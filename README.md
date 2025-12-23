@@ -91,8 +91,8 @@ A list of most of the params is in the following table:
 | ERROR_WRONG_PW | Error if the password is wrong. This value is an key in frontend/src/locales | "ERROR_WRONG_PW" | Needed |
 | http_proxy | The proxy server for http | http://proxy.de:3128 | Not needed |
 | https_proxy | The proxy server for https | http://proxy.de:3128 | Not needed |
-| TEST_USER_MAIL | Mail for a test user | test.user@srv.fs.de | Needed for tests |
-| TEST_ADMIN_MAIL | Mail for a test admin | test.user@srv.fs.de | Needed for tests |
+| TEST_USER_MAIL | Mail for a test user | test.user@mail.de | Needed for tests |
+| TEST_ADMIN_MAIL | Mail for a test admin | test.admin@mail.de | Needed for tests |
 | TEST_USER_PW | PW for test user | test | Needed for tests |
 | TEST_ADMIN_PW | PW for test admin | test | Needed for tests |
 | FRONTEND_TARGET | Set build to production | "production_runtime" | Needed. Dont change | 
