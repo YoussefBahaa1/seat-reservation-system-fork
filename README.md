@@ -124,7 +124,7 @@ Be sure to that all needed Params like VOLUME, PATH_TO_TLS and DATABASE_CONTAINE
 To add a rudimentary dataset to the db execute the following script from the project root: `scripts/db/init/initDatabase.sh`. Accept with 'y' and the script will add basic rooms, users, etc. It is important that at least the database container (which you already defined in .env with DATABASE_CONTAINER in the .env)
 is running.
 
-If everything worked fine youre freshly started project (again with `./scripts/build_and_run.sh`) will show no errors in the log. Now you can open a browser and type in the value of IP (from .env) followed by an ':' with the FRONTEND_PORT (also from .env) to get an url. A leading https:// will indicate that we like to use tls. So the complete url may look like: https//my-srv:3000.
+If everything worked fine youre freshly started project (again with `./scripts/build_and_run.sh`) will show no errors in the log. Now you can open a browser and type in the value of IP (from .env) followed by an ':' with the FRONTEND_PORT (also from .env) to get an url. A leading https:// will indicate that we like to use tls. So the complete url may look like: https//my-srv:3000. But if you dont use TLS the urls is http//my-srv:3000. Please note that some browser will not accept non https requests. A http environment was tested with firefox.
 
 Hopefully you see the landing page. Here you can enter your credentials.  
 Prior we added a test user and a test admin. The later will allow us to add real world persons and rooms etc. So enter test.admin@mail.de as mail and the password test. Now you can enter the real application.
