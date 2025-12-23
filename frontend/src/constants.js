@@ -1,0 +1,13 @@
+export const BAUTZNER_STR_19_A_B = 'Bautzner Str. 19a/b';
+export const BAUTZNER_STR_19_C = 'Bautzner Str. 19c';
+export const GROUND = 'Ground';
+export const FIRST = 'First';
+export const SECOND = 'Second';
+export const ZWICKAU = 'Zwickau';
+export const LEIPZIG = 'Leipzig';
+export const BAUTZEN = 'Bautzen';
+export const CHEMNITZ = 'Chemnitz';
+export const FIRST_ATTIC = 'First_Attic'; // bautzen
+export const SECOND_ATTIC = 'Second_Attic'; // leipzig, chemnitz
+export const FOURTH_ATTIC = 'Fourth_Attic'; // chemnitz
+export const ATTIC = 'Attic'; // zwickau

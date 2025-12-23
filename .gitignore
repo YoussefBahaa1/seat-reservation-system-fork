@@ -1,0 +1,94 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+**/maven-metadata-local.xml
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Misc ###
+dumps/*
+lib/
+lib64
+out.json
+*.cfg
+/backend/target
+/.vscode
+/.metadata/
+*.log
+*.tar.xz
+.env
+*.env*
+!.env_template
+*.png
+!frontend/src/images/*.png
+*.mp4
+
+# Frontend
+frontend/node_modules/**
+frontend/server*
+frontend/package-lock.json 
+
+# Backend
+backend/src/test/resources/dumps/*
+backend/logs_dev_backend/*
+backend/.m2/repository/com/desk_sharing/backend/0.0.1-SNAPSHOT/backend-0.0.1-SNAPSHOT.pom
+backend/.m2/repository/com/desk_sharing/backend/maven-metadata-local.xml
+backend/.m2/repository/com/desk_sharing/backend/0.0.1-SNAPSHOT/_remote.repositories
+backend/.m2/repository/com/desk_sharing/backend/0.0.1-SNAPSHOT/backend-0.0.1-SNAPSHOT.jar
+backend/.m2/repository/*
+backend/.m2/
+
+**/maven-metadata-local.xml
+*.jar
+backend/.m2/repository/com/desk_sharing/backend/0.0.1-SNAPSHOT/backend-0.0.1-SNAPSHOT.jar
+**/_remote.repositories
+
+# TLS
+backend/tls/*
+frontend/tls/*
+tls*
+
+# cypress
+cypress/screenshots/*
+cypress/core
+cypress/cypress/screenshots/*
+cypress/node_modules/
+cypress/package.json
+cypress/package-lock.json
+cypress/cypress/videos/
+
+# misc
+myldaps.sh
+ldap0
+*.bin
+*.cer
+*.pem
+*.p12
+*.crtwie 

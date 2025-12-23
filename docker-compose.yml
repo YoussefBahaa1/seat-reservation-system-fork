@@ -1,0 +1,146 @@
+services:
+  frontend:
+    logging:
+      options:
+        max-size: 3m
+    restart: unless-stopped
+    build: 
+      context: ${PROJECT_PATH}/frontend
+      dockerfile: Dockerfile
+      target: ${FRONTEND_TARGET}
+      pull: false
+      # Things we need during build.
+      args:
+        PROJECT_PATH: ${PROJECT_PATH}
+        REACT_APP_USE_TLS: ${USE_TLS}
+        REACT_APP_CREATE_SERIES_DEFAULT_STARTTIME: ${CREATE_SERIES_DEFAULT_STARTTIME}
+        REACT_APP_CREATE_SERIES_DEFAULT_ENDTIME: ${CREATE_SERIES_DEFAULT_ENDTIME}
+        REACT_APP_CREATE_SERIES_DEFAULT_FREQUENCY: ${CREATE_SERIES_DEFAULT_FREQUENCY}
+        REACT_APP_BACKEND_URL: ${PROTOCOLL}://${IP}:${BACKEND_PORT}
+        REACT_APP_ERROR_USER_NOT_FOUND_IN_AD: ${ERROR_USER_NOT_FOUND_IN_AD}
+        REACT_APP_ERROR_USER_NOT_FOUND_IN_DAO: ${ERROR_USER_NOT_FOUND_IN_DAO}
+        REACT_APP_ERROR_WRONG_PW: ${ERROR_WRONG_PW}
+        TARGET: ${FRONTEND_TARGET}
+    # Things we need in the running container.
+    environment:
+      - GENERATE_SOURCEMAP=false # important to supress some warnings
+      - SSL_KEY_FILE=/etc/ssl/private/${FRONTEND_KEY_FILE}
+      - SSL_CRT_FILE=/etc/ssl/private/${FRONTEND_CRT_FILE}
+      - USE_TLS=${USE_TLS}
+    ports:
+      - ${FRONTEND_PORT}:${FRONTEND_CONTAINER_PORT}
+    volumes:
+      # mount tls stuff read only
+      - ${PATH_TO_TLS}/frontend:/etc/ssl/private:ro
+    networks:
+      - ${NETWORK}
+    depends_on:
+      - backend
+      - database
+
+  backend:
+    logging:
+      options:
+        max-size: 3m
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/docker/daemon.json:/etc/docker/daemon.json 
+      - ${BACKEND_LOGS}:/usr/src/app/logs
+        # mount tls stuff read only
+      - ${PATH_TO_TLS}/backend:/app/tls:ro
+    build: 
+      context: ${PROJECT_PATH}/backend
+      dockerfile: Dockerfile
+      pull: false
+      # Things we need during build.
+      args:
+        PROJECT_PATH: ${PROJECT_PATH}
+        BACKEND_PORT: ${BACKEND_PORT}
+        USE_TLS: ${USE_TLS}
+    ports:
+      - ${BACKEND_PORT}:8080
+    networks:
+      - ${NETWORK}
+    # Things we need in the running container.
+    environment:
+      - USE_TLS=${USE_TLS}
+      # Name of pfx file
+      - BACKEND_PFX_FILENAME=${BACKEND_PFX_FILENAME}
+      # Used in application.properties. The username of the member of AD.
+      - LDAP_DIR_CONTEXT_PRINCIPAL=${LDAP_DIR_CONTEXT_PRINCIPAL}
+      # Used in application.properties. The url of the ldap/AD server.
+      - LDAP_DIR_CONTEXT_URL=${LDAP_DIR_CONTEXT_URL}
+      # Used in application.properties. The base ou (organizational unit) if we look for groups.
+      - LDAP_GROUP_BASE=${LDAP_GROUP_BASE}
+      # Used in application.properties. The filter if we look for groups.
+      - LDAP_GROUP_FILTER=${LDAP_GROUP_FILTER}
+      # Used in application.properties. The filter if we look for users. Here we search for the mail under the condition that the objectClass is user.
+      - LDAP_USER_FILTER=${LDAP_USER_FILTER}
+      # Used in application.properties. The base ou (organizational unit) if we look for users.
+      - LDAP_USER_BASE=${LDAP_USER_BASE}
+      # Used in application.properties. The default dc (domain component).
+      - LDAP_BASE=${LDAP_BASE}
+      # If true only strictly defined urls are allowed to received data from etc.. 
+      - STRICT_CORS=${STRICT_CORS}
+      # A list of allowed origins. Only evaluated if STRICT_CORS=true.
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      # Error messages.
+      - ERROR_USER_NOT_FOUND_IN_AD=${ERROR_USER_NOT_FOUND_IN_AD}
+      - ERROR_USER_NOT_FOUND_IN_DAO=${ERROR_USER_NOT_FOUND_IN_DAO}
+      - ERROR_WRONG_PW=${ERROR_WRONG_PW}
+    secrets:
+      - PW_TLS
+      - PW_DB
+      - PW_LDAP
+
+  database:
+    logging:
+      options:
+        max-size: 3m
+    restart: unless-stopped
+    build: 
+      context: ${PROJECT_PATH}/database
+      dockerfile: Dockerfile
+      pull: false
+      # Things we need during build.
+      args:
+        PROJECT_PATH: ${PROJECT_PATH}
+    # Things we need in the running container.
+    environment:
+      MYSQL_DATABASE: mydatabase
+      PW_DB: ${PW_DB}
+      MARIADB_ROOT_PASSWORD: ${PW_DB}
+    networks:
+      - ${NETWORK}
+    ports:
+      - ${DATABASE_PORT}:3306
+    volumes:
+      - ${VOLUME}:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "ping", "-c", "1", "localhost"]
+      interval: 10s
+      retries: 5
+      timeout: 10s
+    secrets:
+      - PW_DB
+
+networks:
+  mynetwork_dev:
+    driver: bridge
+  mynetwork:
+    driver: bridge
+
+# Where the database is saved.
+volumes:
+  mariadb_data_dev:
+  mariadb_data:
+
+secrets:
+  PW_TLS:
+    file: ${PATH_TO_TLS}/pws/pw_tls.txt
+  PW_DB:
+    file: ${PATH_TO_TLS}/pws/pw_db.txt
+  PW_LDAP:
+    file: ${PATH_TO_TLS}/pws/pw_ldap.txt

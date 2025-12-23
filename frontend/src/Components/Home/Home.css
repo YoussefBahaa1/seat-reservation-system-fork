@@ -1,0 +1,39 @@
+/*.home-page {
+  width: 100vw;
+  height: 100vh;
+  background-color: aliceblue;
+  display: flex;
+}
+
+.home-content {
+  width: 100vw;
+  height: 100vh;
+  background-color: #ffffff;
+}*/
+
+.choose-date {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+
+.gradient {
+  height: 3px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    #008444 0%,
+    rgb(9, 121, 24) 21%,
+    #b89f01 81%,
+    #ffdd00 100%
+  );
+}
+
+.admin-content {
+  padding: 20px; /* Add padding to the content */
+}

@@ -1,0 +1,7 @@
+.flag-image {
+    position: absolute;
+    top: -20%; /* Adjust the percentage as needed */
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 25%; 
+}

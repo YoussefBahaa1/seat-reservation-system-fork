@@ -1,0 +1,252 @@
+{
+    "tokenInvalid": "Token abgelaufen. Bitte melden Sie sich erneut an.",
+    "http401": "Sie sind nicht autorisiert oder die Sitzung ist abgelaufen. Bitte melden Sie sich erneut an."
+    ,"http403": "Sie haben keine Berechtigung für diese Aktion."
+    ,"http405": "Die angeforderte Ressource wurde nicht gefunden."
+    ,"http500": "Serverfehler. Bitte versuche Sie es später erneut."
+    ,"httpOther": "Ein Fehler ist aufgetreten."
+    ,"news":"Neuigkeiten",
+    "defaults":"Voreinstellung",
+    "help":"Hilfe",
+    "any": "Jedes",
+    "login": "Anmeldung",
+    "forgotPassword": "Passwort Vergessen",
+    "passwordsDontMatch": "Bitte geben Sie zweimal ihr neues Passwort ein",
+    "invalidEmail": "Ungültige E-Mail Adresse",
+    "emailAlreadyTaken": "Keine Erstellung möglich. Wird die Email schon verwendet?",
+    "invalidCredentials": "E-Mail Adresse oder Passwort ungültig",
+    "loginFailed": "Anmeldung fehlgeschlagen.",
+    "email": "Email",
+    "password": "Passwort",
+
+    "admin": "Admin",
+    "calendar": "Kalender",
+    "freeDesks": "Freie Arbeitsplätze",
+    "bookings": "Buchungen",
+    "series": "Serienbuchung",
+    "seriesId": "Serien Id",
+    "settings": "Einstellungen",
+    "settingsUpdated": "Einstellungen erfolgreich aktualisiert.",
+    "settingsUpdatedFail": "Einstellungen konnten nicht aktualisiert werden.",   
+    "visibility": "Sichtbarkeit",
+    "logout": "Abmeldung",
+    "hello": "Hallo",
+
+    "visible": "Die Sichtbarkeit wurde erfolgreich in „Sichtbar“ geändert",
+    "anonymousMessage": "Die Sichtbarkeit wurde erfolgreich auf „Anonym“ geändert",
+    "failVisibility": "Die Sichtbarkeit konnte nicht geändert werden",
+
+    "logoutConfirmation": "Sind Sie sicher, dass sie sich abmelden wollen?",
+    "toLogout": "Abmelden",
+    "cancel": "Abbrechen",
+
+    "previousPassword": "Vorheriges Passwort",
+    "newPassword": "Neues Passwort",
+    "newPasswordAgain": "Neues Passwort Nochmal",
+    "submit": "Einreichen",
+    "passwordChangedSuccessfully": "Passwort erfolgreich geändert",
+    "passwordChangFailed": "Passwort konnte nicht geändert werden",
+
+
+    "selectedDate": "Datum Auswählen",
+    "chooseDate": "Datum für eine Arbeitsplatzreservierung wählen",
+    "desk": "Tisch",
+    "chooseDesk": "Tischauswahl",
+
+    "chosenDate": "Datum",
+    "groundFloor": "Erdgeschoss",
+    "firstFloor": "1. Obergeschoss",
+    "thirdFloor": "2. Obergeschoss",
+
+    "groundFloor_19c": "1. Obergeschoss",
+    "firstFloor_19c": "2. Obergeschoss",
+    "thirdFloor_19c": "3. Obergeschoss",
+    
+    "first_attic": "1. Dachgeschoss",
+    "second_attic": "2. Dachgeschoss",
+    "fourth_attic": "4. Dachgeschoss",
+    "attic": "Dachgeschoss",
+
+    "switchFloor": "Etage wechseln",
+    "all": "Alle",
+    "normal": "Normal",
+    "silence": "Ruhebereich",
+
+    "availableDesks": "Verfügbare Arbeitsplätze",
+    "noAvailableDesks": "Keine Arbeitsplätze für diesen Raum verfügbar",
+    "book": "Buchen",
+
+    "available": "Verfügbar",
+    "full": "Ausgebucht",
+    "some": "Geringe Verfügbarkeit",
+    "freeSlots": "Freie Plätze",
+    "anonymous": "Anonym",
+    "bookDesk": "Büchertisch",
+
+    "myBookings": "Meine Buchungen",
+    "edit": "Bearbeiten",
+    "delete": "Entfernen",
+    "day": "Tag",
+    "start": "Beginn",
+    "end": "Ende",
+    "room": "Zimmer",
+    "workstaion": "Arbeitsplatz",
+    "workstations": "Arbeitsplätze",
+    "floor": "Etage",
+    "defaultFloor": "Std. Etage",
+    "defaultView": "Std. Ansicht",
+    "building": "Gebäude",
+    "type": "Art",
+    "equipment": "Austattung",
+    "choose": "Wählen Sie eine Buchung aus",
+    "editBookingTime": "Buchungszeit bearbeiten",
+    "deleteBookingMessage": "Sind Sie sicher, dass Sie diese Buchung entfernen möchten?",
+    "from": "von",
+    "to": "bis",
+
+    "x": "X-Koordinate",
+    "y": "Y-Koordinate",
+    "fields_not_empty": "Felder dürfen nicht leer sein",
+    "x_y_not_empty": "Bitte einen Platz für das Zimmer wählen",
+    "minimum": "Aufenthaltsdauer mindestens 2 Stunden",
+    "maximum": "Aufenthaltsdauer maximal 9 Stunden",
+    "overlap": "Die Auswahl überschneidet sich mit einer anderen Buchung für diesen Arbeitsplatz",
+    "booked": "Buchung erfolgreich",
+    "selectDeskMessage": "Bitte wählen Sie zuerst einen Arbeitsplatz",
+    "blank": "Bitte wählen Sie zuerst einen Arbeitsplatz und Zeitraum vor der Buchung",
+    "deskUpdate": "Arbeitsplatz erfolgreich aktualisiert",
+    "deskUpdateFailed": "Arbeitsplatz konnte nicht aktualisiert werden",
+    "deskDelete": "Arbeitsplatz erfolgreich gelöscht",
+    "deskCreated": "Arbeitsplatz erfolgreich erstellt",
+    "roomStatus": "Status des Zimmers erfolgreich aktualisiert",
+    "roomRemark": "Bemerkungen zum Raum",
+    "deskRemark": "Bemerkungen zum Arbeitsplatz",
+    "roomCreated": "Raum wurde erstellt",
+    "roomDeleted": "Raum wurde gelöscht",
+    "roomCreationFailed": "Raum konnte nicht erstellt werden",
+    "roomChangedSuccessfully": "Raum wurde erfolgreich geändert",
+    "userCreated": "Nutzer wurde erfolgreich erstellt",
+    "userCreationFailed": "Nutzer konnte nicht erstellt werden",
+    "userUpdated": "Nutzer wurde erfolgreich geändert",
+    "userDeleted": "Nutzer wurde erfolgreich gelöscht",
+    "userDeletionFailed": "Nutzer konnte nicht gelöscht werden",
+    "bookingDeleted": "Buchungen wurden erfolgreich gelöscht",
+    "bookingUpdated": "Buchungen wurden erfolgreich geändert",
+    
+    "adminPanel": "Administrationsmenü",
+    "userManagement": "Benutzerverwaltung",
+    "roomManagement": "Zimmer/Schreibtischverwaltung",
+    "bookingManagement": "Buchungsverwaltung",
+    "general": "General",
+    "statistics": "Statistiken",
+
+    "usage": "Verwendung",
+    "timePeriods": "Zeit Abschnitte",
+    "numberOfBookings": "Anzahl der Buchungen",
+    "relativeChange": "Relative Veränderung",
+
+    "addEmployee": "Mitarbeiter Hinzufügen",
+    "deleteEmployee": "Mitarbeiter Entfernen",
+    "editEmployee": "Mitarbeiter Bearbeiten",
+    "name": "Vorname",
+    "surname": "Nachname",
+    "action": "Aktion",
+    
+    "addRoom": "Zimmer Hinzufügen",
+    "deleteRoom": "Zimmer Entfernen",
+    "editRoom": "Zimmer Bearbeiten",
+    "addWorkstation": "Arbeitsplatz Hinzufügen",
+    "deleteWorkstation": "Arbeitsplatz Entfernen",
+    "editWorkstation": "Arbeitsplatz Bearbeiten",
+    "noWorkstationForThisRoom": "Es existiert kein Arbeitsplatz in diesem Raum.",
+    "status": "Status",
+    "enable": "Aktivieren",
+    "disable": "Deaktivieren",
+    "deskID": "Tisch ID",
+    "selectRoom": "Zimmer auswählen",
+    "selectDesk": "Tisch auswählen",
+    "deskNotFound": "Tisch nicht gefunden",
+    "withEquipment": "Mit Austattung",
+    "withoutEquipment": "Ohne Austattung",
+    "unknown": "Unbekannt",
+    
+    "deleteBooking": "Buchung Entfernen",
+    "editBooking": "Buchung Bearbeiten",
+    "overviewBooking": "Buchungsübersicht",
+    "search": "Suchen",
+    "roomID": "Tisch ID",
+    "dataNotFound": "Daten nicht gefunden",
+
+    "next": "Nächste",
+    "back": "Zurück",
+    "today": "Heute",
+    "month": "Monat",
+    "week": "Woche",
+    "agenda": "Agenda",
+    "noEventsInRange": "In diesem Bereich liegen keine Buchungen vor",
+    "date": "Datum",
+    "time": "Zeit",
+    "event": "Buchung",
+    "toDate": "Zu einem bestimmten Datum",
+    
+    "monday": "Montag",
+    "tuesday": "Dienstag",
+    "wednesday": "Mittwoch",
+    "thursday": "Donnerstag",
+    "friday": "Freitag",
+    "dayOfTheWeek": "Wochentag",
+    "hours": "Stunde",
+    
+    "yes": "Ja",
+    "no": "Nein",
+    "true": "Richtig",
+    "false": "Falsch",
+    "begin": "Anfang",
+    "update": "Aktualisieren",
+    "close": "Schließen",
+    "deleteMoreElements": "Löschen weiterer Elemente",
+
+    "forbiddenChar":"Bitte geben sie erlaubte Zeichen ein. (Kein !, ? usw.)"
+    ,"selectRoomError":"Bitte wählen Sie einen existierenden Raum aus",
+    "fFDeleteWorkStation":"Es werden neben dem Arbeitsplatz auch alle damit verbundenen Buchungen gelöscht.",
+    "fFDeleteRoom":"Es werden neben dem Raum auch alle damit verbundenen Tische und Buchungen gelöscht.",
+    "fFDeleteEmployee":"Es werden neben dem Nutzer auch alle damit verbundenen Buchungen gelöscht.",
+    "helpAddRoom":"Bitte wählen Sie einen Ort für ein neues Büro auf der Karte und klicken Sie darauf.<br/>Anschließend geben Sie alle nötigen Informationen ein und wählen <strong>Einreichen</strong>."
+    ,"helpChooseRoom":"Bitte wählen Sie ein existierendes Büro aus und klicken hierauf."
+    ,"helpCreateBooking":"Bitte wählen Sie zuerst ein Arbeitsplatz und dann eine Zeitspanne aus. Klicken Sie anschließend <strong>Buchen</strong>."
+    ,"helpDeleteRoom":"Klicken Sie auf den jeweiligen Raum um diesen zu löschen."
+    ,"helpAddWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Anschließend definieren Sie bitte den jeweiligen Arbeitsplatz."
+    ,"helpEditWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Anschließend wählen Sie bitte den jeweiligen Arbeitsplatz aus. Im Anschluss können Sie die Änderungen definieren."
+    ,"helpDeleteWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Danach wählen Sie den zu löschenden Arbeitsplatz aus."
+    ,"bookingsSum":"Buchungen Gesamt"
+    ,"enableFilter":"Filter aktivieren"
+    ,"column":"Spalte"
+    ,"condition":"Bedingung"
+    ,"contains":"Enthält"
+    ,"isEqual":"="
+    ,"enterText":"Texteingabe"
+    ,"create":"Erstellen"
+    ,"manage":"Verwalten"
+    ,"startDate":"Datum Beginn"
+    ,"endDate":"Datum Ende"
+    ,"startTime":"Zeit Beginn"
+    ,"endTime":"Zeit Ende"
+    ,"frequency":"Frequenz"
+    ,"daily":"Täglich"
+    ,"weekly":"Wöchentlich"
+    ,"twoweeks":"Alle zwei Wochen"
+    ,"threeweeks":"Alle drei Wochen"
+    ,"monthly":"Monatlich"
+    ,"calculatedDates":"Berechnete Daten"
+    ,"timerangeIsNotValid":"Zeitspanne ist nicht valide."
+    ,"startDateBiggerThanStartDate":"Start des Datumsintervalls darf nicht größer als Ende sein."
+    ,"startTimeBiggerThanStartTime":"Start des Zeitintervalls darf nicht größer als Ende sein."
+    ,"seriesDurationTooLong":"Die Dauer der Serienbuchung ist zu groß."
+    ,"noDesksForRange":"Für die angegebene Zeitspanne/Gebäude konnte kein Arbeitsplatz gefunden werden."
+    
+    ,"colleagues":"Kollegen"
+
+    ,"ERROR_USER_NOT_FOUND_IN_AD":"Nutzer wurde nicht im AD gefunden."
+    ,"ERROR_USER_NOT_FOUND_IN_DAO":"Nutzer wurde nicht in lokaled DB gefunden."
+    ,"ERROR_WRONG_PW":"Falsches Passwort."
+}

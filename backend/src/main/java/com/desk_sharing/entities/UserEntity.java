@@ -1,0 +1,57 @@
+package com.desk_sharing.entities;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.*;
+@Entity
+@Table(name = "users")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserEntity {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+    // The email of the user. Is used to uniquly identify the user in the application.
+    private String email;
+    private String password;
+    private String name;
+    private String surname;
+    private boolean visibility;
+    //private boolean admin;
+    @ManyToOne(cascade =  { CascadeType.PERSIST })
+    @JoinColumn(name = "default_floor_id", nullable = true)
+    private Floor default_floor;
+    // The default view in the calendar in MyBookings.jsx. Either "day", "week" or "month".
+    @ManyToOne(cascade =  { CascadeType.PERSIST })
+    @JoinColumn(name = "defaultViewModeId", nullable = true)
+    private ViewMode defaultViewMode;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
+    private List<Role> roles = new ArrayList<>();
+    @Transient
+    public boolean isAdmin() {
+        return roles.stream()
+            .anyMatch(role -> role.getName().equals("ROLE_ADMIN"));
+    }
+  
+    public UserEntity(UserEntity other) {
+        this.id = other.getId();
+        this.email = other.getEmail();
+        this.password = "";
+        this.name = other.getName();
+        this.surname = other.getSurname();
+        this.visibility = other.isVisibility();
+        this.default_floor = other.getDefault_floor();
+        this.roles = other.getRoles();
+        this.defaultViewMode = other.getDefaultViewMode();
+    }
+}

@@ -1,0 +1,252 @@
+{
+    "tokenInvalid": "Token invalid. Please login again.",
+    "http401": "You are not authorized or your session has expired. Please log in again.",
+    "http403": "You do not have permission to perform this action.",
+    "http405": "The requested resource was not found.",
+    "http500": "Server error. Please try again later.",
+    "httpOther": "An error has occurred."
+    ,"news":"News",
+    "defaults":"Defaults",
+    "help":"Help",
+    "any": "Any",
+    "login": "Login",
+    "forgotPassword": "Forgot Password",
+    "passwordsDontMatch": "New passwords do not match",
+    "invalidEmail": "Invalid email",
+    "emailAlreadyTaken": "Creation was not successful. Is the email already used?",
+    "invalidCredentials": "Invalid email or password",
+    "loginFailed": "Login failed.",
+    "email": "Email",
+    "password": "Password",
+
+    "admin": "Admin",
+    "calendar": "Calendar",
+    "freeDesks": "Free Workstations",
+    "bookings": "Bookings",
+    "series": "Series Bookings",
+    "seriesId": "Series Id",
+    "settings": "Settings",
+    "settingsUpdated": "Settings successful updated.",
+    "settingsUpdatedFail": "Settings was not updated.",   
+    "visibility": "Visibility",
+    "logout": "Logout",
+    "hello": "Hello",
+
+    "visible": "Visibility changed successfully to visible",
+    "anonymousMessage": "Visibility changed successfully to anonymous",
+    "failVisibility": "Failed to change visibility",
+
+    "logoutConfirmation": "Are you sure you want to logout?",
+    "toLogout": "Logout",
+    "cancel": "Cancel",
+
+    "previousPassword": "Previous Password",
+    "newPassword": "New Password",
+    "newPasswordAgain": "New Password Again",
+    "submit": "Submit",
+    "passwordChangedSuccessfully": "Password changed successfully",
+    "passwordChangFailed": "Changing password failed",
+
+    "selectedDate": "Selected Date",
+    "chooseDate": "Choose a date for a desk",
+    "desk": "Desk",
+    "chooseDesk": "Choose a desk",
+
+    "chosenDate": "Chosen Date",
+    "groundFloor": "Ground Floor",
+    "firstFloor": "Second Floor",
+    "thirdFloor": "Third Floor",
+
+    "groundFloor_19c": "Ground Floor",
+    "firstFloor_19c": "Second Floor",
+    "thirdFloor_19c": "Third Floor",
+
+    "first_attic": "First Attic",
+    "second_attic": "Second Attic",
+    "fourth_attic": "Fourth Attic",
+    "attic": "Dachgeschoss",
+
+    "switchFloor": "Switch Floor",
+    "all": "All",
+    "normal": "Normal",
+    "silence": "Silence",
+
+    "availableDesks": "Available Desks",
+    "noAvailableDesks": "No desks available for this room",
+    "book": "Book",
+
+    "available": "Available",
+    "full": "Fully booked",
+    "some": "Some free slots",
+    "freeSlots": "Free Slots",
+    "anonymous": "Anonymous",
+    "bookDesk": "Book Desk",
+
+    "myBookings": "My Bookings",
+    "edit": "Edit",
+    "delete": "Delete",
+    "day": "Day",
+    "start": "Start",
+    "end": "End",
+    "room": "Room",
+    "workstaion": "Workstation",
+    "workstations": "Workstations",
+    "floor": "Floor",
+    "defaultFloor": "Default Floor",
+    "defaultView": "Default View",
+    "building": "Building",
+    "defaultBuilding": "Default Building",
+    "type": "Type",
+    "equipment": "Equipment",
+    "choose": "Choose a booking",
+    "editBookingTime": "Edit Booking Time",
+    "deleteBookingMessage": "Are you sure you want to remove this booking?",
+    "from": "from",
+    "to": "to",
+
+    "x": "X coordinate",
+    "y": "Y coordinate",
+    "fields_not_empty": "Fields cannot be blank.",
+    "x_y_not_empty": "Please choose the place of the new room",
+    "minimum": "Minimum booking duration is 2 hours",
+    "maximum": "Maximum booking duration is 9 hours",
+    "overlap": "This slot overlaps with another booking for this desk",
+    "booked": "Booking saved successfully",
+    "selectDeskMessage": "Please first select a desk",
+    "blank": "Please choose a desk and time before booking.",
+    "deskUpdate": "Desk updated successfully",
+    "deskUpdateFailed": "Desk updated was not successfully",
+    "deskDelete": "Desk deleted successfully",
+    "deskCreated": "Desk created successfully",
+    "roomStatus": "Room status changed successfully",
+    "roomRemark": "Room Remark",
+    "deskRemark": "Desk Remark",
+    "roomCreated": "Room was created successfully",
+    "roomDeleted": "Room was deleted successfully",
+    "roomCreationFailed": "Room was not created",
+    "roomChangedSuccessfully": "Room was changed successfully",
+    "userCreated": "User created successfully",
+    "userCreationFailed": "User was not",
+    "userUpdated": "User updated successfully",
+    "userDeleted": "User deleted successfully",
+    "userDeletionFailed": "User was not deleted",
+    "bookingDeleted": "Bookings deleted successfully",
+    "bookingUpdated": "Bookings updated successfully",
+    
+    "adminPanel": "Admin Panel",
+    "userManagement": "User Management",
+    "roomManagement": "Room/Desk Management",
+    "bookingManagement": "Booking Management",
+    "general": "General",
+    "statistics": "Statistics",
+
+    "usage": "Usage",
+    "timePeriods": "Time Periods",
+    "numberOfBookings": "Number of Bookings",
+    "relativeChange": "Relative Change",
+
+    "addEmployee": "Add Employee",
+    "deleteEmployee": "Delete Employee",
+    "editEmployee": "Edit Employee",
+    "name": "Name",
+    "surname": "Surname",
+    "action": "Action",
+    
+    "addRoom": "Add Room",
+    "deleteRoom": "Delete Room",
+    "editRoom": "Edit Room",
+    "addWorkstation": "Add Workstation",
+    "deleteWorkstation": "Delete Workstation",
+    "editWorkstation": "Edit Workstation",
+    "noWorkstationForThisRoom": "No workstation exists in this Room.",
+    "status": "Status",
+    "enable": "Enable",
+    "disable": "Disable",
+    "deskID": "Desk ID",
+    "selectRoom": "Select Room",
+    "selectDesk": "Select Desk",
+    "deskNotFound": "Desk not found",
+    "withEquipment": "With equipment",
+    "withoutEquipment": "Without equipment",
+    "unknown": "unknown",
+    
+    "deleteBooking": "Delete Booking",
+    "editBooking": "Edit Booking",
+    "overviewBooking": "Overview of Bookings",
+    "search": "Search",
+    "roomID": "Room ID",
+    "dataNotFound": "Data not found",
+    
+    "next": "Next",
+    "back": "Back",
+    "today": "Today",
+    "month": "Month",
+    "week": "Week",
+    "agenda": "Agenda",
+    "noEventsInRange": "There are no events in this range",
+    "date": "Date",
+    "time": "Time",
+    "event": "Booking",
+    "toDate": "At an defined date",
+    
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesdy",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "dayOfTheWeek": "Day of the week",
+    "hours": "Hours",
+    
+    "yes": "Yes",
+    "no": "No",
+    "true": "True",
+    "false": "False",
+    "begin": "Begin",
+    "update": "Update",
+    "close": "Close",
+    "deleteMoreElements": "Delete more elements",
+    
+    "forbiddenChar":"Please only use allowed characters. (No !, ? etc.)"
+    ,"selectRoomError":"Please select an existing room",
+    "fFDeleteWorkStation":"All bookings that belongs to this desk wil also be deleted.",
+    "fFDeleteRoom":"All desks and bookings that belongs to this room will also be deleted.",
+    "fFDeleteEmployee":"All bookings that belongs to this user will also be deleted.",
+    "helpAddRoom":"Please choose a location for an new room on the map and click on it.<br/>Additionally provide all necessary informations and push <strong>Submit</strong>."
+    ,"helpChooseRoom":"Please choose an existing room and click on it."
+    ,"helpCreateBooking":"Please choose first an desk and then a timespan. Finish with a push on <strong>Book</strong>."
+    ,"helpDeleteRoom":"Click on the room you want to be deleted."
+    ,"helpAddWorkstation":"Please choose an existing room with an click on it. After this define the new workstation."
+    ,"helpEditWorkstation":"Please choose an existing room with an click on it. After this choose the workstation to be changed. After this take the changes you want."
+    ,"helpDeleteWorkstation":"Please choose an existing room with an click on it. After this choose an workstation to delete it."
+    ,"bookingsSum":"Bookings sum"
+    ,"enableFilter":"Enable Filter"
+    ,"column":"Column"
+    ,"condition":"Condition"
+    ,"contains":"Contains"
+    ,"isEqual":"="
+    ,"enterText":"Enter text"
+    ,"create":"Create"
+    ,"manage":"Manage"
+    ,"startDate":"Start Date"
+    ,"endDate":"End Date"
+    ,"startTime":"Start Time"
+    ,"endTime":"End Time"
+    ,"frequency":"Frequency"
+    ,"daily":"Daily"
+    ,"weekly":"Weekly"
+    ,"twoweeks":"Every two weeks"
+    ,"threeweeks":"Every three weeks"
+    ,"monthly":"Monthly"
+    ,"calculatedDates":"Calculated Dates"
+    ,"timerangeIsNotValid":"Timerange is not valid."
+    ,"startDateBiggerThanStartDate":"Start date must not be greater than the end date."
+    ,"startTimeBiggerThanStartTime":"Start time must not be greater than the end time."
+    ,"seriesDurationTooLong":"The duration of the series booking is too long."
+    ,"noDesksForRange":"For the specified time range and building no desk is available."
+
+    ,"colleagues":"Colleagues"
+
+    ,"ERROR_USER_NOT_FOUND_IN_AD":"User was not found in ad."
+    ,"ERROR_USER_NOT_FOUND_IN_DAO":"User was not found in local database."
+    ,"ERROR_WRONG_PW":"Wrong Password."
+}

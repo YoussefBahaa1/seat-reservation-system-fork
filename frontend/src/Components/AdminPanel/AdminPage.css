@@ -1,0 +1,247 @@
+.admin-controls-container {
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    width: 100%;
+  }
+  
+  .user-management-container,
+.edit-rooms-container,
+.manage-bookings-container,
+.download-statistics-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* Button styles */
+.user-management-button,
+.edit-rooms-button,
+.manage-bookings-button,
+.download-statistics-button {
+  background-color: #008444;
+  color: white;
+  padding: 15px 20px;
+  width: 240px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Button hover styles */
+.user-management-button:hover,
+.edit-rooms-button:hover,
+.manage-bookings-button:hover,
+.download-statistics-button:hover {
+  background-color: #006c37;
+}
+
+/* Icon styles */
+.logo {
+  color: #008444;
+  font-size: 3em;
+  margin-top: 5px;
+  margin-left: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 30%;
+  padding: 10px;
+}
+
+.button-wrapper {
+  position: absolute;
+  top: 80px;
+  right: 60px;
+  padding: 50px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  visibility: hidden; /* Initially hidden */
+}
+
+.button-wrapper.visible {
+  visibility: visible;
+}
+
+/* Wrapper for employee buttons */
+.employee-button-wrapper {
+    position: absolute;
+    top: 80px;
+    right: 60px;
+    padding: 50px;
+    background-color: rgba(171, 168, 168, 0.5); /* Semi-transparent black background */
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    visibility: hidden; /* Initially hidden */
+  }
+
+  .workstation-button-wrapper {
+    position: absolute;
+    top: 80px; /* Adjust this value as needed */
+    right: 60px;
+    padding: 50px;
+    background-color: rgba(171, 168, 168, 0.5); /* Semi-transparent black background */
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    visibility: hidden; /* Initially hidden */
+    z-index: 100; /* Ensure it's above other elements */
+  }
+  
+  /* Make wrapper visible when showEmployeeButtons is true */
+  .employee-button-wrapper.visible {
+    visibility: visible;
+  }
+
+.my-button {
+  background-color: #008444;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  margin-bottom: 5px;
+}
+.employee-button {
+  background-color: #008444;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  margin-bottom: 5px;
+}
+
+.workstation-button {
+  background-color: #008444;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  margin-bottom: 5px;
+}
+
+.employee-button:hover {
+  background-color: #006c37;
+}
+
+  
+  .workstation-button-wrapper.visible {
+    visibility: visible;
+  }
+  
+
+  
+  .workstation-button:hover {
+    background-color: #006c37;
+  }
+
+  .booking-button-wrapper {
+    position: absolute;
+    top: 80px; /* Adjust this value as needed */
+    right: 60px;
+    padding: 50px;
+    background-color: rgba(171, 168, 168, 0.5); /* Semi-transparent black background */
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    visibility: hidden; /* Initially hidden */
+    z-index: 100; /* Ensure it's above other elements */
+  }
+  
+  .booking-button-wrapper.visible {
+    visibility: visible;
+  }
+  
+  .booking-button {
+    background-color: #008444;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    margin-bottom: 5px;
+  }
+  
+  .booking-button:hover {
+    background-color: #006c37;
+  }
+
+  .bottom-container{
+    display: flex;
+    width: 100%;
+  }
+  .data-display{
+    /* background-color: #006c37; */
+    height: 90vh;
+    width: 70vw;
+  }
+  .maps{
+    display: flex;
+  }
+  .map{
+    margin: 20px;
+  }
+  .heat-map{
+    margin: 20px;
+    border-bottom: 2px solid black;
+    opacity: 1;
+  }
+  .usage-map{
+    margin: 20px;
+    border-bottom: 2px solid black;
+    opacity: 1;
+  }
+  .column-map{
+    margin: 20px;
+    border-bottom: 2px solid black;
+    opacity: 1;
+  }
+
+  .column{
+    width: 50%;
+  }
+  
+  .map-content{
+    /* background-color: #008444; */
+    height: 60vh;
+    width: 65vw;
+  }
+  .no-map-content{
+    /* background: #628876; */
+    height: 60vh;
+    width: 65vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  /* animation: changeOpacity 4s linear infinite; */
+  @keyframes changeOpacity {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  .no-map-content{
+    animation: changeOpacity 2s linear infinite; /* Adjust the duration as needed */
+    height: 60vh;
+    width: 65vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .desk-list{
+    height: 85vh;
+    overflow-y: scroll;
+  }
