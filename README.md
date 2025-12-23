@@ -169,7 +169,7 @@ The main task of this tool is to let the user create bookings in defined time ra
 For this we assume that an admin already include at least a building with a floor that contains a room with an desk.
 
 1. Login
-2. You see the main page with the Calendar view. This is indicate by the word calendar that is highlighted in the left bar. And also in the url that contains /home.
+2. You see the main page with the Calendar view. This is indicate by the word calendar that is highlighted in the left bar and also in the url that contains /home.
 3. Choose a date on which you want to book a desk. Left click on it.
 4. You see the floor selection view. Here you can choose a building and a floor in this building. The image in the center is the floor plan of the selected floor. Every blue icon indicates a room. A room can have 0..n desks in it.
 5. Select a room. To do so left click on one of the blue icons. 
