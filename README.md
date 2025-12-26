@@ -37,7 +37,7 @@ Create the folder \${PATH_TO_TLS}/frontend. To be sure you can create that direc
 
 To make sure no passwords are hard coded in the containers we also create the folder \${PATH_TO_TLS}/pws/. This directory and its content is needed even if no TLS is used!
 
-Here we create an file called pw_tls.txt. This file hase the password for our certifcation file as content. If no TLS is needed you can create an empty file with the specified name.
+Here we create an file called pw_tls.txt. This file hase the password for our certifcation file as content. If no TLS is needed you can create an empty file with the specified name. (e.g. with `touch \$PATH_TO_TLS/pws/pw_tls.txt`)
 
 We also create \${PATH_TO_TLS}/pws/pw_db.txt and \${PATH_TO_TLS}/pws/pw_ldap.txt. These files contain the password for the database and for the service user of ldap. If ldap is not used it can be empty.
 
@@ -104,16 +104,16 @@ A list of most of the params is in the following table:
 | CREATE_SERIES_DEFAULT_ENDTIME | Default end time for series creation | 14:00:00 | Needed |
 | CREATE_SERIES_DEFAULT_FREQUENCY=daily | Default frequency for series creation | daily | Needed |
 | FRONTEND_PORT | The exposed port where the frontend container accepts connections | 3000 | Needed |
-| FRONTEND_CONTAINER | Name of the frontend container | desksharingtool_dev-frontend-1 | Needed. Depending on the project name. Since my project is called DeskharingTool_Dev the container is named desksharingtool_dev-frontend-1. | 
+| FRONTEND_CONTAINER | Name of the frontend container | seat-reservation-system-frontend-1 | Needed. Depending on the project name. Since my project is called seat-reservation-system the container is named seat-reservation-system-frontend-1. | 
 | BACKEND_PORT | The exposed port where the backend container accepts connections | 8082 | Needed |
 | BACKEND_LOGS | Path to the backend log dir on the host machine | /home/usr/logs_dev_backend | Needed |
-| BACKEND_CONTAINER | Name of the backend container | desksharingtool_dev-backend-1 | Needed. Depending on the project name. Since my project is called DeskharingTool_Dev the container is named desksharingtool_dev-backend-1 |
+| BACKEND_CONTAINER | Name of the backend container | seat-reservation-system-backend-1 | Needed. Depending on the project name. Since my project is called seat-reservation-system the container is named seat-reservation-system-backend-1 |
 | BACKEND_PFX_FILENAME | Name of pfx file for the backend crt. | backend.pfx | Needed. Must be in $PATH_TO_TLS/backend/. |
 | STRICT_CORS | If true only strictly defined urls are allowed to received data from etc.. | false | If all urls shall be allowed keep it false |
 | CORS_ALLOWED_ORIGINS | A list of allowed origins. Only evaluated if STRICT_CORS=true. | https://my-serv:3000,http://my-serv:3000 |
 | DATABASE_PORT | The exposed port where the db container accepts connections | 3307 | Needed |
-| DATABASE_CONTAINER | Name of the db container | desksharingtool_dev-database-1 | Needed. Depending on the project name. Since my project is called DeskharingTool_Dev the container is named desksharingtool_dev-database-1 |
-| VOLUME | Name of the volume of the db | desksharingtool_dev-database-1 |Needed. One of the two defined volumes in docker-compose.yml |
+| DATABASE_CONTAINER | Name of the db container | seat-reservation-system-database-1 | Needed. Depending on the project name. Since my project is called seat-reservation-system the container is named seat-reservation-system-database-1 |
+| VOLUME | Name of the volume of the db | mariadb_data |Needed. One of the two defined volumes in docker-compose.yml |
 
 
 If you freshly cloned this project it advisable to set STRICT_CORS=false and USE_TLS=false.
