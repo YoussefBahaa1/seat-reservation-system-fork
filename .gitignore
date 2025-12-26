@@ -34,6 +34,7 @@ build/
 
 ### Misc ###
 dumps/*
+!dumps/schema.sql
 lib/
 lib64
 out.json
