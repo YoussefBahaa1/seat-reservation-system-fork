@@ -9,19 +9,27 @@ Web application that allows to book workspaces in an office.
 ## Before you can start
 
 ### First steps
-After you cloned this repo go into the freshly created project directory.
-This directory is your project root. Later we will write the absolute path to our project root in the .env file as PROJECT_PATH. In the future I will reference the project root als \$PROJECT_PATH. Amongst other you will find here the directories frontend, backend, database. These are the main pillars of this project.
+- Clone this repo into a new folder: `git clone git@github.com:DaGeRe/seat-reservation-system.git`. We refer to the folder of the project as `$PROJECT_PATH`
+- Configure the passwords; at least `tls/pws/pw_db.txt` needs to be set to your database password. For default passwords, use `mkdir -p tls/pws; echo "default" >> tls/pws/pw_db.txt; echo "empty" >> tls/pws/pw_ldap.txt; echo "empty" >> tls/pws/pw_tls.txt`
+- Prepare the .env-file: `cp .env_template .env`; Set `PROJECT_PATH`, `PATH_TO_TLS`, and `IP` (your IP) to the relevant values; other than that, the default values can be used.
+	* PROJECT_PATH must set to the absolute path of the root of our project.
+	* PATH_TO_TLS must be set to the absolute path of the dir where we prior store our tls stuff and passwords.
+	* IP must be set to the name/ip of our host machine.
+- To start the containers, run `./scripts/build_and_run.sh`.
+- After the containers are running, execute `./scripts/db/init/initDatabase.sh` to initialize the database with the default users.
+After these steps, the desk-sharing-tool is initially running. Make sure to replace default passwords when running a public server. 
 
-To go further create an directory tls wherever you like. This directory later holds everything needed for tls/https communication. We write down the absolute path to this directory to add it later in the .env file as PATH_TO_TLS.
-In the future I will reference the tls dir  as \$PATH_TO_TLS.
+Afterwards, you can visit the project page (default `http://localhost:3001`). You can use the default credentials (test.user@mail.de / test and test.admin@mail.de / test).
+
+
+### TLS Configuration 
+The TLS directory can be created wherever you like; by default, use `$PROJECT_PATH/tls`. We call this directory `$PATH_TO_TLS`
+This directory later holds everything needed for tls/https communication. We write down the absolute path to this directory to add it later in the .env file as PATH_TO_TLS.
 In the tls directory we first add an other directory called pws.
-In $PATH_TO_TLS/pws/ we create an file called pw_db.txt.
-The only content of this file shall be the password of our database.
-Create on and write it in $PATH_TO_TLS/pws/pw_db.txt.
 
-During the setup process you will execute bash scripts from the project root which are located in \$PROJECT_PATH/scripts. If a error occurs execute the following statement: `chmod -R +x \$PROJECT_PATH/scripts`.
+During the setup process you will execute bash scripts from the project root which are located in `$PROJECT_PATH/scripts`. If a error occurs execute the following statement: `chmod -R +x \$PROJECT_PATH/scripts`.
 
-In the next step we go further with the tls directory \$PATH_TO_TLS. 
+In the next step we go further with the tls directory `$PATH_TO_TLS`
 
 ### TLS
 Attention: later in .env we will see a flag called USE_TLS. Its default value is false, indicating that we dont want to use tls encryption. This means we dont have to do all the work described in this chapter. Anyway, the password files are still stored in the subfolder pws in the tls folder. So everytime an certificate file is mentioned ignore this if you set USE_TLS to false.
@@ -41,27 +49,16 @@ Here we create an file called pw_tls.txt. This file hase the password for our ce
 
 We also create \${PATH_TO_TLS}/pws/pw_db.txt and \${PATH_TO_TLS}/pws/pw_ldap.txt. These files contain the password for the database and for the service user of ldap. If ldap is not used it can be empty.
 
-### Create .env
-.env is used to store parameters that are used to run the project.
-Some of them may be confidential or vary based on the environment.
-So some of them must be set by hand.
-First copy the .env_template to .env.
+### Configure .env
+`.env` is used to store parameters that are used to run the project. Some of them may be confidential or vary based on the environment. So some of them must be set by hand.
 
-There are some variables we must define before we can start:
-* PROJECT_PATH must set to the absolute path of the root of our project.
-* PATH_TO_TLS must be set to the absolute path of the dir where we prior store our tls stuff and passwords.
-* IP must be set to the name/ip of our host machine.
+There are some variables we must can change (but the default values from `.env_template` are fine):
 * Network must be set either to mynetwork_dev or mynetwork. Both of them are defined in docker-compose.yml
 * BACKEND_LOGS must be set to an directory where we like to store the logging messages. Choose a folder you like. E.g.: \${PROJECT_PATH}/backend/logs_dev_backend/.
 * VOLUME must set either to mariadb_data_dev or mariadb_data. Both are defined in docker-compose.yml.
 
-These are the main params. If you set them you be able to first start your project. From the project root use ./scripts/build_and_run.sh
-
-The first run may take some time.
-After the project is started you may see many errors in the project. We will handle them later. 
-
 In the next step we find the names of our containers and add them to .env.
-Execute `docker ps`. You will se all running containers. Hopefully among them you see our three project containers. With docker `ps --format "table {{.ID}}}\t{{.Names}}"` you only the the id and the name of the containers. 
+Execute `docker ps`. You will se all running containers. Hopefully among them you see our three project containers. With docker `ps --format "table {{.ID}}}\t{{.Names}}"` you only get the the id and the name of the containers. 
 
 First search for a container namend something with frontend. This is the container name of our frontend container. Copy the name and add it in .env as FRONTEND_CONTAINER. Do similiar with backend and database.
 
@@ -117,23 +114,6 @@ A list of most of the params is in the following table:
 
 
 If you freshly cloned this project it advisable to set STRICT_CORS=false and USE_TLS=false.
-
-### Prepare the database
-Be sure to that all needed Params like VOLUME, PATH_TO_TLS and DATABASE_CONTAINER are correctly set in .env. Also check if you already written your database password in ${PATH_TO_TLS}/pws/pw_db.txt. 
-
-`cd` to project root (\$PROJECT_PATH). Here do `chmod -R +x scripts/` if needed.
-
-To add a rudimentary dataset to the db execute the following script from the project root: `scripts/db/init/initDatabase.sh`. Accept with 'y' and the script will add basic rooms, users, etc. It is important that at least the database container (which you already defined in .env with DATABASE_CONTAINER in the .env)
-is running.
-
-If everything worked fine youre freshly started project (again with `./scripts/build_and_run.sh`) will show no errors in the log. Now you can open a browser and type in the value of IP (from .env) followed by an ':' with the FRONTEND_PORT (also from .env) to get an url. A leading https:// will indicate that we like to use tls. So the complete url may look like: https//my-srv:3000. But if you dont use TLS the urls is http//my-srv:3000. Please note that some browser will not accept non https requests. A http environment was tested with firefox.
-
-Hopefully you see the landing page. Here you can enter your credentials.  
-Prior we added a test user and a test admin. The later will allow us to add real world persons and rooms etc. So enter test.admin@mail.de as mail and the password test. Now you can enter the real application.
-
-## Run the project
-Use ./scripts/build_and_run.sh. This will create the docker images. Also the containers are started. 
-Please see prior chapter if you want to start the project for the first time.
 
 ## User Manual
 
