@@ -1,6 +1,7 @@
 # User Manual
 
-## Add new user
+## User management
+### Add new user
 After you executed initDatabase.sh you can login as test.admin@mail.de with the password test. With this account you can start to add your real users. It is important that, after you setup youre real world users, you delete this user with this unsafe password.
 
 A step by step guide how to add a new user is seen in the following list:
@@ -14,7 +15,7 @@ If the user shall be grandted admin rights select true. False otherwise.
 9. Click `Submit`.
 10. A small window will appear with the information that the user was creaded successfully.
 
-## Delete user
+### Delete user
 1. Login as user with ADMIN role.
 2. On the on the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
 3. Click on `User Management`.
@@ -24,7 +25,7 @@ If the user shall be grandted admin rights select true. False otherwise.
 7. If the user has done at least one booking a window will appear. You will be asked to delete all bookings that belong to the user. Click `YES`.
 7. A small window will appear with the information that the user was deleted.
 
-## Roles and changes for users
+### Roles and changes for users
 A basic role hierarchy is implemented. A user has per default the role USER. If this user needs to do some special tasks like adding other users or add/delete rooms he must be granted the role ADMIN. 
 A admin can do everything a normal user can do, plus all the administrative tasks. 
 So this only can be done via gui if the executing user is a admin by himself. To do so:
@@ -39,7 +40,8 @@ So this only can be done via gui if the executing user is a admin by himself. To
 9. Click `Update`.
 10. A small window will appear with the information that the user was changed.
 
-## Create a new room
+## Room and desk management
+### Create a new room
 A room contains desks/workstations. A room is located in a floor. For the following guide we assume that the floor (and therefore the building) are already added.
 
 1. Login as user with ADMIN role.
@@ -51,7 +53,7 @@ A room contains desks/workstations. A room is located in a floor. For the follow
 7. Click on `SUBMIT`.
 8. A small window will appear with the information that the room was created.
 
-## Delete a room
+### Delete a room
 1. Login as user with ADMIN role.
 2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
 3. Click on `Room/Desk Management`.
@@ -61,7 +63,7 @@ A room contains desks/workstations. A room is located in a floor. For the follow
 7. Click on `YES`.
 8. A small window will appear with the information that the room was deleted.
 
-## Update a room
+### Update a room
 1. Login as user with ADMIN role.
 2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
 3. Click on `Room/Desk Management`.
@@ -71,7 +73,7 @@ A room contains desks/workstations. A room is located in a floor. For the follow
 7. Click on `SUBMIT`.
 8. A small window will appear with the information that the room was changed.
 
-## Create a new desk
+### Create a new desk
 A desk/workstation is a concrete place that a user can book. For the following guide we assume that the room, in which the new desk will be placed, already exists.
 
 1. Login as user with ADMIN role.
@@ -83,7 +85,7 @@ A desk/workstation is a concrete place that a user can book. For the following g
 7. Click on `SUBMIT`.
 8. A small window will appear with the information that the desk was created.
 
-## Delete a desk
+### Delete a desk
 1. Login as user with ADMIN role.
 2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
 3. Click on `Room/Desk Management`.
@@ -94,7 +96,7 @@ A desk/workstation is a concrete place that a user can book. For the following g
 8. If at least one booking is associated with this desk, you will be asked if it is ok that the booking(s) are also deleted. 
 9. A small window will appear with the information that the desk was deleted.
 
-## Update a desk
+### Update a desk
 1. Login as user with ADMIN role.
 2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
 3. Click on `Room/Desk Management`.
@@ -104,7 +106,8 @@ A desk/workstation is a concrete place that a user can book. For the following g
 7. Below you will see the attributes of the choosen desk. You can change them. If you are sure, click on `UPDATE`.
 8. A small window will appear with the information that the desk was updated.
 
-## Search for free rooms
+## Search options
+### Search for free rooms
 If a group wants to meet it is useful to quickly find a room with at least n desks in it. This search option helps the user with this task.
 
 1. Login
@@ -116,7 +119,7 @@ If a group wants to meet it is useful to quickly find a room with at least n des
 7. A list of rooms with at least n desks will appear.
 8. You can tighten the search by providing a specific date and a start and end time. This will only show rooms with at least n desks that are not booked on the specified day in the specified time range.
 
-## Search for free desks
+### Search for free desks
 If a user wants to quickly occupy a free desk, this search option will help to find free desks.
 
 1. Login
@@ -130,7 +133,7 @@ If a user wants to quickly occupy a free desk, this search option will help to f
 9. You will be asked if you want to confirm your booking. Click `Yes`.
 10. A small window will appear with the information that you successful booked the desk.
 
-## Search for colleagues
+### Search for colleagues
 Often you want to sit next to your colleagues. To do so you must know the rooms where your colleagues booked desks at a given time. This search option helps you to find your colleagues.
 1. Login
 2. On the left side you will see the row called `Search`. Click on it.
