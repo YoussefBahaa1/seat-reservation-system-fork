@@ -105,8 +105,13 @@ const Booking = () => {
     }
 
     const newEvent = { start: slotData.start, end: slotData.end, id: 1 };
-    setEvents([...eventsRef.current, newEvent]);
+    setEvents([
+      ...eventsRef.current.filter((e) => e.id !== 1),
+      newEvent,
+    ]);
+
     setEvent(newEvent);
+
   }, [t]);
 
   /** ----- EVENT FUNCTIONS ----- */

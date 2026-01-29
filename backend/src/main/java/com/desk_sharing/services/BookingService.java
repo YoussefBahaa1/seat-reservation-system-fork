@@ -12,6 +12,9 @@ import com.desk_sharing.repositories.RoomRepository;
 
 import org.springframework.stereotype.Service;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.sql.Date;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -66,6 +69,41 @@ public class BookingService {
     }
     
     /**
+     * Backend validation for booking time rules (Issue 4.4 / Version 1.0 rules).
+     * This ensures clients cannot bypass UI constraints (e.g., via direct API calls).
+     *
+     * Rules enforced here:
+     * - begin/end must be non-null and end must be after begin
+     * - begin/end must align to 30-minute slots (minute is 0 or 30, seconds/nanos are 0)
+     * - minimum duration is 120 minutes (current UI behavior is a hard-block)
+     */
+    private void validateBookingTimes(final Date day, final java.sql.Time begin, final java.sql.Time end) {
+        if (day == null || begin == null || end == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing booking time data");
+        }
+
+        final LocalTime beginTime = begin.toLocalTime();
+        final LocalTime endTime = end.toLocalTime();
+
+        if (!endTime.isAfter(beginTime)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
+        }
+
+        // 30-minute slot alignment (Outlook-style)
+        if ((beginTime.getMinute() % 30) != 0 || beginTime.getSecond() != 0 || beginTime.getNano() != 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Start time must be aligned to 30-minute slots");
+        }
+        if ((endTime.getMinute() % 30) != 0 || endTime.getSecond() != 0 || endTime.getNano() != 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be aligned to 30-minute slots");
+        }
+
+        final long minutes = Duration.between(beginTime, endTime).toMinutes();
+        if (minutes < 120) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Minimum booking duration is 120 minutes");
+        }
+    }
+
+    /**
      * Create and save a new room.
      * The new room is defined by roomDTO.
      * In roomDTo every important variable is provided like the floor_id.
@@ -89,8 +127,12 @@ public class BookingService {
             System.err.println("deskId is null in BookingService.createBooking()");
             return null;
         }
+
         final Desk desk = deskService.getDeskById(deskId)
             .orElseThrow(() -> new IllegalArgumentException("Desk not found with id: " + bookingData.getDeskId()));
+        
+        // Backend validation: do not trust frontend/UI for booking rules
+        validateBookingTimes(bookingData.getDay(), bookingData.getBegin(), bookingData.getEnd());
         
         final LocalDateTime now = LocalDateTime.now();
         final List<Booking> existingBookings = bookingRepository.getAllBookingsForPreventDuplicates(
@@ -191,19 +233,10 @@ public class BookingService {
             if(alreadyBookingList != null && !alreadyBookingList.isEmpty()) {
                 throw new RuntimeException("Already some bookings exist with same time");
             }
-    
-            // Convert java.sql.Time to LocalTime
-            LocalTime beginTime = booking.getBegin().toLocalTime();
-            LocalTime endTime = booking.getEnd().toLocalTime();
-    
-            // Calculate the duration of the booking
-            long duration = Duration.between(beginTime, endTime).toHours();
-    
-            // Check if duration is between 2 and 9 hours
-            if (duration < 2 || duration > 9) {
-                throw new RuntimeException("Booking duration should be between 2 and 9 hours");
-            }
-    
+
+            // Backend validation: do not trust frontend/UI for booking rules
+            validateBookingTimes(bookingById.get().getDay(), booking.getBegin(), booking.getEnd());
+
             Booking booking2 = bookingById.get();
             booking2.setBegin(booking.getBegin());
             booking2.setEnd(booking.getEnd());
