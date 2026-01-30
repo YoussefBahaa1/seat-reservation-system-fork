@@ -243,6 +243,8 @@
     ,"startTimeBiggerThanStartTime":"Start time must not be greater than the end time."
     ,"seriesDurationTooLong":"The duration of the series booking is too long."
     ,"noDesksForRange":"For the specified time range and building no desk is available."
+    ,"datePassed": "This date has passed."
+    ,"timePassed": "This time has already passed."
 
     ,"colleagues":"Colleagues"
 
