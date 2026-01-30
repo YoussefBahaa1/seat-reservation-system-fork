@@ -87,6 +87,28 @@ const Booking = () => {
     const endTime = new Date(slotData.end);
     const duration = endTime - startTime;
 
+    // Block bookings in the past
+    const now = new Date();
+    // Compare only by date
+    const startDay = new Date(startTime);
+    startDay.setHours(0, 0, 0, 0);
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    // Past day → hard block
+    if (startDay < today) {
+      toast.warning(t('datePassed')); // "This date has already passed."
+      return;
+    }
+
+// Today → start must be >= next 30-min slot boundary
+if (startDay.getTime() === today.getTime()) {
+  const earliestStart = roundUpToNextHalfHour(now);
+  if (startTime < earliestStart) {
+    toast.warning(t('timePassed')); // "This time has already passed."
+    return;
+  }
+}
+
     if (duration < 2 * 60 * 60 * 1000) {
       toast.warning(t('minimum'));
       return;
@@ -162,6 +184,23 @@ const Booking = () => {
 
   /** ----- HELPER ----- */
   const getHeadline = () => t('availableDesks') + (room ? ` in ${room.remark}` : '');
+
+  function roundUpToNextHalfHour(d) {
+    const rounded = new Date(d);
+    rounded.setSeconds(0);
+    rounded.setMilliseconds(0);
+
+    const m = rounded.getMinutes();
+    if (m === 0 || m === 30) return rounded;
+
+    if (m < 30) {
+      rounded.setMinutes(30);
+    } else {
+      rounded.setMinutes(0);
+      rounded.setHours(rounded.getHours() + 1);
+    }
+    return rounded;
+  }
 
   /** ----- JSX ----- */
   return (

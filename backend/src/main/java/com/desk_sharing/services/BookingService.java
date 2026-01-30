@@ -82,6 +82,15 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing booking time data");
         }
 
+        // 0) Reject bookings in the past (start time must be >= now)
+        final LocalDateTime startDateTime = LocalDateTime.of(day.toLocalDate(), begin.toLocalTime());
+        if (startDateTime.isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Booking start time has already passed"
+            );
+        }
+
         final LocalTime beginTime = begin.toLocalTime();
         final LocalTime endTime = end.toLocalTime();
 

@@ -243,6 +243,8 @@
     ,"startTimeBiggerThanStartTime":"Start des Zeitintervalls darf nicht größer als Ende sein."
     ,"seriesDurationTooLong":"Die Dauer der Serienbuchung ist zu groß."
     ,"noDesksForRange":"Für die angegebene Zeitspanne/Gebäude konnte kein Arbeitsplatz gefunden werden."
+    ,"datePassed": "Dieses Datum liegt in der Vergangenheit."
+    ,"timePassed": "Diese Uhrzeit liegt bereits in der Vergangenheit."
     
     ,"colleagues":"Kollegen"
 
