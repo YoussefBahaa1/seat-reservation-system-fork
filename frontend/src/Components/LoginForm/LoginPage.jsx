@@ -10,6 +10,7 @@ import { styles } from './LoginPage.style';
 import isEmail from '../misc/isEmail';
 import InfoModal from '../InfoModal';
 import News from './News';
+import i18n from '../../i18n';
 const LoginPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -63,6 +64,8 @@ const LoginPage = () => {
         localStorage.setItem('surname', String(data.surname));
         localStorage.setItem('admin', String(data.admin));
         localStorage.setItem('visibility', String(data.visibility));
+        const userLang = localStorage.getItem(`language_${data.id}`) || 'en';
+        i18n.changeLanguage(userLang);
         sessionStorage.setItem('accessToken', String(data['accessToken']));
         navigate('/home', { replace: true });
       } else {
