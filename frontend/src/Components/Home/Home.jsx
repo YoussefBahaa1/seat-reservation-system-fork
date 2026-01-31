@@ -18,18 +18,10 @@ const Home = () => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
 
   const handleSelectSlot = ({ start }) => {
-    const selectedDateEvent = {
-      start,
-      end: start,
-      title: t('selectedDate'),
-      allDay: true,
-    };
-
-    setEvents([...events, selectedDateEvent]);
-    setTimeout(() => {
-      navigate("/floor", { state: { date: start } });
-    }, 500);
+    navigate("/floor", { state: { date: start } });
   };
+
+  // Generate days of the month and fetch bookings
   const generateMonthDays = useCallback(
     async (date) => {
       const currentMonth = moment(date).startOf('month');
@@ -42,6 +34,7 @@ const Home = () => {
         daysInMonth.push(day.format('YYYY-MM-DD'));
       }
   
+      // Load bookings for the month
       postRequest(
         `${process.env.REACT_APP_BACKEND_URL}/bookings/getAllBookingsForDate`,
         headers.current,
@@ -52,6 +45,7 @@ const Home = () => {
               end: moment(day).endOf('day').toDate(),
               title: `${t('bookingsSum')}: ${data[day]}`,
               allDay: true,
+              resource: { count: data[day] }
             };
             eventsForMonth.push(newEvent);
           }
@@ -68,10 +62,12 @@ const Home = () => {
     [headers, t, setEvents, setNow]  // Abhängigkeiten, die sich ändern könnten
   );
 
+  // Call generateMonthDays when changes occur
   useEffect(() => {
     generateMonthDays(now);
   }, [t, generateMonthDays, now]);
 
+  // Handle different month navigation
   const handleNavigate = (newDate, view) => {
     if (view === 'month') {
       generateMonthDays(newDate);
@@ -84,6 +80,32 @@ const Home = () => {
     // Change moment locale whenever language changes
     moment.locale(i18n.language);
   }, [i18n.language]);
+
+  const BookingEvent = ({ event }) => {
+    const count = event?.resource?.count ?? 0;
+    const date = event?.start;
+
+    const handleAddBookingClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      navigate("/floor", { state: { date } });
+    };
+
+    return (
+      <div className="home-booking-event">
+        <button
+          type="button"
+          className="home-add-booking-btn"
+          onClick={handleAddBookingClick}
+        >
+          {t('addBooking')}
+        </button>
+        <div className="home-bookings-sum">
+          {t('bookingsSum')}: {count}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <LayoutPage
@@ -112,6 +134,7 @@ const Home = () => {
           noEventsInRange: t('noEventsInRange')
         }}
         onNavigate={handleNavigate}
+        components={{ event: BookingEvent }}
       />
     </LayoutPage>
   );

@@ -37,3 +37,29 @@
 .admin-content {
   padding: 20px; /* Add padding to the content */
 }
+
+.home-booking-event {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-add-booking-btn {
+  background: #ffffff;
+  color: #3174ad;
+  border: 1px solid #ffffff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.home-add-booking-btn:hover {
+  background: #eaf2fb;
+}
+
+.home-bookings-sum {
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
