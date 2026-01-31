@@ -29,6 +29,7 @@
     "settingsUpdated": "Settings successful updated.",
     "settingsUpdatedFail": "Settings was not updated.",   
     "visibility": "Visibility",
+    "carpark": "Car park",
     "logout": "Logout",
     "hello": "Hello",
 
@@ -245,6 +246,18 @@
     ,"noDesksForRange":"For the specified time range and building no desk is available."
 
     ,"colleagues":"Colleagues"
+
+    ,"carparkTitle":"Car park overview"
+    ,"carparkHelp":"Click a parking spot to view details."
+    ,"carparkHintClick":"Hover for details, click to select."
+    ,"carparkReset":"Reset"
+    ,"carparkDetails":"Details"
+    ,"carparkNoSelection":"No spot selected."
+    ,"carparkSpot":"Spot"
+    ,"carparkTypeStall":"Marked spot"
+    ,"carparkTypeEmpty":"Unmarked spot"
+    ,"carparkSelected":"Selected"
+    ,"carparkHover":"Hover"
 
     ,"ERROR_USER_NOT_FOUND_IN_AD":"User was not found in ad."
     ,"ERROR_USER_NOT_FOUND_IN_DAO":"User was not found in local database."

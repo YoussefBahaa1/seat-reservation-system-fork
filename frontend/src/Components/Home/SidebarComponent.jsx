@@ -17,6 +17,7 @@ import { HiOutlineSparkles } from 'react-icons/hi2';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { AiOutlineTeam } from "react-icons/ai";
+import { MdLocalParking } from 'react-icons/md';
 import Defaults from "./Defaults";
 
 const SidebarComponent = () => {
@@ -52,6 +53,9 @@ const SidebarComponent = () => {
     if (location.pathname === '/freeDesks') {
       setActiveTab('freeDesks');
       //setSeriesSubMenuOpen(false);
+    }
+    if (location.pathname === '/carpark') {
+      setActiveTab('carpark');
     }
 
   }, [location.pathname, activeTab]);
@@ -99,6 +103,10 @@ const SidebarComponent = () => {
 
       case 'colleagues':
         navigate("/colleagues", { replace: true });
+        break;
+
+      case 'carpark':
+        navigate("/carpark", { replace: true });
         break;
 
       case 'logout':
@@ -212,6 +220,14 @@ const SidebarComponent = () => {
             </MenuItem>
             <MenuItem id='sidebar_colleagues' icon={<AiOutlineTeam />} onClick={() => handleClick('colleagues')}>
               {t('colleagues')}
+            </MenuItem>
+            <MenuItem
+              id='sidebar_carpark'
+              active={activeTab === 'carpark'}
+              icon={<MdLocalParking />}
+              onClick={() => handleClick('carpark')}
+            >
+              {t('carpark')}
             </MenuItem>
           </SubMenu>
 

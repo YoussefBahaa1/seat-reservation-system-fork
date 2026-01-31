@@ -29,6 +29,7 @@
     "settingsUpdated": "Einstellungen erfolgreich aktualisiert.",
     "settingsUpdatedFail": "Einstellungen konnten nicht aktualisiert werden.",   
     "visibility": "Sichtbarkeit",
+    "carpark": "Parkplatz",
     "logout": "Abmeldung",
     "hello": "Hallo",
 
@@ -245,6 +246,18 @@
     ,"noDesksForRange":"Für die angegebene Zeitspanne/Gebäude konnte kein Arbeitsplatz gefunden werden."
     
     ,"colleagues":"Kollegen"
+
+    ,"carparkTitle":"Parkplatz-Übersicht"
+    ,"carparkHelp":"Klicken Sie auf einen Parkplatz, um Details zu sehen."
+    ,"carparkHintClick":"Zum Anzeigen bewegen, zum Auswählen klicken."
+    ,"carparkReset":"Zurücksetzen"
+    ,"carparkDetails":"Details"
+    ,"carparkNoSelection":"Kein Parkplatz ausgewählt."
+    ,"carparkSpot":"Platz"
+    ,"carparkTypeStall":"Markierter Platz"
+    ,"carparkTypeEmpty":"Unmarkierter Platz"
+    ,"carparkSelected":"Ausgewählt"
+    ,"carparkHover":"Hover"
 
     ,"ERROR_USER_NOT_FOUND_IN_AD":"Nutzer wurde nicht im AD gefunden."
     ,"ERROR_USER_NOT_FOUND_IN_DAO":"Nutzer wurde nicht in lokaled DB gefunden."

@@ -1,0 +1,112 @@
+<ns0:svg xmlns:ns0="http://www.w3.org/2000/svg" width="1500" height="540" viewBox="-520 0 1500 540">
+  <ns0:defs>
+    <ns0:style>
+      .font { font-family: Arial, Helvetica, sans-serif; }
+      .label { fill:#212121; font-weight:700; }
+      .small { font-size:16px; }
+      .med { font-size:20px; }
+
+      .stall { fill:#bfeaf8; stroke:#4a4a4a; stroke-width:2; }
+      .empty { fill:#ffffff; stroke:#4a4a4a; stroke-width:2; }
+      .outline { fill:none; stroke:#111; stroke-width:3; }
+
+      .lit { font-size:22px; font-weight:800; fill:#2e7d32; }
+
+      .road { fill:#ffeb00; }
+      .road-text { font-size:14px; font-weight:700; fill:#212121; letter-spacing:18px; }
+
+      .building { fill:#7b7b7b; }
+      .building-text { font-size:20px; font-weight:700; fill:#111; }
+    </ns0:style>
+  </ns0:defs>
+
+  
+  <ns0:rect x="-520" y="0" width="1500" height="540" fill="#ffffff" />
+
+  
+  <ns0:rect x="-517" y="3" width="1497" height="534" class="outline" />
+
+  
+  <ns0:rect x="-517" y="18" width="1247" height="70" class="building" />
+  <ns0:text x="242" y="62" text-anchor="middle" class="font building-text">Bürogebäude</ns0:text>
+
+  
+  <ns0:rect x="-517" y="260" width="1315" height="90" class="road" />
+  <ns0:rect x="730" y="18" width="68" height="332" class="road" />
+  <ns0:text x="141" y="314" text-anchor="middle" class="font road-text">FAHRSTRASSE</ns0:text>
+
+  
+  <ns0:g class="font label small">
+    <ns0:text x="-5" y="104" text-anchor="middle">37</ns0:text>
+    <ns0:text x="65" y="104" text-anchor="middle">36</ns0:text>
+    <ns0:text x="135" y="104" text-anchor="middle">35</ns0:text>
+    <ns0:text x="205" y="104" text-anchor="middle">34</ns0:text>
+    <ns0:text x="275" y="104" text-anchor="middle">33</ns0:text>
+    <ns0:text x="345" y="104" text-anchor="middle">32</ns0:text>
+    <ns0:text x="415" y="104" text-anchor="middle">31</ns0:text>
+    <ns0:text x="485" y="104" text-anchor="middle">30</ns0:text>
+    <ns0:text x="555" y="104" text-anchor="middle">29</ns0:text>
+  </ns0:g>
+
+  
+  <ns0:g>
+    
+    <ns0:rect x="-40" y="110" width="70" height="130" class="stall" /><ns0:text x="-5" y="185" text-anchor="middle" class="font lit">LIT</ns0:text>
+    <ns0:rect x="30" y="110" width="70" height="130" class="stall" /><ns0:text x="65" y="185" text-anchor="middle" class="font lit">LIT</ns0:text>
+    <ns0:rect x="100" y="110" width="70" height="130" class="stall" /><ns0:text x="135" y="185" text-anchor="middle" class="font lit">LIT</ns0:text>
+    <ns0:rect x="170" y="110" width="70" height="130" class="stall" /><ns0:text x="205" y="185" text-anchor="middle" class="font lit">LIT</ns0:text>
+    <ns0:rect x="240" y="110" width="70" height="130" class="stall" /><ns0:text x="275" y="185" text-anchor="middle" class="font lit">LIT</ns0:text>
+    <ns0:rect x="310" y="110" width="70" height="130" class="stall" /><ns0:text x="345" y="185" text-anchor="middle" class="font lit">LIT</ns0:text>
+    <ns0:rect x="380" y="110" width="70" height="130" class="stall" /><ns0:text x="415" y="185" text-anchor="middle" class="font lit">LIT</ns0:text>
+
+    
+    <ns0:rect x="450" y="110" width="70" height="130" class="stall" />
+    <ns0:text x="485" y="180" text-anchor="middle" class="font lit">LIT</ns0:text>
+    <ns0:text x="485" y="226" text-anchor="middle" class="font" font-size="40" fill="#1565c0">♿</ns0:text>
+
+    
+    <ns0:rect x="520" y="110" width="70" height="130" class="stall" /><ns0:text x="555" y="185" text-anchor="middle" class="font lit">LIT</ns0:text>
+
+    
+    <ns0:rect x="590" y="110" width="70" height="130" class="empty" />
+    <ns0:rect x="660" y="110" width="70" height="130" class="empty" />
+  </ns0:g>
+
+  
+  <ns0:g>
+    <ns0:text x="804" y="120" text-anchor="start" class="font label small">23</ns0:text><ns0:rect x="820" y="60" width="160" height="18" class="empty" /><ns0:rect x="820" y="78" width="160" height="18" class="empty" /><ns0:rect x="820" y="96" width="160" height="18" class="empty" /><ns0:rect x="820" y="114" width="160" height="18" class="empty" /><ns0:rect x="820" y="132" width="160" height="18" class="empty" /><ns0:rect x="820" y="150" width="160" height="18" class="empty" /><ns0:rect x="820" y="96" width="160" height="54" class="stall" /><ns0:text x="900.0" y="129.0" text-anchor="middle" class="font lit">LIT</ns0:text></ns0:g>
+
+  
+  <ns0:g>
+    <ns0:text x="-250" y="370" text-anchor="middle" class="font label small">43</ns0:text>
+
+    <ns0:rect x="-495" y="378" width="70" height="130" class="empty" />
+    <ns0:rect x="-425" y="378" width="70" height="130" class="empty" />
+    <ns0:rect x="-355" y="378" width="70" height="130" class="empty" />
+
+    <ns0:rect x="-285" y="378" width="70" height="130" class="stall" />
+    <ns0:text x="-250" y="448" text-anchor="middle" class="font lit">LIT</ns0:text>
+
+    <ns0:rect x="-215" y="378" width="70" height="130" class="empty" />
+    <ns0:rect x="-145" y="378" width="70" height="130" class="empty" />
+
+    
+    <ns0:rect x="-75" y="378" width="105" height="130" fill="#ffffff" />
+  </ns0:g>
+
+  
+  <ns0:g>
+    <ns0:text x="65" y="370" text-anchor="middle" class="font label small">40</ns0:text>
+    <ns0:text x="135" y="370" text-anchor="middle" class="font label small">39</ns0:text>
+    <ns0:text x="205" y="370" text-anchor="middle" class="font label small">38</ns0:text>
+
+    <ns0:rect x="30" y="378" width="70" height="130" class="stall" />
+    <ns0:text x="65" y="448" text-anchor="middle" class="font lit">LIT</ns0:text>
+
+    <ns0:rect x="100" y="378" width="70" height="130" class="stall" />
+    <ns0:text x="135" y="448" text-anchor="middle" class="font lit">LIT</ns0:text>
+
+    <ns0:rect x="170" y="378" width="70" height="130" class="stall" />
+    <ns0:text x="205" y="448" text-anchor="middle" class="font lit">LIT</ns0:text>
+  </ns0:g>
+</ns0:svg>
