@@ -13,12 +13,20 @@ import { MdGTranslate } from 'react-icons/md';
 import { AiFillPlusCircle } from 'react-icons/ai';
 import { IoIosCheckbox, IoIosSettings, IoIosAlbums } from 'react-icons/io';
 import { IoSearchSharp } from 'react-icons/io5';
+import LogoutConfirmationModal from "./LogoutConfirmationModal";
+import { CiLogout } from 'react-icons/ci';
+import { MdGTranslate } from 'react-icons/md';
+import { AiFillPlusCircle } from 'react-icons/ai';
+import { IoIosCheckbox, IoIosSettings, IoIosAlbums } from 'react-icons/io';
+import { IoSearchSharp } from 'react-icons/io5';
 import { HiOutlineSparkles } from 'react-icons/hi2';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { AiOutlineTeam } from "react-icons/ai";
 import { MdLocalParking } from 'react-icons/md';
 import Defaults from "./Defaults";
+import Defaults from "./Defaults";
+import i18n from '../../i18n';
 
 const SidebarComponent = () => {
   const { t, i18n } = useTranslation();
@@ -91,6 +99,10 @@ const SidebarComponent = () => {
         const currentLanguage = i18n.language;
         const newLanguage = currentLanguage === "en" ? "de" : "en";
         i18n.changeLanguage(newLanguage);
+        const userId = localStorage.getItem('userId');
+        if (userId) {
+          localStorage.setItem(`language_${userId}`, newLanguage);
+        }
         break;
 
       case 'changePassword':
@@ -129,6 +141,9 @@ const SidebarComponent = () => {
 
   const handleLogoutConfirmed = () => {
     localStorage.removeItem('userId'); // Clear the user's session
+    // Reset language to browser preference for the unauthenticated screens
+    const browserLang = navigator.language.split('-')[0] || 'en';
+    i18n.changeLanguage(browserLang);
     navigate('/', { replace: true }); // Redirect to login page
   };
 
