@@ -1,9 +1,9 @@
-{
+﻿{
     "tokenInvalid": "Token abgelaufen. Bitte melden Sie sich erneut an.",
     "http401": "Sie sind nicht autorisiert oder die Sitzung ist abgelaufen. Bitte melden Sie sich erneut an."
-    ,"http403": "Sie haben keine Berechtigung für diese Aktion."
+    ,"http403": "Sie haben keine Berechtigung fĂĽr diese Aktion."
     ,"http405": "Die angeforderte Ressource wurde nicht gefunden."
-    ,"http500": "Serverfehler. Bitte versuche Sie es später erneut."
+    ,"http500": "Serverfehler. Bitte versuche Sie es spĂ¤ter erneut."
     ,"httpOther": "Ein Fehler ist aufgetreten."
     ,"news":"Neuigkeiten",
     "defaults":"Voreinstellung",
@@ -12,16 +12,16 @@
     "login": "Anmeldung",
     "forgotPassword": "Passwort Vergessen",
     "passwordsDontMatch": "Bitte geben Sie zweimal ihr neues Passwort ein",
-    "invalidEmail": "Ungültige E-Mail Adresse",
-    "emailAlreadyTaken": "Keine Erstellung möglich. Wird die Email schon verwendet?",
-    "invalidCredentials": "E-Mail Adresse oder Passwort ungültig",
+    "invalidEmail": "UngĂĽltige E-Mail Adresse",
+    "emailAlreadyTaken": "Keine Erstellung mĂ¶glich. Wird die Email schon verwendet?",
+    "invalidCredentials": "E-Mail Adresse oder Passwort ungĂĽltig",
     "loginFailed": "Anmeldung fehlgeschlagen.",
     "email": "Email",
     "password": "Passwort",
 
     "admin": "Admin",
     "calendar": "Kalender",
-    "freeDesks": "Freie Arbeitsplätze",
+    "freeDesks": "Freie ArbeitsplĂ¤tze",
     "bookings": "Buchungen",
     "series": "Serienbuchung",
     "seriesId": "Serien Id",
@@ -32,9 +32,9 @@
     "logout": "Abmeldung",
     "hello": "Hallo",
 
-    "visible": "Die Sichtbarkeit wurde erfolgreich in „Sichtbar“ geändert",
-    "anonymousMessage": "Die Sichtbarkeit wurde erfolgreich auf „Anonym“ geändert",
-    "failVisibility": "Die Sichtbarkeit konnte nicht geändert werden",
+    "visible": "Die Sichtbarkeit wurde erfolgreich in â€žSichtbarâ€ś geĂ¤ndert",
+    "anonymousMessage": "Die Sichtbarkeit wurde erfolgreich auf â€žAnonymâ€ś geĂ¤ndert",
+    "failVisibility": "Die Sichtbarkeit konnte nicht geĂ¤ndert werden",
 
     "logoutConfirmation": "Sind Sie sicher, dass sie sich abmelden wollen?",
     "toLogout": "Abmelden",
@@ -44,12 +44,12 @@
     "newPassword": "Neues Passwort",
     "newPasswordAgain": "Neues Passwort Nochmal",
     "submit": "Einreichen",
-    "passwordChangedSuccessfully": "Passwort erfolgreich geändert",
-    "passwordChangFailed": "Passwort konnte nicht geändert werden",
+    "passwordChangedSuccessfully": "Passwort erfolgreich geĂ¤ndert",
+    "passwordChangFailed": "Passwort konnte nicht geĂ¤ndert werden",
 
 
-    "selectedDate": "Datum Auswählen",
-    "chooseDate": "Datum für eine Arbeitsplatzreservierung wählen",
+    "selectedDate": "Datum AuswĂ¤hlen",
+    "chooseDate": "Datum fĂĽr eine Arbeitsplatzreservierung wĂ¤hlen",
     "desk": "Tisch",
     "chooseDesk": "Tischauswahl",
 
@@ -72,16 +72,16 @@
     "normal": "Normal",
     "silence": "Ruhebereich",
 
-    "availableDesks": "Verfügbare Arbeitsplätze",
-    "noAvailableDesks": "Keine Arbeitsplätze für diesen Raum verfügbar",
+    "availableDesks": "VerfĂĽgbare ArbeitsplĂ¤tze",
+    "noAvailableDesks": "Keine ArbeitsplĂ¤tze fĂĽr diesen Raum verfĂĽgbar",
     "book": "Buchen",
 
-    "available": "Verfügbar",
+    "available": "VerfĂĽgbar",
     "full": "Ausgebucht",
-    "some": "Geringe Verfügbarkeit",
-    "freeSlots": "Freie Plätze",
+    "some": "Geringe VerfĂĽgbarkeit",
+    "freeSlots": "Freie PlĂ¤tze",
     "anonymous": "Anonym",
-    "bookDesk": "Büchertisch",
+    "bookDesk": "BĂĽchertisch",
 
     "myBookings": "Meine Buchungen",
     "edit": "Bearbeiten",
@@ -90,50 +90,52 @@
     "start": "Beginn",
     "end": "Ende",
     "room": "Zimmer",
+    "parking": "Parken",
+    "parkingSpace": "Parkplatz",
     "workstaion": "Arbeitsplatz",
-    "workstations": "Arbeitsplätze",
+    "workstations": "ArbeitsplĂ¤tze",
     "floor": "Etage",
     "defaultFloor": "Std. Etage",
     "defaultView": "Std. Ansicht",
-    "building": "Gebäude",
+    "building": "GebĂ¤ude",
     "type": "Art",
     "equipment": "Austattung",
-    "choose": "Wählen Sie eine Buchung aus",
+    "choose": "WĂ¤hlen Sie eine Buchung aus",
     "editBookingTime": "Buchungszeit bearbeiten",
-    "deleteBookingMessage": "Sind Sie sicher, dass Sie diese Buchung entfernen möchten?",
+    "deleteBookingMessage": "Sind Sie sicher, dass Sie diese Buchung entfernen mĂ¶chten?",
     "from": "von",
     "to": "bis",
 
     "x": "X-Koordinate",
     "y": "Y-Koordinate",
-    "fields_not_empty": "Felder dürfen nicht leer sein",
-    "x_y_not_empty": "Bitte einen Platz für das Zimmer wählen",
+    "fields_not_empty": "Felder dĂĽrfen nicht leer sein",
+    "x_y_not_empty": "Bitte einen Platz fĂĽr das Zimmer wĂ¤hlen",
     "minimum": "Aufenthaltsdauer mindestens 2 Stunden",
     "maximum": "Aufenthaltsdauer maximal 9 Stunden",
-    "overlap": "Die Auswahl überschneidet sich mit einer anderen Buchung für diesen Arbeitsplatz",
+    "overlap": "Die Auswahl ĂĽberschneidet sich mit einer anderen Buchung fĂĽr diesen Arbeitsplatz",
     "booked": "Buchung erfolgreich",
-    "selectDeskMessage": "Bitte wählen Sie zuerst einen Arbeitsplatz",
-    "blank": "Bitte wählen Sie zuerst einen Arbeitsplatz und Zeitraum vor der Buchung",
+    "selectDeskMessage": "Bitte wĂ¤hlen Sie zuerst einen Arbeitsplatz",
+    "blank": "Bitte wĂ¤hlen Sie zuerst einen Arbeitsplatz und Zeitraum vor der Buchung",
     "deskUpdate": "Arbeitsplatz erfolgreich aktualisiert",
     "deskUpdateFailed": "Arbeitsplatz konnte nicht aktualisiert werden",
-    "deskDelete": "Arbeitsplatz erfolgreich gelöscht",
+    "deskDelete": "Arbeitsplatz erfolgreich gelĂ¶scht",
     "deskCreated": "Arbeitsplatz erfolgreich erstellt",
     "roomStatus": "Status des Zimmers erfolgreich aktualisiert",
     "roomRemark": "Bemerkungen zum Raum",
     "deskRemark": "Bemerkungen zum Arbeitsplatz",
     "roomCreated": "Raum wurde erstellt",
-    "roomDeleted": "Raum wurde gelöscht",
+    "roomDeleted": "Raum wurde gelĂ¶scht",
     "roomCreationFailed": "Raum konnte nicht erstellt werden",
-    "roomChangedSuccessfully": "Raum wurde erfolgreich geändert",
+    "roomChangedSuccessfully": "Raum wurde erfolgreich geĂ¤ndert",
     "userCreated": "Nutzer wurde erfolgreich erstellt",
     "userCreationFailed": "Nutzer konnte nicht erstellt werden",
-    "userUpdated": "Nutzer wurde erfolgreich geändert",
-    "userDeleted": "Nutzer wurde erfolgreich gelöscht",
-    "userDeletionFailed": "Nutzer konnte nicht gelöscht werden",
-    "bookingDeleted": "Buchungen wurden erfolgreich gelöscht",
-    "bookingUpdated": "Buchungen wurden erfolgreich geändert",
+    "userUpdated": "Nutzer wurde erfolgreich geĂ¤ndert",
+    "userDeleted": "Nutzer wurde erfolgreich gelĂ¶scht",
+    "userDeletionFailed": "Nutzer konnte nicht gelĂ¶scht werden",
+    "bookingDeleted": "Buchungen wurden erfolgreich gelĂ¶scht",
+    "bookingUpdated": "Buchungen wurden erfolgreich geĂ¤ndert",
     
-    "adminPanel": "Administrationsmenü",
+    "adminPanel": "AdministrationsmenĂĽ",
     "userManagement": "Benutzerverwaltung",
     "roomManagement": "Zimmer/Schreibtischverwaltung",
     "bookingManagement": "Buchungsverwaltung",
@@ -143,19 +145,19 @@
     "usage": "Verwendung",
     "timePeriods": "Zeit Abschnitte",
     "numberOfBookings": "Anzahl der Buchungen",
-    "relativeChange": "Relative Veränderung",
+    "relativeChange": "Relative VerĂ¤nderung",
 
-    "addEmployee": "Mitarbeiter Hinzufügen",
+    "addEmployee": "Mitarbeiter HinzufĂĽgen",
     "deleteEmployee": "Mitarbeiter Entfernen",
     "editEmployee": "Mitarbeiter Bearbeiten",
     "name": "Vorname",
     "surname": "Nachname",
     "action": "Aktion",
     
-    "addRoom": "Zimmer Hinzufügen",
+    "addRoom": "Zimmer HinzufĂĽgen",
     "deleteRoom": "Zimmer Entfernen",
     "editRoom": "Zimmer Bearbeiten",
-    "addWorkstation": "Arbeitsplatz Hinzufügen",
+    "addWorkstation": "Arbeitsplatz HinzufĂĽgen",
     "deleteWorkstation": "Arbeitsplatz Entfernen",
     "editWorkstation": "Arbeitsplatz Bearbeiten",
     "noWorkstationForThisRoom": "Es existiert kein Arbeitsplatz in diesem Raum.",
@@ -163,8 +165,8 @@
     "enable": "Aktivieren",
     "disable": "Deaktivieren",
     "deskID": "Tisch ID",
-    "selectRoom": "Zimmer auswählen",
-    "selectDesk": "Tisch auswählen",
+    "selectRoom": "Zimmer auswĂ¤hlen",
+    "selectDesk": "Tisch auswĂ¤hlen",
     "deskNotFound": "Tisch nicht gefunden",
     "withEquipment": "Mit Austattung",
     "withoutEquipment": "Ohne Austattung",
@@ -172,13 +174,13 @@
     
     "deleteBooking": "Buchung Entfernen",
     "editBooking": "Buchung Bearbeiten",
-    "overviewBooking": "Buchungsübersicht",
+    "overviewBooking": "BuchungsĂĽbersicht",
     "search": "Suchen",
     "roomID": "Tisch ID",
     "dataNotFound": "Daten nicht gefunden",
 
-    "next": "Nächste",
-    "back": "Zurück",
+    "next": "NĂ¤chste",
+    "back": "ZurĂĽck",
     "today": "Heute",
     "month": "Monat",
     "week": "Woche",
@@ -203,26 +205,26 @@
     "false": "Falsch",
     "begin": "Anfang",
     "update": "Aktualisieren",
-    "close": "Schließen",
-    "deleteMoreElements": "Löschen weiterer Elemente",
+    "close": "SchlieĂźen",
+    "deleteMoreElements": "LĂ¶schen weiterer Elemente",
 
     "forbiddenChar":"Bitte geben sie erlaubte Zeichen ein. (Kein !, ? usw.)"
-    ,"selectRoomError":"Bitte wählen Sie einen existierenden Raum aus",
-    "fFDeleteWorkStation":"Es werden neben dem Arbeitsplatz auch alle damit verbundenen Buchungen gelöscht.",
-    "fFDeleteRoom":"Es werden neben dem Raum auch alle damit verbundenen Tische und Buchungen gelöscht.",
-    "fFDeleteEmployee":"Es werden neben dem Nutzer auch alle damit verbundenen Buchungen gelöscht.",
-    "helpAddRoom":"Bitte wählen Sie einen Ort für ein neues Büro auf der Karte und klicken Sie darauf.<br/>Anschließend geben Sie alle nötigen Informationen ein und wählen <strong>Einreichen</strong>."
-    ,"helpChooseRoom":"Bitte wählen Sie ein existierendes Büro aus und klicken hierauf."
-    ,"helpCreateBooking":"Bitte wählen Sie zuerst ein Arbeitsplatz und dann eine Zeitspanne aus. Klicken Sie anschließend <strong>Buchen</strong>."
-    ,"helpDeleteRoom":"Klicken Sie auf den jeweiligen Raum um diesen zu löschen."
-    ,"helpAddWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Anschließend definieren Sie bitte den jeweiligen Arbeitsplatz."
-    ,"helpEditWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Anschließend wählen Sie bitte den jeweiligen Arbeitsplatz aus. Im Anschluss können Sie die Änderungen definieren."
-    ,"helpDeleteWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Danach wählen Sie den zu löschenden Arbeitsplatz aus."
+    ,"selectRoomError":"Bitte wĂ¤hlen Sie einen existierenden Raum aus",
+    "fFDeleteWorkStation":"Es werden neben dem Arbeitsplatz auch alle damit verbundenen Buchungen gelĂ¶scht.",
+    "fFDeleteRoom":"Es werden neben dem Raum auch alle damit verbundenen Tische und Buchungen gelĂ¶scht.",
+    "fFDeleteEmployee":"Es werden neben dem Nutzer auch alle damit verbundenen Buchungen gelĂ¶scht.",
+    "helpAddRoom":"Bitte wĂ¤hlen Sie einen Ort fĂĽr ein neues BĂĽro auf der Karte und klicken Sie darauf.<br/>AnschlieĂźend geben Sie alle nĂ¶tigen Informationen ein und wĂ¤hlen <strong>Einreichen</strong>."
+    ,"helpChooseRoom":"Bitte wĂ¤hlen Sie ein existierendes BĂĽro aus und klicken hierauf."
+    ,"helpCreateBooking":"Bitte wĂ¤hlen Sie zuerst ein Arbeitsplatz und dann eine Zeitspanne aus. Klicken Sie anschlieĂźend <strong>Buchen</strong>."
+    ,"helpDeleteRoom":"Klicken Sie auf den jeweiligen Raum um diesen zu lĂ¶schen."
+    ,"helpAddWorkstation":"Bitte wĂ¤hlen Sie einen existierenden Raum durch einen Klick aus. AnschlieĂźend definieren Sie bitte den jeweiligen Arbeitsplatz."
+    ,"helpEditWorkstation":"Bitte wĂ¤hlen Sie einen existierenden Raum durch einen Klick aus. AnschlieĂźend wĂ¤hlen Sie bitte den jeweiligen Arbeitsplatz aus. Im Anschluss kĂ¶nnen Sie die Ă„nderungen definieren."
+    ,"helpDeleteWorkstation":"Bitte wĂ¤hlen Sie einen existierenden Raum durch einen Klick aus. Danach wĂ¤hlen Sie den zu lĂ¶schenden Arbeitsplatz aus."
     ,"bookingsSum":"Buchungen Gesamt"
     ,"enableFilter":"Filter aktivieren"
     ,"column":"Spalte"
     ,"condition":"Bedingung"
-    ,"contains":"Enthält"
+    ,"contains":"EnthĂ¤lt"
     ,"isEqual":"="
     ,"enterText":"Texteingabe"
     ,"create":"Erstellen"
@@ -232,19 +234,30 @@
     ,"startTime":"Zeit Beginn"
     ,"endTime":"Zeit Ende"
     ,"frequency":"Frequenz"
-    ,"daily":"Täglich"
-    ,"weekly":"Wöchentlich"
+    ,"daily":"TĂ¤glich"
+    ,"weekly":"WĂ¶chentlich"
     ,"twoweeks":"Alle zwei Wochen"
     ,"threeweeks":"Alle drei Wochen"
     ,"monthly":"Monatlich"
     ,"calculatedDates":"Berechnete Daten"
     ,"timerangeIsNotValid":"Zeitspanne ist nicht valide."
-    ,"startDateBiggerThanStartDate":"Start des Datumsintervalls darf nicht größer als Ende sein."
-    ,"startTimeBiggerThanStartTime":"Start des Zeitintervalls darf nicht größer als Ende sein."
-    ,"seriesDurationTooLong":"Die Dauer der Serienbuchung ist zu groß."
-    ,"noDesksForRange":"Für die angegebene Zeitspanne/Gebäude konnte kein Arbeitsplatz gefunden werden."
+    ,"startDateBiggerThanStartDate":"Start des Datumsintervalls darf nicht grĂ¶Ăźer als Ende sein."
+    ,"startTimeBiggerThanStartTime":"Start des Zeitintervalls darf nicht grĂ¶Ăźer als Ende sein."
+    ,"seriesDurationTooLong":"Die Dauer der Serienbuchung ist zu groĂź."
+    ,"noDesksForRange":"FĂĽr die angegebene Zeitspanne/GebĂ¤ude konnte kein Arbeitsplatz gefunden werden."
     
     ,"colleagues":"Kollegen"
+
+    ,"parkingAvailable":"VerfĂĽgbar"
+    ,"parkingPartial":"Teilweise verfĂĽgbar"
+    ,"parkingOccupied":"Belegt"
+    ,"parkingBlocked":"Gesperrt/Defekt"
+    ,"parkingNoReservations":"Keine Reservierungen"
+    ,"parkingPending":"In Bearbeitung"
+    ,"parkingTypeStandard":"Standard"
+    ,"parkingTypeAccessible":"Behindertenparkplatz"
+    ,"parkingTypeEvCharging":"E-Ladestation"
+    ,"parkingTypeSpecial":"Spezial"
 
     ,"ERROR_USER_NOT_FOUND_IN_AD":"Nutzer wurde nicht im AD gefunden."
     ,"ERROR_USER_NOT_FOUND_IN_DAO":"Nutzer wurde nicht in lokaled DB gefunden."

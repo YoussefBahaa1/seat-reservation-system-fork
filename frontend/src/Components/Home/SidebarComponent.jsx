@@ -16,6 +16,7 @@ import { IoSearchSharp } from 'react-icons/io5';
 import { HiOutlineSparkles } from 'react-icons/hi2';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
+import LocalParkingIcon from '@mui/icons-material/LocalParking';
 import { AiOutlineTeam } from "react-icons/ai";
 import Defaults from "./Defaults";
 
@@ -52,6 +53,9 @@ const SidebarComponent = () => {
     if (location.pathname === '/freeDesks') {
       setActiveTab('freeDesks');
       //setSeriesSubMenuOpen(false);
+    }
+    if (location.pathname === '/parking') {
+      setActiveTab('parking');
     }
 
   }, [location.pathname, activeTab]);
@@ -99,6 +103,10 @@ const SidebarComponent = () => {
 
       case 'colleagues':
         navigate("/colleagues", { replace: true });
+        break;
+
+      case 'parking':
+        navigate("/parking", { replace: true });
         break;
 
       case 'logout':
@@ -201,6 +209,9 @@ const SidebarComponent = () => {
               () => handleClick('roomSearch')}
             >
               {t('room')}
+            </MenuItem>
+            <MenuItem id='sidebar_parking' active={activeTab === 'parking'} icon={<LocalParkingIcon />} onClick={() => handleClick('parking')}>
+              {t('parking')}
             </MenuItem>
             <MenuItem
               id='sidebar_freeDesks'

@@ -89,6 +89,8 @@
     "start": "Start",
     "end": "End",
     "room": "Room",
+    "parking": "Parking",
+    "parkingSpace": "Parking space",
     "workstaion": "Workstation",
     "workstations": "Workstations",
     "floor": "Floor",
@@ -245,6 +247,17 @@
     ,"noDesksForRange":"For the specified time range and building no desk is available."
 
     ,"colleagues":"Colleagues"
+
+    ,"parkingAvailable":"Available"
+    ,"parkingPartial":"Partially available"
+    ,"parkingOccupied":"Occupied"
+    ,"parkingBlocked":"Blocked/defective"
+    ,"parkingNoReservations":"No reservations"
+    ,"parkingPending":"Pending"
+    ,"parkingTypeStandard":"Standard"
+    ,"parkingTypeAccessible":"Accessible"
+    ,"parkingTypeEvCharging":"E-charging"
+    ,"parkingTypeSpecial":"Special"
 
     ,"ERROR_USER_NOT_FOUND_IN_AD":"User was not found in ad."
     ,"ERROR_USER_NOT_FOUND_IN_DAO":"User was not found in local database."

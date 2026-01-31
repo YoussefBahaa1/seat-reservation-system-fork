@@ -149,4 +149,59 @@ where not exists(
     select 1 from desks where desks.remark='Arbeitsplatz 1.1.2'
 );
 
+-- Parking (modeled as desks in a dedicated room)
+insert into rooms (remark, x, y, floor_id, room_status_id, room_type_id)
+select
+    'Car Park',
+    50,
+    50,
+    (select floor_id from floors where floors.name='Musteretage 1'),
+    (select room_status_id from room_statuses where room_statuses.room_status_name='enable'),
+    (select room_type_id from room_types where room_types.room_type_name='normal')
+where not exists(
+    select 1 from rooms where rooms.remark='Car Park'
+);
+
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P23', 1, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P23');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P29', 2, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P29');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P30', 3, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P30');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P31', 4, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P31');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P32', 5, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P32');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P33', 6, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P33');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P34', 7, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P34');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P35', 8, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P35');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P36', 9, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P36');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P37', 10, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P37');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P38', 11, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P38');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P39', 12, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P39');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P40', 13, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P40');
+insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+select (select room_id from rooms where rooms.remark='Car Park'), 'P43', 14, (select equipment_id from equipments where equipments.equipment_name='unknown')
+where not exists(select 1 from desks where desks.remark='P43');
 

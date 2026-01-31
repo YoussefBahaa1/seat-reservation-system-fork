@@ -19,15 +19,15 @@ const Booking = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const localizer = momentLocalizer(moment);
-  const { roomId, date } = location.state;
+  const { roomId, date, preselectedDeskId, preselectedDeskRemark, hideDeskList } = location.state || {};
 
   // States
   const [room, setRoom] = useState(null);
   const [desks, setDesks] = useState([]);
   const [events, setEvents] = useState([]);
   const [event, setEvent] = useState({});
-  const [clickedDeskId, setClickedDeskId] = useState(null);
-  const [clickedDeskRemark, setClickedDeskRemark] = useState('');
+  const [clickedDeskId, setClickedDeskId] = useState(preselectedDeskId ?? null);
+  const [clickedDeskRemark, setClickedDeskRemark] = useState(preselectedDeskRemark ?? '');
 
   const eventRef = useRef(event);
   const eventsRef = useRef(events);
@@ -38,6 +38,7 @@ const Booking = () => {
 
   /** ----- API FETCH FUNCTIONS ----- */
   const fetchRoom = useCallback(() => {
+    if (!roomId) return;
     getRequest(
       `${process.env.REACT_APP_BACKEND_URL}/rooms/${roomId}`,
       headers.current,
@@ -147,7 +148,7 @@ const Booking = () => {
   useEffect(()=>{eventsRef.current=events},[events])
 
   // Fetch desks when roomId changes
-  useEffect(() => { if (roomId) fetchDesks(); }, [roomId, fetchDesks]);
+  useEffect(() => { if (roomId && !hideDeskList) fetchDesks(); }, [roomId, fetchDesks, hideDeskList]);
 
   // Reload bookings when clicked desk changes
   useEffect(() => { if (clickedDeskId) loadBookings(); }, [clickedDeskId, loadBookings]);
@@ -156,47 +157,55 @@ const Booking = () => {
   useEffect(() => { moment.locale(i18n.language); }, [i18n.language]);
 
   /** ----- HELPER ----- */
-  const getHeadline = () => t('availableDesks') + (room ? ` in ${room.remark}` : '');
+  const getHeadline = () => {
+    if (hideDeskList) {
+      const suffix = clickedDeskRemark ? ` ${clickedDeskRemark}` : '';
+      return `${t('parkingSpace')}${suffix}`;
+    }
+    return t('availableDesks') + (room ? ` in ${room.remark}` : '');
+  };
 
   /** ----- JSX ----- */
   return (
     <LayoutPage title={getHeadline()} helpText={t('helpCreateBooking')} useGenericBackButton withPaddingX>
       <Box sx={{ display: 'flex', width: '100%' }}>
         {/* Desks List */}
-        <Box id="desks" sx={{ width: '20%', paddingRight: '20px' }}>
-          {desks.length ? (
-            desks.map((desk) => (
-              <Box key={desk.id} sx={{ display: 'flex', margin: '25px', justifyContent: 'space-between', width: '210px' }}>
-                <Box>{desk.deskNumberInRoom}.</Box>
-                <Box
-                  sx={{
-                    backgroundColor: desk.id === clickedDeskId ? '#ffdd00' : 'yellowgreen',
-                    height: '125px',
-                    width: '140px',
-                    borderRadius: '7px',
-                    padding: '5px',
-                    cursor: 'pointer',
-                    boxShadow: '0px 0px 5px rgba(0,0,0,0.2)',
-                    transition: desk.id === clickedDeskId ? '0.25s' : 'box-shadow 0.3s',
-                    '&:hover': { boxShadow: '0px 0px 10px rgba(0,0,0,0.4)' },
-                  }}
-                  onClick={() => {
-                    setClickedDeskId(desk.id);
-                    setClickedDeskRemark(desk.remark);
-                  }}
-                >
-                  <Typography sx={typography_sx}>{desk.remark}</Typography>
-                  <Typography sx={typography_sx}>{t(desk.equipment.equipmentName)}</Typography>
+        {!hideDeskList && (
+          <Box id="desks" sx={{ width: '20%', paddingRight: '20px' }}>
+            {desks.length ? (
+              desks.map((desk) => (
+                <Box key={desk.id} sx={{ display: 'flex', margin: '25px', justifyContent: 'space-between', width: '210px' }}>
+                  <Box>{desk.deskNumberInRoom}.</Box>
+                  <Box
+                    sx={{
+                      backgroundColor: desk.id === clickedDeskId ? '#ffdd00' : 'yellowgreen',
+                      height: '125px',
+                      width: '140px',
+                      borderRadius: '7px',
+                      padding: '5px',
+                      cursor: 'pointer',
+                      boxShadow: '0px 0px 5px rgba(0,0,0,0.2)',
+                      transition: desk.id === clickedDeskId ? '0.25s' : 'box-shadow 0.3s',
+                      '&:hover': { boxShadow: '0px 0px 10px rgba(0,0,0,0.4)' },
+                    }}
+                    onClick={() => {
+                      setClickedDeskId(desk.id);
+                      setClickedDeskRemark(desk.remark);
+                    }}
+                  >
+                    <Typography sx={typography_sx}>{desk.remark}</Typography>
+                    <Typography sx={typography_sx}>{t(desk.equipment.equipmentName)}</Typography>
+                  </Box>
                 </Box>
-              </Box>
-            ))
-          ) : (
-            <Typography sx={typography_sx}>{t('noAvailableDesks')}</Typography>
-          )}
-        </Box>
+              ))
+            ) : (
+              <Typography sx={typography_sx}>{t('noAvailableDesks')}</Typography>
+            )}
+          </Box>
+        )}
 
         {/* Calendar + Controls */}
-        <Box sx={{ width: '80%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, marginRight: '10px' }}>
+        <Box sx={{ width: hideDeskList ? '100%' : '80%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, marginRight: '10px' }}>
           {/*<FormControl>
             <RadioGroup
               row

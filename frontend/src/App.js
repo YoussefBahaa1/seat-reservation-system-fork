@@ -18,6 +18,7 @@ import CreateSeries from './Components/Series/CreateSeries';
 import FreeDesks from './Components/Home/FreeDesks';
 import RoomSearch from './Components/Home/RoomSearch';
 import Colleagues from './Components/Home/Colleagues';
+import Parking from './Components/Parking/Parking.jsx';
 import JwtHeartbeat from './Components/misc/JwtHearbeat';
 import './i18n';
 
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path='/freedesks' element={<FreeDesks />} />
         <Route path='/roomSearch' element={<RoomSearch />} />
         <Route path='/colleagues' element={<Colleagues />} />
+        <Route path="/parking" element={<Parking />} />
         <Route path="*" element={<Navigate to="/home" />} />
       </Routes>
     </>
