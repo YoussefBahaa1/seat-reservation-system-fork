@@ -30,7 +30,6 @@ ARG REACT_APP_ERROR_WRONG_PW
 ENV REACT_APP_ERROR_WRONG_PW=$REACT_APP_ERROR_WRONG_PW
 
 ARG TARGET
-ARG CACHEBUST
 
 # Copy needed packages.
 COPY package.json package-lock.json* ./
@@ -46,9 +45,9 @@ RUN npm ci --omit=dev
 COPY public public
 COPY src src
 
-RUN echo "cachebust=$CACHEBUST" >/dev/null
-
-RUN npm run build
+RUN if [ "$TARGET" = "production_runtime" ]; then \
+        npm run build; \
+    fi
 
 # Small image to serve the builded bundle
 FROM nginx:alpine AS production_runtime

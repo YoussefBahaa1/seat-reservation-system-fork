@@ -91,10 +91,6 @@ public class BookingService {
         }
         final Desk desk = deskService.getDeskById(deskId)
             .orElseThrow(() -> new IllegalArgumentException("Desk not found with id: " + bookingData.getDeskId()));
-
-        if ("Car Park".equals(room.getRemark()) && "P23".equals(desk.getRemark())) {
-            throw new RuntimeException("Parking space P23 is blocked/defective");
-        }
         
         final LocalDateTime now = LocalDateTime.now();
         final List<Booking> existingBookings = bookingRepository.getAllBookingsForPreventDuplicates(
@@ -105,21 +101,13 @@ public class BookingService {
             bookingData.getEnd()
         );
         
-        final List<Booking> expiredLocks = existingBookings.stream()
-            .filter(b -> b.isBookingInProgress() && b.getLockExpiryTime() != null && now.isAfter(b.getLockExpiryTime()))
-            .toList();
-        if (!expiredLocks.isEmpty()) {
-            bookingRepository.deleteAll(expiredLocks);
-        }
-
-        final boolean hasBlockingBooking = existingBookings.stream()
-            .filter(b -> !expiredLocks.contains(b))
-            .anyMatch(b ->
-                !b.isBookingInProgress() ||
-                (b.getLockExpiryTime() != null && now.isBefore(b.getLockExpiryTime()))
-            );
-
-        if (!hasBlockingBooking) {
+        /**
+         * Checks if some other user is currently booking the desk and
+         * the 
+         */
+        final boolean anyLockedBooking = existingBookings.stream()
+                .anyMatch(booking -> booking.isBookingInProgress() && now.isBefore(booking.getLockExpiryTime()));
+        if (existingBookings.isEmpty() || !anyLockedBooking) {
             final Booking newBooking = new Booking(user, room, desk, bookingData.getDay(), bookingData.getBegin(), bookingData.getEnd());
             /**
              * Set the lockExpiryTime.
