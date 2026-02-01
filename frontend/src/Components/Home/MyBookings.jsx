@@ -8,11 +8,13 @@ import {getRequest, deleteRequest} from '../RequestFunctions/RequestFunctions';
 import LayoutPage from '../Templates/LayoutPage';
 import LayoutModal from '../Templates/LayoutModal';
 import { toast } from 'react-toastify';
+import { useLocation } from 'react-router-dom';
 
 const MyBookings = () => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const { t, i18n } = useTranslation();
   const [events, setEvents] = useState([]);
+  const location = useLocation();
   // Defines which view is displayed per default. Either day, week or month.
   const [defaultView, setDefaultView] = useState(''); 
   const [selectedBookingEvent, setSelectedBookingEvent] = useState(null);
@@ -117,6 +119,10 @@ const MyBookings = () => {
     return i18n.language === 'de' ? 'Die Übersicht zu all Ihren getätigten Buchungen, inklusive der Möglichkeit diese zu löschen.' : 'An overview of all your bookings, including the option to delete them.';
   }
 
+  // Get selected date and view from location state
+  const selectedDate = location.state?.date ? new Date(location.state.date) : null;
+  const initialView = location.state?.view || defaultView.viewModeName;
+
   return (
     <LayoutPage
       title={t('myBookings')}
@@ -143,7 +149,7 @@ const MyBookings = () => {
             } 
           </div>
         </LayoutModal>
-          {defaultView.viewModeName && (
+          {initialView && (
             <Calendar
               localizer={localizer}
               style={{ height: '100vh' }}
@@ -156,7 +162,8 @@ const MyBookings = () => {
               startAccessor='start'
               endAccessor='end'
               //defaultView='week'
-              defaultView={defaultView.viewModeName}
+              defaultView={initialView}
+              defaultDate={selectedDate || new Date()}
               min={new Date(0, 0, 0, 6, 0, 0)} // 6 am
               max={new Date(0, 0, 0, 22, 0, 0)} // 10 pm
               popup={true}

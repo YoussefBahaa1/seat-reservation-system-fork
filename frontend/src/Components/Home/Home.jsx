@@ -18,7 +18,7 @@ const Home = () => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
 
   const handleSelectSlot = ({ start }) => {
-    navigate("/floor", { state: { date: start } });
+    navigate("/mybookings", { state: { date: start, view: 'day' } });
   };
 
   // Generate days of the month and fetch bookings
