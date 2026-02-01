@@ -17,6 +17,7 @@ export default function EditEmployee({ isOpen, onClose }) {
   const [surname, setSurname] = useState('');
   //const [visibility, setVisibility] = useState();
   const [isAdmin, setIsAdmin] = useState();
+  const [visibilityMode, setVisibilityMode] = useState('FULL_NAME');
   
   const getAllEmployee = useCallback(
     async () => {
@@ -54,7 +55,8 @@ export default function EditEmployee({ isOpen, onClose }) {
         'name': name,
         'surname': surname,
         'admin': isAdmin,
-        'visibility': true//visibility
+        'visibility': true,//visibility
+        'visibilityMode': visibilityMode
       })
     );
   }
@@ -69,6 +71,7 @@ export default function EditEmployee({ isOpen, onClose }) {
       setName(to_be_edited_employee.name);
       setSurname(to_be_edited_employee.surname);
       setIsAdmin(to_be_edited_employee.admin);
+      setVisibilityMode(to_be_edited_employee.visibilityMode || 'FULL_NAME');
       //setVisibility(to_be_edited_employee.visibility);
       setIsEditEmployeeOpen(true);
     } catch (e) {
@@ -135,6 +138,19 @@ export default function EditEmployee({ isOpen, onClose }) {
             >
             <FormControlLabel id='radioAdmin_true' value={true} control={<Radio />} label={t('true')} />
             <FormControlLabel id='radioAdmin_false' value={false} control={<Radio />} label={t('false')} />
+          </RadioGroup>
+        </FormControl>
+        <br/><br/>
+        <FormControl id='editEmployeeModal-visibilityMode'>
+          <FormLabel>{t('visibility')}</FormLabel>
+          <RadioGroup
+            row
+            value={visibilityMode}
+            onChange={(e)=> setVisibilityMode(e.target.value)}
+          >
+            <FormControlLabel value='FULL_NAME' control={<Radio />} label={t('name')} />
+            <FormControlLabel value='ABBREVIATION' control={<Radio />} label={t('abbreviationCap')} />
+            <FormControlLabel value='ANONYMOUS' control={<Radio />} label={t('anonymous')} />
           </RadioGroup>
         </FormControl>
         {/*<br/><br/>

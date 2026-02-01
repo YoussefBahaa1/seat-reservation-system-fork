@@ -24,6 +24,9 @@ public class UserEntity {
     private String name;
     private String surname;
     private boolean visibility;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "visibility_mode", columnDefinition = "varchar(20) default 'FULL_NAME'")
+    private VisibilityMode visibilityMode = VisibilityMode.FULL_NAME;
     //private boolean admin;
     @ManyToOne(cascade =  { CascadeType.PERSIST })
     @JoinColumn(name = "default_floor_id", nullable = true)
@@ -50,8 +53,14 @@ public class UserEntity {
         this.name = other.getName();
         this.surname = other.getSurname();
         this.visibility = other.isVisibility();
+        this.visibilityMode = other.getVisibilityMode();
         this.default_floor = other.getDefault_floor();
         this.roles = other.getRoles();
         this.defaultViewMode = other.getDefaultViewMode();
+    }
+
+    @PrePersist
+    public void ensureDefaults() {
+        if (visibilityMode == null) visibilityMode = VisibilityMode.FULL_NAME;
     }
 }

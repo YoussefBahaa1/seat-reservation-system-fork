@@ -14,10 +14,11 @@ public class AuthResponseDTO {
     private final String surname;
     private final boolean admin;
     private final boolean visibility;
+    private final String visibilityMode;
     private final String message;
 
     public static AuthResponseDTO FailRepsonse(final String email, final String message) {
-        return new AuthResponseDTO("", email, 0, "", "", false, false, message);
+        return new AuthResponseDTO("", email, 0, "", "", false, false, "FULL_NAME", message);
     }
 
     public AuthResponseDTO(
@@ -27,8 +28,9 @@ public class AuthResponseDTO {
         final String name, 
         final String surname, 
         final boolean admin, 
-        final boolean visibility
+        final boolean visibility,
+        final String visibilityMode
     ) {
-        this(accessToken, email, id, name, surname, admin, visibility, "SUCCESS");
+        this(accessToken, email, id, name, surname, admin, visibility, visibilityMode, "SUCCESS");
     }
 };

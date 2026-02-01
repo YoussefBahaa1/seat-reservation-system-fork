@@ -10,4 +10,5 @@ public class RegisterDto {
     private String surname;
     private boolean visibility;
     private boolean admin;
+    private String visibilityMode;
 }

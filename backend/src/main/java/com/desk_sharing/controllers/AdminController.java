@@ -235,6 +235,11 @@ public class AdminController {
         user.setName(registerDto.getName());
         user.setSurname(registerDto.getSurname());
         user.setVisibility(registerDto.isVisibility());
+        if (registerDto.getVisibilityMode() != null) {
+            try {
+                user.setVisibilityMode(com.desk_sharing.entities.VisibilityMode.valueOf(registerDto.getVisibilityMode()));
+            } catch (IllegalArgumentException ignored) {}
+        }
         
         // If the user is an admin grant the matching privileges.
         final Role role = registerDto.isAdmin() ? 

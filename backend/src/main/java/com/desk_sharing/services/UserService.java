@@ -35,6 +35,7 @@ import com.desk_sharing.entities.Booking;
 import com.desk_sharing.entities.Floor;
 import com.desk_sharing.entities.Role;
 import com.desk_sharing.entities.Series;
+import com.desk_sharing.entities.VisibilityMode;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,8 @@ public class UserService  {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         final String token = jwtGenerator.generateToken(authentication);
 
+        VisibilityMode mode = user.getVisibilityMode() != null ? user.getVisibilityMode() : VisibilityMode.FULL_NAME;
+
         return new AuthResponseDTO(
             token, 
             user.getEmail(),
@@ -94,7 +97,8 @@ public class UserService  {
             user.getName(),
             user.getSurname(),
             user.isAdmin(),
-            user.isVisibility()
+            user.isVisibility(),
+            mode.name()
         );
     }
 
@@ -148,6 +152,23 @@ public class UserService  {
 
     public UserEntity findByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+
+    public VisibilityMode getVisibilityMode(int userId) {
+        final UserEntity user = userRepository.getReferenceById(userId);
+        return user.getVisibilityMode() == null ? VisibilityMode.FULL_NAME : user.getVisibilityMode();
+    }
+
+    public boolean setVisibilityMode(int userId, VisibilityMode mode) {
+        try {
+            final UserEntity user = userRepository.getReferenceById(userId);
+            user.setVisibilityMode(mode);
+            userRepository.save(user);
+            return true;
+        } catch (Exception e) {
+            loggingErr("Failed setVisibilityMode for user " + userId + ": " + e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -222,6 +243,13 @@ public class UserService  {
             userFromDB.setSurname(userDto.getSurname());
         }
         userFromDB.setVisibility(userDto.isVisibility());
+        if (userDto.getVisibilityMode() != null) {
+            try {
+                userFromDB.setVisibilityMode(VisibilityMode.valueOf(userDto.getVisibilityMode()));
+            } catch (IllegalArgumentException ex) {
+                loggingErr("Invalid visibilityMode: " + userDto.getVisibilityMode());
+            }
+        }
 
         setAdmin(userFromDB, userDto.isAdmin());
 

@@ -39,7 +39,11 @@ function EmployeeTable({ employees, onAction, action, t }) {
                   {row.admin ? t('true') : t('false')}
                 </TableCell>
                 <TableCell sx={{textAlign: 'center', fontSize:14, fontWeight:400 }} >
-                  {row.visibility ? t('true') : t('false')}
+                  {row.visibilityMode === 'ANONYMOUS'
+                    ? t('anonymous')
+                    : row.visibilityMode === 'ABBREVIATION'
+                    ? t('abbreviationCap')
+                    : t('name')}
                 </TableCell>
                 <TableCell sx={{textAlign: 'center', fontSize:14, width:'30%' }} component="th" scope="row">
                   <Button onClick={() => onAction(row.id)}>{action}</Button>
