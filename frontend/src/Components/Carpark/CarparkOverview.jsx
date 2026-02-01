@@ -11,6 +11,9 @@ const parseFloatAttr = (el, name, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const isPointInRect = (x, y, rectX, rectY, rectW, rectH) =>
+  x >= rectX && x <= rectX + rectW && y >= rectY && y <= rectY + rectH;
+
 const getClosestNumericLabel = (labels, x, y) => {
   let best = null;
   let bestDistSq = Infinity;
@@ -87,6 +90,11 @@ const CarparkOverview = () => {
       svg.style.height = 'auto';
       svg.style.display = 'block';
 
+      // Make sure labels don't intercept pointer events (so hover/click behavior is driven by the spot rects).
+      for (const textEl of Array.from(svg.querySelectorAll('text'))) {
+        textEl.style.pointerEvents = 'none';
+      }
+
       const defs = svg.querySelector('defs') ?? svg.insertBefore(doc.createElementNS(svg.namespaceURI, 'defs'), svg.firstChild);
       const style = doc.createElementNS(svg.namespaceURI, 'style');
       style.textContent = `
@@ -98,19 +106,22 @@ const CarparkOverview = () => {
       defs.appendChild(style);
 
       const localCleanup = [];
-      const labelTexts = Array.from(svg.querySelectorAll('text'))
-        .map((el) => {
-          const value = (el.textContent ?? '').trim();
-          if (!/^\d+$/.test(value)) return null;
-          return {
-            value,
-            x: parseFloatAttr(el, 'x', NaN),
-            y: parseFloatAttr(el, 'y', NaN),
-          };
-        })
-        .filter((v) => v && Number.isFinite(v.x) && Number.isFinite(v.y));
+      const allTextNodes = Array.from(svg.querySelectorAll('text'))
+        .map((el) => ({
+          value: (el.textContent ?? '').trim(),
+          x: parseFloatAttr(el, 'x', NaN),
+          y: parseFloatAttr(el, 'y', NaN),
+        }))
+        .filter((t) => t.value !== '' && Number.isFinite(t.x) && Number.isFinite(t.y));
 
-      const spotRects = Array.from(svg.querySelectorAll('rect.stall, rect.empty')).filter((rect) => {
+      const labelTexts = allTextNodes.filter((t) => /^\d+$/.test(t.value));
+      const litTexts = allTextNodes.filter((t) => t.value.toUpperCase() === 'LIT');
+      const accessibleTexts = allTextNodes.filter(
+        (t) => t.value.includes('♿') || t.value.includes('â™ż')
+      );
+
+      // Only "stall" rectangles are selectable/hoverable (blank "empty" spots are view-only).
+      const spotRects = Array.from(svg.querySelectorAll('rect.stall')).filter((rect) => {
         const w = parseFloatAttr(rect, 'width');
         const h = parseFloatAttr(rect, 'height');
         return w >= 40 && h >= 40;
@@ -129,14 +140,11 @@ const CarparkOverview = () => {
         const closest = getClosestNumericLabel(labelTexts, cx, cy);
         const spotLabel = closest?.value ?? `${idx + 1}`;
 
-        const group = rect.closest('g') ?? rect.parentElement;
-        const groupTexts = group ? Array.from(group.querySelectorAll('text')) : [];
-
-        const isLit = groupTexts.some((tEl) => (tEl.textContent ?? '').trim().toUpperCase() === 'LIT');
-        const isAccessible = groupTexts.some((tEl) => (tEl.textContent ?? '').includes('♿'));
+        const isLit = litTexts.some((t) => isPointInRect(t.x, t.y, x, y, w, h));
+        const isAccessible = accessibleTexts.some((t) => isPointInRect(t.x, t.y, x, y, w, h));
 
         rect.dataset.spotLabel = spotLabel;
-        rect.dataset.spotType = rect.classList.contains('stall') ? 'stall' : 'empty';
+        rect.dataset.spotType = 'stall';
         rect.dataset.spotLit = isLit ? 'true' : 'false';
         rect.dataset.spotAccessible = isAccessible ? 'true' : 'false';
 
@@ -144,7 +152,7 @@ const CarparkOverview = () => {
         rect.setAttribute('role', 'button');
         rect.setAttribute(
           'aria-label',
-          `Parking spot ${spotLabel}${isAccessible ? ', accessible' : ''}${isLit ? ', LIT' : ''}`
+          `Parking spot ${spotLabel}${isAccessible ? ', accessible' : ', standard'}${isLit ? ', LIT' : ''}`
         );
 
         const setSelectedRect = () => {
@@ -197,6 +205,20 @@ const CarparkOverview = () => {
       };
       svg.addEventListener('click', onSvgClick);
       localCleanup.push(() => svg.removeEventListener('click', onSvgClick));
+
+      // If the pointer is not over an interactive stall rect, do not show hover details.
+      const onSvgMouseMove = (e) => {
+        const target = e.target;
+        if (!(target instanceof Element)) return;
+        if (!target.closest('.carpark-spot')) {
+          setHoveredSpot(null);
+        }
+      };
+      const onSvgMouseLeave = () => setHoveredSpot(null);
+      svg.addEventListener('mousemove', onSvgMouseMove);
+      svg.addEventListener('mouseleave', onSvgMouseLeave);
+      localCleanup.push(() => svg.removeEventListener('mousemove', onSvgMouseMove));
+      localCleanup.push(() => svg.removeEventListener('mouseleave', onSvgMouseLeave));
 
       if (cancelled) {
         for (const fn of localCleanup) fn();
@@ -287,8 +309,12 @@ const CarparkOverview = () => {
                   {t(spotForPanel.type === 'stall' ? 'carparkTypeStall' : 'carparkTypeEmpty')}
                 </Typography>
                 <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {spotForPanel.accessible ? (
+                    <Typography variant="body2">♿</Typography>
+                  ) : (
+                    <Typography variant="body2">{t('carparkStandard')}</Typography>
+                  )}
                   {spotForPanel.lit && <Typography variant="body2">LIT</Typography>}
-                  {spotForPanel.accessible && <Typography variant="body2">♿</Typography>}
                 </Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   {selectedSpot ? t('carparkSelected') : t('carparkHover')}
