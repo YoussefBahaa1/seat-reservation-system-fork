@@ -84,6 +84,22 @@ public class UserService  {
             throw new UsernameNotFoundException("Username not found after login.");
         }
 
+        // Check if MFA is enabled for this user
+        if (user.isMfaEnabled()) {
+            // Generate an MFA-pending token instead of a full access token
+            final String mfaToken = jwtGenerator.generateMfaPendingToken(email);
+            logging("MFA required for user: " + email);
+            return AuthResponseDTO.MfaRequiredResponse(
+                user.getEmail(),
+                user.getId(),
+                user.getName(),
+                user.getSurname(),
+                user.isAdmin(),
+                user.isVisibility(),
+                mfaToken
+            );
+        }
+
         SecurityContextHolder.getContext().setAuthentication(authentication);
         final String token = jwtGenerator.generateToken(authentication);
 

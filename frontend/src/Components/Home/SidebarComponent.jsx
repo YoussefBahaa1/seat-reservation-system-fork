@@ -8,8 +8,9 @@ import { useTranslation } from "react-i18next";
 import { FaLock, FaBookmark } from "react-icons/fa";
 import ChangePassword from "./ChangePassword";
 import LogoutConfirmationModal from "./LogoutConfirmationModal";
+import MfaSettings from "./MfaSettings";
 import { CiLogout } from 'react-icons/ci';
-import { MdGTranslate } from 'react-icons/md';
+import { MdGTranslate, MdSecurity } from 'react-icons/md';
 import { AiFillPlusCircle } from 'react-icons/ai';
 import { IoIosCheckbox, IoIosSettings, IoIosAlbums } from 'react-icons/io';
 import { IoSearchSharp } from 'react-icons/io5';
@@ -31,6 +32,7 @@ const SidebarComponent = () => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] = useState(false);
   const [isDefaultsModalOpen, setIsDefaultsModalOpen] = useState(false);
+  const [isMfaSettingsOpen, setIsMfaSettingsOpen] = useState(false);
   
   useEffect(() => {
     if (location.pathname === '/admin') {
@@ -108,6 +110,10 @@ const SidebarComponent = () => {
 
       case 'logout':
         setIsLogoutConfirmationOpen(true);
+        break;
+
+      case 'mfaSettings':
+        setIsMfaSettingsOpen(true);
         break;
 
       default:
@@ -241,6 +247,11 @@ const SidebarComponent = () => {
             <MenuItem id='sidebar_changePassword' icon={<FaLock/>} onClick={() => handleClick('changePassword')}>
               {t('password')}
             </MenuItem>
+            {localStorage.getItem("admin") === 'true' && (
+              <MenuItem id='sidebar_mfaSettings' icon={<MdSecurity/>} onClick={() => handleClick('mfaSettings')}>
+                {t('mfaSettings')}
+              </MenuItem>
+            )}
           </SubMenu>
           
           <MenuItem id='sidebar_logout' icon={<CiLogout />} onClick={() => handleClick('logout')}>{t('logout')}</MenuItem>
@@ -261,6 +272,11 @@ const SidebarComponent = () => {
         isOpen={isLogoutConfirmationOpen}
         onClose={handleCloseLogoutConfirmationModal}
         onConfirm={handleLogoutConfirmed}
+      />
+
+      <MfaSettings
+        isOpen={isMfaSettingsOpen}
+        onClose={() => setIsMfaSettingsOpen(false)}
       />
     </div>
   );

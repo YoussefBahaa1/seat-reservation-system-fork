@@ -32,6 +32,13 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String token = getJWTFromRequest(request);
         if(StringUtils.hasText(token) && tokenGenerator.validateToken(token)) {
+            // Reject MFA-pending tokens - they cannot be used for API access
+            if (tokenGenerator.isMfaPendingToken(token)) {
+                // MFA-pending tokens are not valid for authentication to protected resources
+                filterChain.doFilter(request, response);
+                return;
+            }
+            
             String username = tokenGenerator.getUsernameFromJWT(token);
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
             UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
