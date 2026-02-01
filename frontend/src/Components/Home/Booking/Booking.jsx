@@ -20,6 +20,7 @@ const Booking = () => {
   const location = useLocation();
   const localizer = momentLocalizer(moment);
   const { roomId, date } = location.state;
+  const selectionKey = `bookingSelection:${roomId}:${date ? moment(date).format('YYYY-MM-DD') : ''}`;
 
   // States
   const [room, setRoom] = useState(null);
@@ -176,6 +177,22 @@ if (startDay.getTime() === today.getTime()) {
   // Fetch desks when roomId changes
   useEffect(() => { if (roomId) fetchDesks(); }, [roomId, fetchDesks]);
 
+  useEffect(() => {
+    if (!desks.length) return;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(selectionKey));
+      if (saved?.deskId) {
+        const match = desks.find((desk) => desk.id === saved.deskId);
+        if (match) {
+          setClickedDeskId(match.id);
+          setClickedDeskRemark(match.remark || '');
+        }
+      }
+    } catch {
+      // ignore invalid stored value
+    }
+  }, [desks, selectionKey]);
+
   // Reload bookings when clicked desk changes
   useEffect(() => { if (clickedDeskId) loadBookings(); }, [clickedDeskId, loadBookings]);
 
@@ -227,6 +244,7 @@ if (startDay.getTime() === today.getTime()) {
                   onClick={() => {
                     setClickedDeskId(desk.id);
                     setClickedDeskRemark(desk.remark);
+                    sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: desk.id }));
                   }}
                 >
                   <Typography sx={typography_sx}>{desk.remark}</Typography>
