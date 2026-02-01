@@ -40,6 +40,8 @@ const getSpotMetaFromDataset = (rect) => ({
   type: rect.dataset.spotType ?? 'unknown',
   lit: rect.dataset.spotLit === 'true',
   accessible: rect.dataset.spotAccessible === 'true',
+  special: rect.dataset.spotSpecial === 'true',
+  selectable: rect.dataset.spotSelectable !== 'false',
 });
 
 const CarparkOverview = () => {
@@ -139,6 +141,8 @@ const CarparkOverview = () => {
 
         const closest = getClosestNumericLabel(labelTexts, cx, cy);
         const spotLabel = closest?.value ?? `${idx + 1}`;
+        const isSpecial = spotLabel === '23';
+        const isSelectable = !isSpecial;
 
         const isLit = litTexts.some((t) => isPointInRect(t.x, t.y, x, y, w, h));
         const isAccessible = accessibleTexts.some((t) => isPointInRect(t.x, t.y, x, y, w, h));
@@ -147,15 +151,21 @@ const CarparkOverview = () => {
         rect.dataset.spotType = 'stall';
         rect.dataset.spotLit = isLit ? 'true' : 'false';
         rect.dataset.spotAccessible = isAccessible ? 'true' : 'false';
+        rect.dataset.spotSpecial = isSpecial ? 'true' : 'false';
+        rect.dataset.spotSelectable = isSelectable ? 'true' : 'false';
 
-        rect.setAttribute('tabindex', '0');
-        rect.setAttribute('role', 'button');
+        rect.setAttribute('tabindex', isSelectable ? '0' : '-1');
+        rect.setAttribute('role', isSelectable ? 'button' : 'img');
+        if (!isSelectable) {
+          rect.style.cursor = 'default';
+        }
         rect.setAttribute(
           'aria-label',
-          `Parking spot ${spotLabel}${isAccessible ? ', accessible' : ', standard'}${isLit ? ', LIT' : ''}`
+          `Parking spot ${spotLabel}${isSpecial ? ', special case' : isAccessible ? ', accessible' : ', standard'}${isLit ? ', LIT' : ''}`
         );
 
         const setSelectedRect = () => {
+          if (!isSelectable) return;
           if (selectedRectRef.current && selectedRectRef.current !== rect) {
             selectedRectRef.current.classList.remove('carpark-selected');
           }
@@ -174,11 +184,13 @@ const CarparkOverview = () => {
         };
         const onClick = (e) => {
           e.stopPropagation();
+          if (!isSelectable) return;
           setSelectedRect();
         };
         const onKeyDown = (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
+            if (!isSelectable) return;
             setSelectedRect();
           }
         };
@@ -248,6 +260,7 @@ const CarparkOverview = () => {
   }, [zoom]);
 
   const spotForPanel = selectedSpot ?? hoveredSpot;
+  const isSpecialSpot = spotForPanel?.special === true;
 
   return (
     <LayoutPage
@@ -309,7 +322,9 @@ const CarparkOverview = () => {
                   {t(spotForPanel.type === 'stall' ? 'carparkTypeStall' : 'carparkTypeEmpty')}
                 </Typography>
                 <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  {spotForPanel.accessible ? (
+                  {isSpecialSpot ? (
+                    <Typography variant="body2">{t('carparkSpecialCase')}</Typography>
+                  ) : spotForPanel.accessible ? (
                     <Typography variant="body2">♿</Typography>
                   ) : (
                     <Typography variant="body2">{t('carparkStandard')}</Typography>
@@ -323,9 +338,11 @@ const CarparkOverview = () => {
             )}
             <Divider sx={{ my: 2 }} />
             <Typography variant="body2" color="text.secondary">
-              {i18n.language === 'de'
-                ? 'Hinweis: Diese Seite ist aktuell nur eine interaktive Übersicht (ohne Backend-Buchung).'
-                : 'Note: This page is currently just an interactive overview (no backend booking yet).'}
+              {isSpecialSpot
+                ? t('carparkContactStaff')
+                : i18n.language === 'de'
+                  ? 'Hinweis: Diese Seite ist aktuell nur eine interaktive Übersicht (ohne Backend-Buchung).'
+                  : 'Note: This page is currently just an interactive overview (no backend booking yet).'}
             </Typography>
           </Paper>
         </Box>

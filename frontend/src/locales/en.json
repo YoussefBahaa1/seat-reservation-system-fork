@@ -259,6 +259,8 @@
     ,"carparkTypeStall":"Marked spot"
     ,"carparkTypeEmpty":"Unmarked spot"
     ,"carparkStandard":"Standard"
+    ,"carparkSpecialCase":"Special case"
+    ,"carparkContactStaff":"Contact staff to reserve this spot."
     ,"carparkSelected":"Selected"
     ,"carparkHover":"Hover"
 

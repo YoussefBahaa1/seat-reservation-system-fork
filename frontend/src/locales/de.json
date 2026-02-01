@@ -259,6 +259,8 @@
     ,"carparkTypeStall":"Markierter Platz"
     ,"carparkTypeEmpty":"Unmarkierter Platz"
     ,"carparkStandard":"Standard"
+    ,"carparkSpecialCase":"Sonderfall"
+    ,"carparkContactStaff":"Bitte wenden Sie sich an das Personal, um diesen Platz zu reservieren."
     ,"carparkSelected":"Ausgewählt"
     ,"carparkHover":"Hover"
 
