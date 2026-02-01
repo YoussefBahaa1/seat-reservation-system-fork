@@ -13,4 +13,5 @@ public class RegisterDto {
     private boolean admin;
     private boolean employee;
     private boolean servicePersonnel;
+    private String visibilityMode;
 }

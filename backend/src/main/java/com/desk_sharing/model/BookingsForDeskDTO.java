@@ -21,7 +21,8 @@ public class BookingsForDeskDTO {
     private Integer user_id;
     private String name;
     private String surname;
-    private Boolean visibility;
+    private String displayName;
+    private String visibilityMode;
 
     public BookingsForDeskDTO(final Object[] object) {
         this(
@@ -32,7 +33,29 @@ public class BookingsForDeskDTO {
             (Integer) object[4],
             (String) object[5],
             (String) object[6],
-            (Boolean) object[7]
+            mask(
+                (String) object[5],
+                (String) object[6],
+                (String) object[7]
+            ),
+            (String) object[7]
         );
+    }
+
+    private static String mask(String name, String surname, String mode) {
+        if (mode == null) mode = "FULL_NAME";
+        switch (mode) {
+            case "ANONYMOUS":
+                return "Anonymous";
+            case "ABBREVIATION":
+                String first = (name != null && !name.isEmpty()) ? name.substring(0,1) : "";
+                String last = (surname != null && !surname.isEmpty()) ? surname.substring(0,1) : "";
+                return (first + (last.isEmpty() ? "" : "." + last)).trim();
+            case "FULL_NAME":
+            default:
+                String n = (name == null ? "" : name);
+                String s = (surname == null ? "" : surname);
+                return (n + " " + s).trim();
+        }
     }
 }

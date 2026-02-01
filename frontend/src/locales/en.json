@@ -6,7 +6,8 @@
     "http500": "Server error. Please try again later.",
     "httpOther": "An error has occurred."
     ,"news":"News",
-    "defaults":"Defaults",
+    "defaults":"Preferences",
+    "preferences":"Preferences",
     "help":"Help",
     "any": "Any",
     "match": "Match",
@@ -30,6 +31,12 @@
     "settingsUpdated": "Settings successful updated.",
     "settingsUpdatedFail": "Settings was not updated.",   
     "visibility": "Visibility",
+    "visibilityMode": "Visibility",
+    "abbreviationCap": "Abbreviation",
+    "you": "You",
+    "visibilityMode": "Visibility",
+    "abbreviationCap": "Abbreviation",
+    "you": "You",
     "logout": "Logout",
     "hello": "Hello",
 
@@ -304,3 +311,4 @@
     ,"confirmDeleteUser":"This action will permanently delete the user and cannot be undone."
     ,"value":"Value"
 }
+

@@ -243,7 +243,7 @@ const SidebarComponent = () => {
                 id='sidebar_defaults' 
                 icon={<HiOutlineSparkles />} onClick={
                 () => handleClick('defaults')}>
-                  {t('defaults')}
+                  {t('preferences')}
               </MenuItem>
             <MenuItem id='sidebar_changePassword' icon={<FaLock/>} onClick={() => handleClick('changePassword')}>
               {t('password')}
