@@ -42,12 +42,13 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding: 2px 0;
 }
 
 .home-add-booking-btn {
   background: #ffffff;
   color: #3174ad;
-  border: 1px solid #ffffff;
+  border: 1px solid #3174ad;
   border-radius: 4px;
   padding: 2px 6px;
   font-size: 0.75rem;
@@ -62,4 +63,16 @@
 .home-bookings-sum {
   font-size: 0.75rem;
   line-height: 1.2;
+  color: #ffffff;
 }
+
+.rbc-toolbar .rbc-btn-group button {
+  background: #e4f3ea;
+  border: 1px solid #b7e0c8;
+  color: #0b5f2a;
+}
+
+.rbc-toolbar .rbc-btn-group button:hover {
+  background: #d7ecdf;
+}
+
