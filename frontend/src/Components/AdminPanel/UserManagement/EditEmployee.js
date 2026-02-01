@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from "react-i18next";
 import EmployeeTable from './EmployeeTable';
-import { putRequest, getRequest} from '../../RequestFunctions/RequestFunctions';
+import { putRequest, getRequest, postRequest } from '../../RequestFunctions/RequestFunctions';
 import LayoutModalAdmin from '../../Templates/LayoutModalAdmin';
 
 export default function EditEmployee({ isOpen, onClose }) {
@@ -76,13 +76,36 @@ export default function EditEmployee({ isOpen, onClose }) {
     }
   }
 
+  function disableMfaForUser(userId) {
+    if (!window.confirm(t('mfaRecoveryConfirm'))) {
+      return;
+    }
+    postRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/admin/users/${userId}/mfa/disable`,
+      headers.current,
+      () => {
+        toast.success(t('mfaDisabledSuccess'));
+        getAllEmployee(); // Refresh the list
+      },
+      () => {
+        toast.error('Failed to disable MFA');
+      }
+    );
+  }
+
   return (
     <LayoutModalAdmin
       title={t('editEmployee')}
       onClose={onClose}
       isOpen={isOpen}
     >
-      <EmployeeTable employees={allEmployee} onAction={editEmployeeById} action={t("edit").toUpperCase()} t={t}/>
+      <EmployeeTable 
+        employees={allEmployee} 
+        onAction={editEmployeeById} 
+        action={t("edit").toUpperCase()} 
+        t={t}
+        onDisableMfa={disableMfaForUser}
+      />
       <LayoutModalAdmin
         isOpen={isEditEmployeeOpen}
         onClose={setIsEditEmployeeOpen.bind(null, !isEditEmployeeOpen)}

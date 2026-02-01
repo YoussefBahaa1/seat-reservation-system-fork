@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 @Entity
 @Table(name = "users")
@@ -25,6 +26,14 @@ public class UserEntity {
     private String surname;
     private boolean visibility;
     //private boolean admin;
+    
+    // MFA fields
+    @Column(name = "mfa_enabled", nullable = false)
+    private boolean mfaEnabled = false;
+    
+    @Column(name = "mfa_secret", nullable = true)
+    @JsonIgnore // Never expose mfaSecret in API responses
+    private String mfaSecret;
     @ManyToOne(cascade =  { CascadeType.PERSIST })
     @JoinColumn(name = "default_floor_id", nullable = true)
     private Floor default_floor;
@@ -53,5 +62,7 @@ public class UserEntity {
         this.default_floor = other.getDefault_floor();
         this.roles = other.getRoles();
         this.defaultViewMode = other.getDefaultViewMode();
+        this.mfaEnabled = other.isMfaEnabled();
+        // Do not copy mfaSecret for security reasons
     }
 }

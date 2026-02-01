@@ -272,6 +272,30 @@ public class AdminController {
         return new ResponseEntity<>(bookingProjectionDtos, HttpStatus.OK);
     }
 
+    /**
+     * Disable MFA for a user (admin recovery endpoint).
+     * This allows one admin to disable MFA for another user who is locked out.
+     * @param id The id of the user whose MFA should be disabled.
+     * @return Success or error response.
+     */
+    @PostMapping("users/{id}/mfa/disable")
+    public ResponseEntity<String> disableUserMfa(@PathVariable("id") int id) {
+        userService.logging("disableUserMfa( " + id + " )");
+        try {
+            UserEntity user = userRepository.getReferenceById(id);
+            if (!user.isMfaEnabled()) {
+                return new ResponseEntity<>("MFA is not enabled for this user", HttpStatus.BAD_REQUEST);
+            }
+            user.setMfaEnabled(false);
+            user.setMfaSecret(null);
+            userRepository.save(user);
+            userService.logging("Admin disabled MFA for user id: " + id);
+            return new ResponseEntity<>("MFA disabled successfully", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Failed to disable MFA: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     ////////////////
 
    
