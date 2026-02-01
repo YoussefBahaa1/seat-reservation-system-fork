@@ -158,8 +158,8 @@ const MyBookings = () => {
                 id="mybookings_add_booking_btn"
                 sx={{
                   marginBottom: '10px',
-                  marginLeft: '30px',
-                  padding: '10px 7px',
+                  marginLeft: '35px',
+                  padding: '8px 12px',
                   backgroundColor: '#0b5f2a',
                   borderRadius: '8px',
                   color: '#fff',
