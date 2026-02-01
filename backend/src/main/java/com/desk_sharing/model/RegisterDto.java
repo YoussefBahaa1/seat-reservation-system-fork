@@ -8,7 +8,7 @@ public class RegisterDto {
     private String email;
     private String name;
     private String surname;
-    private boolean visibility;
+    private Boolean visibility; // optional legacy flag
     private boolean admin;
     private String visibilityMode;
 }

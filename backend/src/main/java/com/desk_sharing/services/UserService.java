@@ -241,7 +241,9 @@ public class UserService  {
         if(userDto.getSurname() != null) {
             userFromDB.setSurname(userDto.getSurname());
         }
-        userFromDB.setVisibility(userDto.isVisibility());
+        if(userDto.getVisibility() != null) {
+            userFromDB.setVisibility(userDto.getVisibility());
+        }
         if (userDto.getVisibilityMode() != null) {
             try {
                 userFromDB.setVisibilityMode(VisibilityMode.valueOf(userDto.getVisibilityMode()));

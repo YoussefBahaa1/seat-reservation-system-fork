@@ -14,7 +14,7 @@ public class UserDto {
     private String password;
     private String name;
     private String surname;
-    private boolean visibility;
+    private Boolean visibility; // legacy flag, nullable to avoid overwriting
     private boolean admin;
     private String visibilityMode;
     private Floor default_floor;

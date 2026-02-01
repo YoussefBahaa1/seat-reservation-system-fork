@@ -55,7 +55,6 @@ export default function EditEmployee({ isOpen, onClose }) {
         'name': name,
         'surname': surname,
         'admin': isAdmin,
-        'visibility': true,//visibility
         'visibilityMode': visibilityMode
       })
     );
