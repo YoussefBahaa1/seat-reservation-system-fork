@@ -6,7 +6,6 @@
     ,"http500": "Serverfehler. Bitte versuche Sie es später erneut."
     ,"httpOther": "Ein Fehler ist aufgetreten."
     ,"news":"Neuigkeiten",
-    "defaults":"Einstellungen",
     "preferences":"Einstellungen",
     "help":"Hilfe",
     "any": "Jedes",
@@ -30,7 +29,6 @@
     "settingsUpdated": "Einstellungen erfolgreich aktualisiert.",
     "settingsUpdatedFail": "Einstellungen konnten nicht aktualisiert werden.",   
     "visibility": "Sichtbarkeit",
-    "visibilityMode": "Sichtbarkeit",
     "abbreviationCap": "Abkürzung",
     "you": "Du",
     "logout": "Abmeldung",
