@@ -9,7 +9,7 @@ public class RegisterDto {
     private String name;
     private String surname;
     private String department;
-    private boolean visibility;
+    private Boolean visibility; // optional legacy flag
     private boolean admin;
     private boolean employee;
     private boolean servicePersonnel;

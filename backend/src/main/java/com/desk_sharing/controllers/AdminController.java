@@ -242,7 +242,7 @@ public class AdminController {
         user.setName(registerDto.getName());
         user.setSurname(registerDto.getSurname());
         user.setDepartment(registerDto.getDepartment());
-        user.setVisibility(registerDto.isVisibility());
+        user.setVisibility(registerDto.getVisibility() != null ? registerDto.getVisibility() : true);
         if (registerDto.getVisibilityMode() != null) {
             try {
                 user.setVisibilityMode(com.desk_sharing.entities.VisibilityMode.valueOf(registerDto.getVisibilityMode()));

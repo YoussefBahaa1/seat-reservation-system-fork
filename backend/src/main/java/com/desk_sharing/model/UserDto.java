@@ -15,7 +15,7 @@ public class UserDto {
     private String name;
     private String surname;
     private String department;
-    private boolean visibility;
+    private Boolean visibility; // legacy flag, nullable to avoid overwriting
     private boolean admin;
     private boolean employee;
     private boolean servicePersonnel;
