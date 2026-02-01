@@ -20,7 +20,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByDeskIdAndDay(Long deskId, Date day);
 	List<Booking> findByRoomIdAndDay(Long roomId, Date day); 
 
-	@Query(value = "select booking_id, day, begin, end, id, name, surname, visibility "
+	@Query(value = "select booking_id, day, begin, end, id, name, surname, visibility_mode "
 	+ "from bookings " 
 	+ "join desks on bookings.desk_id = desks.desk_id "
 	+ "join users on bookings.user_id=users.id "

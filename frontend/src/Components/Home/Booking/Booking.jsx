@@ -67,10 +67,10 @@ const Booking = () => {
           end: new Date(`${b.day}T${b.end}`),
           title:
             b.user_id.toString() === localStorage.getItem('userId')
-              ? ''
-              : b.visibility
-              ? `${b.name} ${b.surname}`
-              : t('anonymous'),
+              ? t('you')
+              : (localStorage.getItem('admin') === 'true'
+                  ? `${b.name || ''} ${b.surname || ''}`.trim() || b.displayName || ''
+                  : b.displayName || ''),
           id: b.booking_id,
         }));
         //setDeskEvents(bookingEvents);

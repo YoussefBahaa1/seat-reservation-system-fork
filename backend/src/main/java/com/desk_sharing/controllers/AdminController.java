@@ -243,6 +243,11 @@ public class AdminController {
         user.setSurname(registerDto.getSurname());
         user.setDepartment(registerDto.getDepartment());
         user.setVisibility(registerDto.isVisibility());
+        if (registerDto.getVisibilityMode() != null) {
+            try {
+                user.setVisibilityMode(com.desk_sharing.entities.VisibilityMode.valueOf(registerDto.getVisibilityMode()));
+            } catch (IllegalArgumentException ignored) {}
+        }
         user.setActive(true); // New users are active by default
         
         // Assign roles based on the flags

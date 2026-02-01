@@ -17,6 +17,7 @@ import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.misc.DaoUserNotFoundException;
 import com.desk_sharing.misc.LdapUserNotFoundException;
 import com.desk_sharing.services.UserService;
+import com.desk_sharing.entities.VisibilityMode;
 
 import lombok.AllArgsConstructor;
 
@@ -90,5 +91,22 @@ public class UserController {
     public boolean isAdmin(@PathVariable("id") int id) {
         userService.logging("isAdmin( " + id + " )");
         return userService.isAdmin(id);
+    }
+
+    @GetMapping("/visibilityMode/{id}")
+    public String getVisibilityMode(@PathVariable("id") int id) {
+        userService.logging("getVisibilityMode( " + id + " )");
+        return userService.getVisibilityMode(id).name();
+    }
+
+    @PutMapping("/visibilityMode/{id}/{mode}")
+    public ResponseEntity<Boolean> setVisibilityMode(@PathVariable("id") int id, @PathVariable("mode") String mode) {
+        userService.logging("setVisibilityMode( " + id + ", " + mode + " )");
+        try {
+            VisibilityMode vm = VisibilityMode.valueOf(mode);
+            return ResponseEntity.ok(userService.setVisibilityMode(id, vm));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(false);
+        }
     }
 }
