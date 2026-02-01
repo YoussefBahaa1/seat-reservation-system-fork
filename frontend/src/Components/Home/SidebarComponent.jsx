@@ -13,20 +13,12 @@ import { MdGTranslate } from 'react-icons/md';
 import { AiFillPlusCircle } from 'react-icons/ai';
 import { IoIosCheckbox, IoIosSettings, IoIosAlbums } from 'react-icons/io';
 import { IoSearchSharp } from 'react-icons/io5';
-import LogoutConfirmationModal from "./LogoutConfirmationModal";
-import { CiLogout } from 'react-icons/ci';
-import { MdGTranslate } from 'react-icons/md';
-import { AiFillPlusCircle } from 'react-icons/ai';
-import { IoIosCheckbox, IoIosSettings, IoIosAlbums } from 'react-icons/io';
-import { IoSearchSharp } from 'react-icons/io5';
 import { HiOutlineSparkles } from 'react-icons/hi2';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { AiOutlineTeam } from "react-icons/ai";
 import { MdLocalParking } from 'react-icons/md';
 import Defaults from "./Defaults";
-import Defaults from "./Defaults";
-import i18n from '../../i18n';
 
 const SidebarComponent = () => {
   const { t, i18n } = useTranslation();
