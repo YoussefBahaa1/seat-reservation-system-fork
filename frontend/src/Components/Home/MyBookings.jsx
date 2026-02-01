@@ -8,13 +8,15 @@ import {getRequest, deleteRequest} from '../RequestFunctions/RequestFunctions';
 import LayoutPage from '../Templates/LayoutPage';
 import LayoutModal from '../Templates/LayoutModal';
 import { toast } from 'react-toastify';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '@mui/material';
 
 const MyBookings = () => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const { t, i18n } = useTranslation();
   const [events, setEvents] = useState([]);
   const location = useLocation();
+  const navigate = useNavigate();
   // Defines which view is displayed per default. Either day, week or month.
   const [defaultView, setDefaultView] = useState(''); 
   const [selectedBookingEvent, setSelectedBookingEvent] = useState(null);
@@ -122,6 +124,7 @@ const MyBookings = () => {
   // Get selected date and view from location state
   const selectedDate = location.state?.date ? new Date(location.state.date) : null;
   const initialView = location.state?.view || defaultView.viewModeName;
+  const [currentDate, setCurrentDate] = useState(selectedDate || new Date());
 
   return (
     <LayoutPage
@@ -150,38 +153,59 @@ const MyBookings = () => {
           </div>
         </LayoutModal>
           {initialView && (
-            <Calendar
-              localizer={localizer}
-              style={{ height: '100vh' }}
-              eventPropGetter={(event) => ({
-                style: {
-                  backgroundColor: "#008444",
-                },
-              })}
-              events={events}
-              startAccessor='start'
-              endAccessor='end'
-              //defaultView='week'
-              defaultView={initialView}
-              defaultDate={selectedDate || new Date()}
-              min={new Date(0, 0, 0, 6, 0, 0)} // 6 am
-              max={new Date(0, 0, 0, 22, 0, 0)} // 10 pm
-              popup={true}
-              onSelectEvent={handleEventSelect}
-              messages={{
-                next: t('next'),
-                previous: t('back'),
-                today: t('today'),
-                month: t('month'),
-                week: t('week'),
-                day: t("day"),
-                agenda: t("agenda"),
-                date: t("date"),
-                time: t("time"),
-                event: t("event"),
-                noEventsInRange: t("noEventsInRange")
-            }}
-            />
+            <>
+              <Button
+                id="mybookings_add_booking_btn"
+                sx={{
+                  marginBottom: '10px',
+                  marginLeft: '30px',
+                  padding: '10px 7px',
+                  backgroundColor: '#0b5f2a',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  fontSize: '14px',
+                  textTransform: 'none',
+                  alignSelf: 'flex-start',
+                  '&:hover': { backgroundColor: '#b7e0c8' }
+                }}
+                onClick={() => navigate('/freeDesks', { state: { date: currentDate } })}
+              >
+                {t('addBooking')}
+              </Button>
+              <Calendar
+                localizer={localizer}
+                style={{ height: '100vh' }}
+                eventPropGetter={(event) => ({
+                  style: {
+                    backgroundColor: "#3174ad",
+                  },
+                })}
+                events={events}
+                startAccessor='start'
+                endAccessor='end'
+                //defaultView='week'
+                defaultView={initialView}
+                defaultDate={selectedDate || new Date()}
+                min={new Date(0, 0, 0, 6, 0, 0)} // 6 am
+                max={new Date(0, 0, 0, 22, 0, 0)} // 10 pm
+                popup={true}
+                onSelectEvent={handleEventSelect}
+                onNavigate={(date) => setCurrentDate(date)}
+                messages={{
+                  next: t('next'),
+                  previous: t('back'),
+                  today: t('today'),
+                  month: t('month'),
+                  week: t('week'),
+                  day: t("day"),
+                  agenda: t("agenda"),
+                  date: t("date"),
+                  time: t("time"),
+                  event: t("event"),
+                  noEventsInRange: t("noEventsInRange")
+              }}
+              />
+            </>
           )}
           </>
     </LayoutPage>
