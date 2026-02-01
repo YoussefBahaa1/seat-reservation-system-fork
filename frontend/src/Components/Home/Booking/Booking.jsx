@@ -20,6 +20,8 @@ const Booking = () => {
   const location = useLocation();
   const localizer = momentLocalizer(moment);
   const { roomId, date } = location.state;
+
+  //Safe selection of desks
   const selectionKey = `bookingSelection:${roomId}:${date ? moment(date).format('YYYY-MM-DD') : ''}`;
 
   // States
@@ -177,6 +179,7 @@ if (startDay.getTime() === today.getTime()) {
   // Fetch desks when roomId changes
   useEffect(() => { if (roomId) fetchDesks(); }, [roomId, fetchDesks]);
 
+  //Load saved desk selection from sessionStorage
   useEffect(() => {
     if (!desks.length) return;
     try {
@@ -244,6 +247,8 @@ if (startDay.getTime() === today.getTime()) {
                   onClick={() => {
                     setClickedDeskId(desk.id);
                     setClickedDeskRemark(desk.remark);
+
+                    // Save selection to sessionStorage 
                     sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: desk.id }));
                   }}
                 >

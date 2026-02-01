@@ -109,7 +109,7 @@ const Home = () => {
 
   return (
     <LayoutPage
-      title={t('chooseDate')}
+      title={t('home')}
       helpText={''}
     >
       <Calendar
@@ -119,7 +119,7 @@ const Home = () => {
         startAccessor='start'
         endAccessor='end'
         views={['month']}
-        style={{ height: 500 }}
+        style={{ height: 400 }}
         onSelectSlot={handleSelectSlot}
         selectable={true}
         onKeyPressEvent={(data) => console.log(data)}
