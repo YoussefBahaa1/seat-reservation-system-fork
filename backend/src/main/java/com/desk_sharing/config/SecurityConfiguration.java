@@ -56,6 +56,8 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(auth -> auth
                 // Allow unauthenticated users to contact /users/login endpoint.
                 .requestMatchers("/users/login").permitAll()
+                // Allow MFA verification endpoint (second step of login)
+                .requestMatchers("/users/mfa/verify").permitAll()
                 // Users must have role admin for everything under /admin/ 
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
