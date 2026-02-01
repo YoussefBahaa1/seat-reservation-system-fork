@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getRequest, putRequest } from '../RequestFunctions/RequestFunctions';
+import { getRequest } from '../RequestFunctions/RequestFunctions';
 import { toast } from 'react-toastify';
 import { FormControl, InputLabel, Select, MenuItem, Tooltip } from '@mui/material';
 import FloorSelector from '../FloorSelector';
@@ -21,7 +21,6 @@ const Defaults = ({ isOpen, onClose }) => {
     const [defaultViewId, setDefaultViewId] = useState(''); 
     const [views, setViews] = useState([]);
     const [defaultFloor, setDefaultFloor] = useState('');
-    const [visibilityMode, setVisibilityMode] = useState('FULL_NAME');
     const { t, i18n } = useTranslation();
     const handleChildData = (data) => {
         setDefaultFloor(data);
@@ -38,17 +37,6 @@ const Defaults = ({ isOpen, onClose }) => {
             }
         );
     },[]);
-
-    // Fetch visibility mode
-    useEffect(() => {
-        if (!localStorage.getItem('userId')) return;
-        getRequest(
-            `${process.env.REACT_APP_BACKEND_URL}/users/visibilityMode/${localStorage.getItem('userId')}`,
-            headers.current,
-            (mode) => setVisibilityMode(mode || 'FULL_NAME'),
-            () => console.log('Failed to fetch visibilityMode')
-        );
-    }, []);
 
     // Fetch defauflt viewmode
     useEffect(()=>{
@@ -82,14 +70,6 @@ const Defaults = ({ isOpen, onClose }) => {
                 else {
                     toast.error(t('settingsUpdatedFail'));
                 }
-                // Set visibility mode after defaults
-                putRequest(
-                    `${process.env.REACT_APP_BACKEND_URL}/users/visibilityMode/${localStorage.getItem('userId')}/${visibilityMode}`,
-                    headers.current,
-                    () => {},
-                    () => console.log('Failed to set visibilityMode'),
-                    null
-                );
                 onClose();
                 return;
             }),
@@ -107,7 +87,7 @@ const Defaults = ({ isOpen, onClose }) => {
             submit={saveDefaults}
         >
             <br/>
-            <h1>{i18n.language === 'de' ? 'Einstellungen' : 'Preferences'}</h1>
+            <h1>{i18n.language === 'de' ? 'Standard Kalenderansicht' : 'Default viewmode'}</h1>
             <Tooltip
                 placement='top'
                 title={i18n.language === 'de' 
@@ -140,26 +120,6 @@ const Defaults = ({ isOpen, onClose }) => {
                     idString={'settings'}
                     sendDataToParent={handleChildData}
                 />
-            </Tooltip>
-            <br/><br/>
-            <h1>{i18n.language === 'de' ? 'Sichtbarkeit' : 'Visibility'}</h1>
-            <Tooltip
-                placement='top'
-                title={i18n.language === 'de' ? 'Wählen Sie aus, wie Ihr Name anderen angezeigt wird.' : 'Choose how your name is shown to others.'}
-            >
-                <FormControl required id='visibilityMode' size='small' fullWidth>
-                    <InputLabel shrink>{t('visibility')}</InputLabel>
-                    <Select
-                        id='select_visibilityMode'
-                        value={visibilityMode}
-                        label={t('visibility')}
-                        onChange={(e)=> setVisibilityMode(e.target.value)}
-                    >
-                        <MenuItem value='FULL_NAME'>{t('name')}</MenuItem>
-                        <MenuItem value='ABBREVIATION'>{t('abbreviationCap')}</MenuItem>
-                        <MenuItem value='ANONYMOUS'>{t('anonymous')}</MenuItem>
-                    </Select>
-                </FormControl>
             </Tooltip>
     </LayoutModal>
   )
