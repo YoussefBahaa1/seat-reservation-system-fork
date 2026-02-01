@@ -14,10 +14,12 @@ import { AiFillPlusCircle } from 'react-icons/ai';
 import { IoIosCheckbox, IoIosSettings, IoIosAlbums } from 'react-icons/io';
 import { IoSearchSharp } from 'react-icons/io5';
 import { HiOutlineSparkles } from 'react-icons/hi2';
+import { MdVisibility } from 'react-icons/md';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { AiOutlineTeam } from "react-icons/ai";
 import Defaults from "./Defaults";
+import VisibilityPreferences from "./VisibilityPreferences";
 import i18n from '../../i18n';
 
 const SidebarComponent = () => {
@@ -31,6 +33,7 @@ const SidebarComponent = () => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] = useState(false);
   const [isDefaultsModalOpen, setIsDefaultsModalOpen] = useState(false);
+  const [isVisibilityModalOpen, setIsVisibilityModalOpen] = useState(false);
   
   useEffect(() => {
     if (location.pathname === '/admin') {
@@ -100,6 +103,9 @@ const SidebarComponent = () => {
 
       case 'defaults':
         setIsDefaultsModalOpen(true);
+        break;
+      case 'visibilityPrefs':
+        setIsVisibilityModalOpen(true);
         break;
 
       case 'colleagues':
@@ -236,7 +242,13 @@ const SidebarComponent = () => {
                 id='sidebar_defaults' 
                 icon={<HiOutlineSparkles />} onClick={
                 () => handleClick('defaults')}>
-                  {t('preferences')}
+                  {t('defaults')}
+              </MenuItem>
+              <MenuItem 
+                id='sidebar_visibility' 
+                icon={<MdVisibility />} onClick={
+                () => handleClick('visibilityPrefs')}>
+                  {t('visibility')}
               </MenuItem>
             <MenuItem id='sidebar_changePassword' icon={<FaLock/>} onClick={() => handleClick('changePassword')}>
               {t('password')}
@@ -250,6 +262,10 @@ const SidebarComponent = () => {
       <Defaults 
         isOpen={isDefaultsModalOpen}
         onClose={setIsDefaultsModalOpen.bind(null, false)}
+      />
+      <VisibilityPreferences 
+        isOpen={isVisibilityModalOpen}
+        onClose={setIsVisibilityModalOpen.bind(null, false)}
       />
       <ChangePassword
         isOpen={isChangePasswordModalOpen}
