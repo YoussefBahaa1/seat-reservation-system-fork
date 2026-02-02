@@ -72,7 +72,6 @@ const Home = () => {
             eventsForMonth.push(newEvent);
           }
           setEvents(eventsForMonth);  // Ereignisse für den Monat setzen
-          setNow(date);  // Aktuelles Datum setzen
         },
         (errorCode) => { 
           console.log('Fehler beim Abrufen der Buchungen:', errorCode);
@@ -171,7 +170,6 @@ const Home = () => {
     return selectedParkingFilters.filter((value) => value.startsWith('type:'));
   }, [mode, selectedDeskFilters, selectedParkingFilters]);
 
-  const selectedValues = selectedFilters;
 
   const handleFilterChange = (event) => {
     const values =
@@ -362,11 +360,12 @@ const Home = () => {
       />
       <div className="home-calendar-footer">
         <div className="home-calendar-controls">
+          <span className="home-filter-label">{t('filters')}</span>
           <FormControl size="small" className="home-filter-select">
           <InputLabel>{t('filters')}</InputLabel>
           <Select
               multiple
-              value={selectedValues}
+              value={selectedFilters}
               onChange={handleFilterChange}
             label={t('filters')}
             renderValue={(selected) =>
@@ -392,7 +391,7 @@ const Home = () => {
                 <ListSubheader>{t('rooms')}</ListSubheader>
                 {roomOptions.map((option) => (
                   <MenuItem key={option.value} value={option.value} onClick={() => toggleFilterValue(option.value)}>
-                    <Checkbox checked={selectedValues.includes(option.value)} />
+                    <Checkbox checked={selectedFilters.includes(option.value)} />
                     <ListItemText primary={option.label} />
                   </MenuItem>
                 ))}
@@ -403,7 +402,7 @@ const Home = () => {
             </ListSubheader>
             {typeOptions.map((option) => (
               <MenuItem key={option.value} value={option.value} onClick={() => toggleFilterValue(option.value)}>
-                <Checkbox checked={selectedValues.includes(option.value)} />
+                <Checkbox checked={selectedFilters.includes(option.value)} />
                 <ListItemText primary={option.label} />
               </MenuItem>
             ))}
@@ -475,7 +474,6 @@ const Home = () => {
             style={{ height: 500 }}
             onSelectSlot={handleSelectSlot}
             selectable={true}
-            onKeyPressEvent={(data) => console.log(data)}
             messages={{
               next: t("next"),
               previous: t("back"),

@@ -113,6 +113,13 @@
   gap: 12px;
 }
 
+.home-filter-label {
+  font-weight: 400;
+  color: #000000;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
 .home-mode-toggle {
   background-color: #008444 !important;
   color: #ffffff !important;
