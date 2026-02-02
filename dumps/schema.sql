@@ -267,6 +267,28 @@ CREATE TABLE `users` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `parking_reservations`
+--
+
+DROP TABLE IF EXISTS `parking_reservations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `parking_reservations` (
+  `parking_reservation_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `spot_label` varchar(255) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `day` date NOT NULL,
+  `begin` time(6) NOT NULL,
+  `end` time(6) NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  PRIMARY KEY (`parking_reservation_id`),
+  KEY `IDX_parking_reservations_day` (`day`),
+  KEY `IDX_parking_reservations_spot_label` (`spot_label`),
+  KEY `IDX_parking_reservations_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `view_modes`
 --
 

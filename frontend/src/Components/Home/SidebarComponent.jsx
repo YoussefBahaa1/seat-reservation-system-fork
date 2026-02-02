@@ -139,7 +139,15 @@ const SidebarComponent = () => {
   };
 
   const handleLogoutConfirmed = () => {
-    localStorage.removeItem('userId'); // Clear the user's session
+    // Clear the user's session (auth + cached user info).
+    sessionStorage.removeItem('headers');
+    sessionStorage.removeItem('accessToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('email');
+    localStorage.removeItem('name');
+    localStorage.removeItem('surname');
+    localStorage.removeItem('admin');
+    localStorage.removeItem('visibility');
     // Reset language to browser preference for the unauthenticated screens
     const browserLang = navigator.language.split('-')[0] || 'en';
     i18n.changeLanguage(browserLang);
