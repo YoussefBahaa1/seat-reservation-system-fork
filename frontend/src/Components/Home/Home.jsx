@@ -181,18 +181,14 @@ const Home = () => {
     }
   };
 
-  const timeBlocks = useMemo(
-    () => [
-      { label: '06:00 - 08:00', start: 6, end: 8 },
-      { label: '08:00 - 10:00', start: 8, end: 10 },
-      { label: '10:00 - 12:00', start: 10, end: 12 },
-      { label: '12:00 - 14:00', start: 12, end: 14 },
-      { label: '14:00 - 16:00', start: 14, end: 16 },
-      { label: '16:00 - 18:00', start: 16, end: 18 },
-      { label: '18:00 - 21:00', start: 18, end: 21 }
-    ],
-    []
-  );
+  const timeBlocks = useMemo(() => {
+    const blocks = [];
+    for (let hour = 6; hour < 21; hour += 1) {
+      const label = `${String(hour).padStart(2, '0')}:00`;
+      blocks.push({ label, start: hour, end: hour + 1 });
+    }
+    return blocks;
+  }, []);
 
   const filteredDayEvents = useMemo(() => {
     const selectedRoomSet = new Set(selectedRooms.map(String));
@@ -231,15 +227,8 @@ const Home = () => {
       if (Number.isNaN(hour) || hour < 6 || hour >= 21) {
         return;
       }
-      let index = null;
-      if (hour < 8) index = 0;
-      else if (hour < 10) index = 1;
-      else if (hour < 12) index = 2;
-      else if (hour < 14) index = 3;
-      else if (hour < 16) index = 4;
-      else if (hour < 18) index = 5;
-      else if (hour < 21) index = 6;
-      if (index !== null) {
+      const index = hour - 6;
+      if (index >= 0 && index < groups.length) {
         groups[index].events.push(event);
       }
     });
