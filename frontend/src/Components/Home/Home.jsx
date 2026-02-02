@@ -270,9 +270,37 @@ const Home = () => {
     );
   };
 
+  const CustomToolbar = (toolbar) => (
+    <div className="home-rbc-toolbar rbc-toolbar">
+      <span className="rbc-btn-group">
+        <button type="button" onClick={() => toolbar.onNavigate('TODAY')}>
+          {t('today')}
+        </button>
+        <button type="button" onClick={() => toolbar.onNavigate('PREV')}>
+          {t('back')}
+        </button>
+        <button type="button" onClick={() => toolbar.onNavigate('NEXT')}>
+          {t('next')}
+        </button>
+      </span>
+      <span className="home-rbc-toolbar-label">{toolbar.label}</span>
+      <span className="home-rbc-toolbar-right">
+        <Tooltip title={mode === 'desk' ? t('switchToParking') : t('switchToDesk')}>
+          <IconButton
+            className="home-mode-toggle"
+            onClick={() => setMode(mode === 'desk' ? 'parking' : 'desk')}
+            aria-label={mode === 'desk' ? t('switchToParking') : t('switchToDesk')}
+          >
+            {mode === 'desk' ? <DirectionsCarIcon /> : <DesktopWindowsIcon />}
+          </IconButton>
+        </Tooltip>
+      </span>
+    </div>
+  );
+
   return (
     <LayoutPage
-      title={t('home')}
+      title={mode === 'desk' ? t('desksTitle') : t('parkingsTitle')}
       helpText={''}
     >
       <Calendar
@@ -302,19 +330,10 @@ const Home = () => {
           noEventsInRange: t('noEventsInRange')
         }}
         onNavigate={handleNavigate}
-        components={{ event: BookingEvent }}
+        components={{ event: BookingEvent, toolbar: CustomToolbar }}
       />
       <div className="home-calendar-footer">
         <div className="home-calendar-controls">
-          <Tooltip title={mode === 'desk' ? t('switchToParking') : t('switchToDesk')}>
-            <IconButton
-              className="home-mode-toggle"
-              onClick={() => setMode(mode === 'desk' ? 'parking' : 'desk')}
-              aria-label={mode === 'desk' ? t('switchToParking') : t('switchToDesk')}
-            >
-              {mode === 'desk' ? <DirectionsCarIcon /> : <DesktopWindowsIcon />}
-            </IconButton>
-          </Tooltip>
           <FormControl size="small" className="home-filter-select">
             <InputLabel>{t('filter')}</InputLabel>
             <Select

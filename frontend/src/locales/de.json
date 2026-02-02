@@ -220,6 +220,8 @@
     ,"helpEditWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Anschließend wählen Sie bitte den jeweiligen Arbeitsplatz aus. Im Anschluss können Sie die Änderungen definieren."
     ,"helpDeleteWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Danach wählen Sie den zu löschenden Arbeitsplatz aus."
     ,"bookingsSum":"Buchungen Gesamt"
+    ,"desksTitle":"Arbeitsplaetze"
+    ,"parkingsTitle":"Parkplaetze"
     ,"filter":"Filter"
     ,"rooms":"Räume"
     ,"deskTypes":"Arbeitsplatztypen"
