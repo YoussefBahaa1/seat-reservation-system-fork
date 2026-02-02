@@ -43,5 +43,11 @@ export const LayoutPage_theme = {
       margin: '20px', 
       textAlign: 'center', 
       fontWeight: 'bold',
-    }
+    },
+    headerRow: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      px: 2,
+    },
   };
