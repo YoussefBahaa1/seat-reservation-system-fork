@@ -49,7 +49,11 @@ public class UserController {
         } catch (DaoUserNotFoundException e) {
             errorMessage = env.getProperty("ERROR_USER_NOT_FOUND_IN_DAO_MESSAGE");
         } catch (BadCredentialsException e) {
-            errorMessage = env.getProperty("ERROR_WRONG_PW_MESSAGE");
+            if ("Account is deactivated. Please contact an administrator.".equals(e.getMessage())) {
+                errorMessage = env.getProperty("ERROR_USER_DEACTIVATED_MESSAGE");
+            } else {
+                errorMessage = env.getProperty("ERROR_WRONG_PW_MESSAGE");
+            }
         }
         return new ResponseEntity<>(
             AuthResponseDTO.FailRepsonse(

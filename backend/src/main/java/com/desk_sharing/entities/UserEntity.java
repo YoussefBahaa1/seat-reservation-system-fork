@@ -34,6 +34,14 @@ public class UserEntity {
     @Column(name = "mfa_secret", nullable = true)
     @JsonIgnore // Never expose mfaSecret in API responses
     private String mfaSecret;
+    
+    // Department field (free-text)
+    @Column(name = "department", nullable = true)
+    private String department;
+    
+    // Active status (for soft-suspend/deactivation)
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
     @ManyToOne(cascade =  { CascadeType.PERSIST })
     @JoinColumn(name = "default_floor_id", nullable = true)
     private Floor default_floor;
@@ -76,5 +84,7 @@ public class UserEntity {
         this.defaultViewMode = other.getDefaultViewMode();
         this.mfaEnabled = other.isMfaEnabled();
         // Do not copy mfaSecret for security reasons
+        this.department = other.getDepartment();
+        this.active = other.isActive();
     }
 }

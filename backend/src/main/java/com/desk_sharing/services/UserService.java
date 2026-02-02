@@ -83,6 +83,12 @@ public class UserService  {
         if (user == null) {
             throw new UsernameNotFoundException("Username not found after login.");
         }
+        
+        // Check if user account is deactivated
+        if (!user.isActive()) {
+            logging("Login attempt rejected for deactivated user: " + email);
+            throw new BadCredentialsException("Account is deactivated. Please contact an administrator.");
+        }
 
         // Check if MFA is enabled for this user
         if (user.isMfaEnabled()) {
@@ -237,6 +243,12 @@ public class UserService  {
         if(userDto.getSurname() != null) {
             userFromDB.setSurname(userDto.getSurname());
         }
+        
+        // Update department if provided
+        if(userDto.getDepartment() != null) {
+            userFromDB.setDepartment(userDto.getDepartment());
+        }
+        
         userFromDB.setVisibility(userDto.isVisibility());
 
         setAdmin(userFromDB, userDto.isAdmin());

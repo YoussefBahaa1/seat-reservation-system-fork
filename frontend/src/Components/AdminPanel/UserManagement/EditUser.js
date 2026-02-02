@@ -1,10 +1,11 @@
-import { FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, Checkbox } from '@mui/material';
+import { FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, Checkbox, Button, Divider, Box } from '@mui/material';
 import { toast } from 'react-toastify';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from "react-i18next";
 import UserTable from './UserTable';
 import { putRequest, getRequest, postRequest } from '../../RequestFunctions/RequestFunctions';
 import LayoutModalAdmin from '../../Templates/LayoutModalAdmin';
+import isEmail from '../../misc/isEmail';
 
 export default function EditUser({ isOpen, onClose }) {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -15,10 +16,15 @@ export default function EditUser({ isOpen, onClose }) {
   const [email, setEmail] = useState('');
   const [name, setName ] = useState('');
   const [surname, setSurname] = useState('');
+  const [department, setDepartment] = useState('');
   //const [visibility, setVisibility] = useState();
   const [isAdmin, setIsAdmin] = useState();
   const [isEmployee, setIsEmployee] = useState();
   const [isServicePersonnel, setIsServicePersonnel] = useState();
+  // Password reset state
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
   const getAllUsers = useCallback(
     async () => {
@@ -41,6 +47,11 @@ export default function EditUser({ isOpen, onClose }) {
       toast.error(t('fields_not_empty'));
       return false;
     }
+    // Validate email format
+    if(!isEmail(email.trim())){
+      toast.error(t('invalidEmail'));
+      return false;
+    }
 
     putRequest(
       `${process.env.REACT_APP_BACKEND_URL}/admin/users`,
@@ -55,6 +66,7 @@ export default function EditUser({ isOpen, onClose }) {
         'email': email,
         'name': name,
         'surname': surname,
+        'department': department,
         'admin': isAdmin,
         'employee': isEmployee,
         'servicePersonnel': isServicePersonnel,
@@ -75,6 +87,11 @@ export default function EditUser({ isOpen, onClose }) {
       setIsAdmin(toBeEditedUser.admin);
       setIsEmployee(toBeEditedUser.employee);
       setIsServicePersonnel(toBeEditedUser.servicePersonnel);
+      setDepartment(toBeEditedUser.department || '');
+      // Reset password fields when opening edit modal
+      setShowResetPassword(false);
+      setNewPassword('');
+      setConfirmPassword('');
       //setVisibility(toBeEditedUser.visibility);
       setIsEditUserOpen(true);
     } catch (e) {
@@ -96,6 +113,31 @@ export default function EditUser({ isOpen, onClose }) {
       () => {
         toast.error('Failed to disable MFA');
       }
+    );
+  }
+
+  function resetUserPassword() {
+    if (!newPassword || !confirmPassword) {
+      toast.error(t('fields_not_empty'));
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error(t('passwordMismatch'));
+      return;
+    }
+    putRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/admin/users/${id}/password/reset`,
+      headers.current,
+      () => {
+        toast.success(t('passwordResetSuccess'));
+        setNewPassword('');
+        setConfirmPassword('');
+        setShowResetPassword(false);
+      },
+      () => {
+        toast.error(t('passwordResetFailed'));
+      },
+      JSON.stringify({ newPassword: newPassword })
     );
   }
 
@@ -152,6 +194,17 @@ export default function EditUser({ isOpen, onClose }) {
           />
         </FormControl>
         <br/><br/>
+        <FormControl id='editUserModal-setDepartment' size='small' fullWidth variant='standard'>
+          <TextField
+            id='standard-adornment-department'
+            label={t('department')}
+            size='small'
+            type='text'
+            value={department}
+            onChange={(e)=>setDepartment(e.target.value)}
+          />
+        </FormControl>
+        <br/><br/>
         <FormControl id='editUserModal-setIsAdmin'>
           <FormLabel id='ratioIsAdmin'>{t('admin')}</FormLabel>
             <RadioGroup
@@ -196,6 +249,51 @@ export default function EditUser({ isOpen, onClose }) {
             label={t('servicePersonnel')}
           />
         </FormControl>
+        
+        {/* Password Reset Section */}
+        <br/><br/>
+        <Divider />
+        <br/>
+        <Box>
+          <Button 
+            variant="outlined" 
+            onClick={() => setShowResetPassword(!showResetPassword)}
+            size="small"
+          >
+            {t('resetPassword')}
+          </Button>
+          {showResetPassword && (
+            <Box sx={{ mt: 2 }}>
+              <FormControl size='small' fullWidth variant='standard' sx={{ mb: 2 }}>
+                <TextField
+                  label={t('newPassword')}
+                  size='small'
+                  type='password'
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </FormControl>
+              <FormControl size='small' fullWidth variant='standard' sx={{ mb: 2 }}>
+                <TextField
+                  label={t('confirmPassword')}
+                  size='small'
+                  type='password'
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </FormControl>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                onClick={resetUserPassword}
+                size="small"
+              >
+                {t('confirmResetPassword')}
+              </Button>
+            </Box>
+          )}
+        </Box>
+        
         {/*<br/><br/>
         <FormControl>
           <FormLabel id='ratioIsVisible'>{t('visibility')}</FormLabel>
