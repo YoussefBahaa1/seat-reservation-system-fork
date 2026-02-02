@@ -5,7 +5,7 @@ import { Sidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
 import { RiAdminFill } from "react-icons/ri";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FaLock, FaBookmark } from "react-icons/fa";
+import { FaLock, FaBookmark, FaStar } from "react-icons/fa";
 import ChangePassword from "./ChangePassword";
 import LogoutConfirmationModal from "./LogoutConfirmationModal";
 import MfaSettings from "./MfaSettings";
@@ -51,6 +51,9 @@ const SidebarComponent = () => {
       //setSeriesSubMenuOpen(false);
       
     }
+    if (location.pathname === '/favourites') {
+      setActiveTab('favourites');
+    }
     if (location.pathname === '/manageseries' || location.pathname === '/createseries') {
       setActiveTab('series');
       //setSeriesSubMenuOpen(true);
@@ -83,6 +86,10 @@ const SidebarComponent = () => {
 
       case 'freeDesks':
         navigate("/freeDesks", { replace: true });
+        break;
+
+      case 'favourites':
+        navigate("/favourites", { replace: true });
         break;
 
       case 'roomSearch':
@@ -203,6 +210,15 @@ const SidebarComponent = () => {
           >
 
             {t('bookings')}
+          </MenuItem>
+
+          <MenuItem
+            id='sidebar_favourites'
+            active={activeTab === 'favourites'}
+            icon={<FaStar />}
+            onClick={() => handleClick('favourites')}
+          >
+            {t('favourites')}
           </MenuItem>
 
           {/*Series*/}
