@@ -261,6 +261,7 @@
     ,"ERROR_USER_NOT_FOUND_IN_AD":"User was not found in ad."
     ,"ERROR_USER_NOT_FOUND_IN_DAO":"User was not found in local database."
     ,"ERROR_WRONG_PW":"Wrong Password."
+    ,"ERROR_USER_DEACTIVATED":"Account is deactivated. Please contact an administrator."
 
     ,"mfaRequired":"MFA verification required"
     ,"mfaCodeLabel":"Enter 6-digit code from your authenticator app"

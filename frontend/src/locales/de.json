@@ -261,6 +261,7 @@
     ,"ERROR_USER_NOT_FOUND_IN_AD":"Nutzer wurde nicht im AD gefunden."
     ,"ERROR_USER_NOT_FOUND_IN_DAO":"Nutzer wurde nicht in lokaled DB gefunden."
     ,"ERROR_WRONG_PW":"Falsches Passwort."
+    ,"ERROR_USER_DEACTIVATED":"Konto ist deaktiviert. Bitte wenden Sie sich an einen Administrator."
 
     ,"mfaRequired":"MFA-Verifizierung erforderlich"
     ,"mfaCodeLabel":"Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein"
