@@ -80,7 +80,7 @@ public class MfaController {
         
         userService.logging("MFA verification successful for user: " + email);
         
-        return new ResponseEntity<>(
+        return ResponseEntity.ok(
             new AuthResponseDTO(
                 accessToken,
                 user.getEmail(),
@@ -88,9 +88,11 @@ public class MfaController {
                 user.getName(),
                 user.getSurname(),
                 user.isAdmin(),
-                user.isVisibility()
-            ),
-            HttpStatus.OK
+                user.isVisibility(),
+                "MFA_SUCCESS",
+                false,
+                ""
+            )
         );
     }
     
@@ -106,7 +108,7 @@ public class MfaController {
         
         UserEntity user = userRepository.findByEmail(email);
         if (user == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         
         // Generate a new secret

@@ -12,7 +12,6 @@ public class AuthResponseDTO {
     private final String surname;
     private final boolean admin;
     private final boolean visibility;
-    private final String visibilityMode;
     private final String message;
     
     // MFA fields
@@ -20,7 +19,7 @@ public class AuthResponseDTO {
     private final String mfaToken;
 
     public static AuthResponseDTO FailRepsonse(final String email, final String message) {
-        return new AuthResponseDTO("", email, 0, "", "", false, false, "FULL_NAME", message, false, null);
+ return new AuthResponseDTO("", email, 0, "", "", false, false, message, false, "");
     }
 
     /**
@@ -33,6 +32,7 @@ public class AuthResponseDTO {
         final String surname,
         final boolean admin,
         final boolean visibility,
+        final String visibilityMode,
         final String mfaToken
     ) {
         return new AuthResponseDTO("", email, id, name, surname, admin, visibility, "MFA_REQUIRED", true, mfaToken);
@@ -63,21 +63,5 @@ public class AuthResponseDTO {
         this.message = message;
         this.requiresMfa = requiresMfa;
         this.mfaToken = mfaToken;
-    }
-
-    /**
-     * Success response constructor (backward compatible)
-     */
-    public AuthResponseDTO(
-        final String accessToken, 
-        final String email, 
-        final int id, 
-        final String name, 
-        final String surname, 
-        final boolean admin, 
-        final boolean visibility,
-        final String visibilityMode
-    ) {
-        this(accessToken, email, id, name, surname, admin, visibility, visibilityMode, "SUCCESS", false, null);
     }
 }

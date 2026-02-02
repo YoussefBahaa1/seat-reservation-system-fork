@@ -49,6 +49,7 @@ function UserTable({ users, onAction, action, actionRenderer, t, onDisableMfa })
               <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t("activity")}</TableCell>
               <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t('role')}</TableCell>
               <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>MFA</TableCell>
+              <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>Visibility</TableCell>
               <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }} colSpan={2}>{t("action")}</TableCell>
             </TableRow>
           </TableHead>
@@ -90,6 +91,13 @@ function UserTable({ users, onAction, action, actionRenderer, t, onDisableMfa })
                   ) : (
                     <Chip label={t('mfaDisabled')} color="default" size="small" variant="outlined" />
                   )}
+                </TableCell>
+                <TableCell sx={{textAlign: 'center', fontSize:14, fontWeight:400 }} >
+                  {row.visibilityMode === 'ANONYMOUS'
+                    ? t('anonymous')
+                    : row.visibilityMode === 'ABBREVIATION'
+                    ? t('abbreviationCap')
+                    : t('name')}
                 </TableCell>
                 <TableCell sx={{textAlign: 'center', fontSize:14, width:'20%' }} component="th" scope="row">
                   <Button onClick={() => onAction(row.id)}>

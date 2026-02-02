@@ -91,6 +91,7 @@ public class UserService  {
         }
 
         // Check if MFA is enabled for this user
+        VisibilityMode mode = user.getVisibilityMode() != null ? user.getVisibilityMode() : VisibilityMode.FULL_NAME;
         if (user.isMfaEnabled()) {
             // Generate an MFA-pending token instead of a full access token
             final String mfaToken = jwtGenerator.generateMfaPendingToken(email);
@@ -102,14 +103,13 @@ public class UserService  {
                 user.getSurname(),
                 user.isAdmin(),
                 user.isVisibility(),
+                mode.name(),
                 mfaToken
             );
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         final String token = jwtGenerator.generateToken(authentication);
-
-        VisibilityMode mode = user.getVisibilityMode() != null ? user.getVisibilityMode() : VisibilityMode.FULL_NAME;
 
         return new AuthResponseDTO(
             token, 
@@ -119,7 +119,9 @@ public class UserService  {
             user.getSurname(),
             user.isAdmin(),
             user.isVisibility(),
-            mode.name()
+            "SUCCESS",
+            false,
+            ""
         );
     }
 
