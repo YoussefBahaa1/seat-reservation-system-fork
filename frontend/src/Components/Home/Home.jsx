@@ -21,27 +21,22 @@ const Home = () => {
   const [selectedDate, setSelectedDate] = useState(moment().startOf('day').toDate());
   const [dayEvents, setDayEvents] = useState([]);
   const [mode, setMode] = useState(() => sessionStorage.getItem('homeDayMode') || 'desk');
-  const [selectedRooms, setSelectedRooms] = useState(() => {
+  const [selectedDeskFilters, setSelectedDeskFilters] = useState(() => {
     try {
-      return JSON.parse(sessionStorage.getItem('homeDayRooms') || '[]');
+      return JSON.parse(sessionStorage.getItem('homeDayDeskFilters') || '[]');
     } catch {
       return [];
     }
   });
-  const [selectedDeskTypes, setSelectedDeskTypes] = useState(() => {
+  const [selectedParkingFilters, setSelectedParkingFilters] = useState(() => {
     try {
-      return JSON.parse(sessionStorage.getItem('homeDayDeskTypes') || '[]');
+      return JSON.parse(sessionStorage.getItem('homeDayParkingFilters') || '[]');
     } catch {
       return [];
     }
   });
-  const [selectedParkingTypes, setSelectedParkingTypes] = useState(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem('homeDayParkingTypes') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  const [rooms, setRooms] = useState([]);
+  const [equipments, setEquipments] = useState([]);
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
 
   const handleSelectSlot = ({ start }) => {
@@ -109,75 +104,97 @@ const Home = () => {
   }, [i18n.language]);
 
   useEffect(() => {
-    const dayString = moment(selectedDate).format('YYYY-MM-DD');
+    const dayString = moment(selectedDate).format('DD.MM.YYYY');
     getRequest(
       `${process.env.REACT_APP_BACKEND_URL}/bookings/day/${dayString}`,
       headers.current,
       (data) => setDayEvents(Array.isArray(data) ? data : []),
       (errorCode) => {
         console.log('Error fetching day bookings:', errorCode);
-        toast.error(t(errorCode + ''));
+        if (errorCode !== 400) {
+          toast.error(t(errorCode + ''));
+        }
+        setDayEvents([]);
       }
     );
   }, [selectedDate, headers, t]);
 
   useEffect(() => {
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/rooms`,
+      headers.current,
+      (data) => setRooms(Array.isArray(data) ? data : []),
+      (errorCode) => {
+        console.log('Error fetching rooms:', errorCode);
+      }
+    );
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/equipments`,
+      headers.current,
+      (data) => setEquipments(Array.isArray(data) ? data : []),
+      (errorCode) => {
+        console.log('Error fetching equipments:', errorCode);
+      }
+    );
+  }, [headers]);
+
+  useEffect(() => {
     sessionStorage.setItem('homeDayMode', mode);
-    sessionStorage.setItem('homeDayRooms', JSON.stringify(selectedRooms));
-    sessionStorage.setItem('homeDayDeskTypes', JSON.stringify(selectedDeskTypes));
-    sessionStorage.setItem('homeDayParkingTypes', JSON.stringify(selectedParkingTypes));
-  }, [mode, selectedRooms, selectedDeskTypes, selectedParkingTypes]);
+    sessionStorage.setItem('homeDayDeskFilters', JSON.stringify(selectedDeskFilters));
+    sessionStorage.setItem('homeDayParkingFilters', JSON.stringify(selectedParkingFilters));
+  }, [mode, selectedDeskFilters, selectedParkingFilters]);
 
   const roomOptions = useMemo(() => {
-    const map = new Map();
-    dayEvents.forEach((event) => {
-      if (event.roomId && event.roomRemark) {
-        map.set(String(event.roomId), event.roomRemark);
-      }
-    });
-    return Array.from(map.entries()).map(([id, label]) => ({
-      value: `room:${id}`,
-      label
-    }));
-  }, [dayEvents]);
+    if (mode !== 'desk') return [];
+    return rooms
+      .filter((room) => room?.id && room?.remark)
+      .map((room) => ({
+        value: `room:${room.id}`,
+        label: room.remark
+      }));
+  }, [rooms, mode]);
 
   const typeOptions = useMemo(() => {
-    const set = new Set();
-    dayEvents.forEach((event) => {
-      const typeValue = mode === 'desk' ? event.workspaceType : event.parkingType;
-      if (typeValue) {
-        set.add(typeValue);
-      }
-    });
-    return Array.from(set.values()).map((typeValue) => ({
-      value: `type:${typeValue}`,
-      label: t(typeValue)
-    }));
-  }, [dayEvents, mode, t]);
+    if (mode === 'desk') {
+      return equipments
+        .filter((equipment) => equipment?.equipmentName)
+        .map((equipment) => ({
+          value: `type:${equipment.equipmentName}`,
+          label: t(equipment.equipmentName)
+        }));
+    }
+    return [];
+  }, [equipments, mode, t]);
 
-  const selectedValues = useMemo(() => {
-    const roomValues = selectedRooms.map((roomId) => `room:${roomId}`);
-    const typeValues =
-      mode === 'desk'
-        ? selectedDeskTypes.map((typeValue) => `type:${typeValue}`)
-        : selectedParkingTypes.map((typeValue) => `type:${typeValue}`);
-    return [...roomValues, ...typeValues];
-  }, [selectedRooms, selectedDeskTypes, selectedParkingTypes, mode]);
+  const selectedFilters = useMemo(() => {
+    if (mode === 'desk') return selectedDeskFilters;
+    return selectedParkingFilters.filter((value) => value.startsWith('type:'));
+  }, [mode, selectedDeskFilters, selectedParkingFilters]);
+
+  const selectedValues = selectedFilters;
 
   const handleFilterChange = (event) => {
-    const values = event.target.value;
-    const nextRooms = values
-      .filter((value) => value.startsWith('room:'))
-      .map((value) => value.replace('room:', ''));
-    const nextTypes = values
-      .filter((value) => value.startsWith('type:'))
-      .map((value) => value.replace('type:', ''));
-
-    setSelectedRooms(nextRooms);
+    const values =
+      typeof event.target.value === 'string'
+        ? event.target.value.split(',')
+        : event.target.value;
     if (mode === 'desk') {
-      setSelectedDeskTypes(nextTypes);
+      setSelectedDeskFilters(values);
     } else {
-      setSelectedParkingTypes(nextTypes);
+      setSelectedParkingFilters(values.filter((value) => value.startsWith('type:')));
+    }
+  };
+
+  const toggleFilterValue = (value) => {
+    if (mode === 'desk') {
+      setSelectedDeskFilters((prev) =>
+        prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
+      );
+    } else {
+      setSelectedParkingFilters((prev) => {
+        if (!value.startsWith('type:')) return prev;
+        return prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value];
+      });
     }
   };
 
@@ -191,11 +208,16 @@ const Home = () => {
   }, []);
 
   const filteredDayEvents = useMemo(() => {
-    const selectedRoomSet = new Set(selectedRooms.map(String));
-    const selectedTypeSet =
-      mode === 'desk'
-        ? new Set(selectedDeskTypes)
-        : new Set(selectedParkingTypes);
+    const selectedRoomSet = new Set(
+      selectedFilters
+        .filter((value) => value.startsWith('room:'))
+        .map((value) => value.replace('room:', ''))
+    );
+    const selectedTypeSet = new Set(
+      selectedFilters
+        .filter((value) => value.startsWith('type:'))
+        .map((value) => value.replace('type:', ''))
+    );
 
     return dayEvents
       .filter((event) => event.mode === mode)
@@ -217,7 +239,7 @@ const Home = () => {
         const typeMatch = typeValue && selectedTypeSet.has(typeValue);
         return roomMatch || typeMatch;
       });
-  }, [dayEvents, mode, selectedRooms, selectedDeskTypes, selectedParkingTypes]);
+  }, [dayEvents, mode, selectedFilters]);
 
   const groupedDayEvents = useMemo(() => {
     const groups = timeBlocks.map((block) => ({ ...block, events: [] }));
@@ -286,11 +308,17 @@ const Home = () => {
       <span className="home-rbc-toolbar-label">{toolbar.label}</span>
       <span className="home-rbc-toolbar-right">
         <Tooltip title={mode === 'desk' ? t('switchToParking') : t('switchToDesk')}>
-          <IconButton
-            className="home-mode-toggle"
-            onClick={() => setMode(mode === 'desk' ? 'parking' : 'desk')}
-            aria-label={mode === 'desk' ? t('switchToParking') : t('switchToDesk')}
-          >
+            <IconButton
+              className="home-mode-toggle"
+              onClick={() => {
+                if (mode === 'desk') {
+                  setMode('parking');
+                } else {
+                  setMode('desk');
+                }
+              }}
+              aria-label={mode === 'desk' ? t('switchToParking') : t('switchToDesk')}
+            >
             {mode === 'desk' ? <DirectionsCarIcon /> : <DesktopWindowsIcon />}
           </IconButton>
         </Tooltip>
@@ -335,46 +363,50 @@ const Home = () => {
       <div className="home-calendar-footer">
         <div className="home-calendar-controls">
           <FormControl size="small" className="home-filter-select">
-            <InputLabel>{t('filter')}</InputLabel>
-            <Select
+          <InputLabel>{t('filters')}</InputLabel>
+          <Select
               multiple
               value={selectedValues}
               onChange={handleFilterChange}
-              label={t('filter')}
-              renderValue={(selected) =>
-                selected
-                  .map((value) => {
-                    if (value.startsWith('room:')) {
-                      const roomId = value.replace('room:', '');
-                      const room = roomOptions.find((option) => option.value === value);
-                      return room ? room.label : roomId;
-                    }
-                    if (value.startsWith('type:')) {
-                      const typeValue = value.replace('type:', '');
-                      const type = typeOptions.find((option) => option.value === value);
-                      return type ? type.label : typeValue;
-                    }
-                    return value;
-                  })
-                  .join(', ')
-              }
-            >
-              <ListSubheader>{t('rooms')}</ListSubheader>
-              {roomOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  <Checkbox checked={selectedValues.includes(option.value)} />
-                  <ListItemText primary={option.label} />
-                </MenuItem>
-              ))}
-              <ListSubheader>
-                {mode === 'desk' ? t('deskTypes') : t('parkingTypes')}
-              </ListSubheader>
-              {typeOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  <Checkbox checked={selectedValues.includes(option.value)} />
-                  <ListItemText primary={option.label} />
-                </MenuItem>
-              ))}
+            label={t('filters')}
+            renderValue={(selected) =>
+              selected
+                .map((value) => {
+                  if (value.startsWith('room:')) {
+                    const roomId = value.replace('room:', '');
+                    const room = roomOptions.find((option) => option.value === value);
+                    return room ? room.label : roomId;
+                  }
+                  if (value.startsWith('type:')) {
+                    const typeValue = value.replace('type:', '');
+                    const type = typeOptions.find((option) => option.value === value);
+                    return type ? type.label : typeValue;
+                  }
+                  return value;
+                })
+                .join(', ')
+            }
+          >
+            {mode === 'desk' && (
+              <>
+                <ListSubheader>{t('rooms')}</ListSubheader>
+                {roomOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value} onClick={() => toggleFilterValue(option.value)}>
+                    <Checkbox checked={selectedValues.includes(option.value)} />
+                    <ListItemText primary={option.label} />
+                  </MenuItem>
+                ))}
+              </>
+            )}
+            <ListSubheader>
+              {mode === 'desk' ? t('deskTypes') : t('parkingTypes')}
+            </ListSubheader>
+            {typeOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value} onClick={() => toggleFilterValue(option.value)}>
+                <Checkbox checked={selectedValues.includes(option.value)} />
+                <ListItemText primary={option.label} />
+              </MenuItem>
+            ))}
             </Select>
           </FormControl>
         </div>

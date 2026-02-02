@@ -1,6 +1,8 @@
 package com.desk_sharing.controllers;
 
 import java.sql.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
@@ -148,10 +150,16 @@ public class BookingController {
     public ResponseEntity<List<BookingDayEventDTO>> getBookingsForDay(@PathVariable("date") String date) {
         userService.logging("getBookingsForDay( " + date + " )");
         try {
-            Date parsedDate = Date.valueOf(date);
+            Date parsedDate;
+            try {
+                LocalDate parsedLocalDate = LocalDate.parse(date, DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+                parsedDate = Date.valueOf(parsedLocalDate);
+            } catch (DateTimeParseException e) {
+                parsedDate = Date.valueOf(date);
+            }
             List<BookingDayEventDTO> bookings = bookingService.getBookingEventsForDate(parsedDate);
             return new ResponseEntity<>(bookings, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | DateTimeParseException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
