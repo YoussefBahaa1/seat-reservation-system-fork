@@ -4,6 +4,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -40,14 +41,25 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             }
             
             String username = tokenGenerator.getUsernameFromJWT(token);
-            UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
-            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                userDetails, 
-                null, //credentials ???
-                userDetails.getAuthorities()
-            );
-            authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            try {
+                UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+                if (!userDetails.isEnabled()) {
+                    SecurityContextHolder.clearContext();
+                    writeUnauthorized(response, "Account is deactivated. Please contact an administrator.");
+                    return;
+                }
+                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                    userDetails, 
+                    null, //credentials ???
+                    userDetails.getAuthorities()
+                );
+                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            } catch (UsernameNotFoundException ex) {
+                SecurityContextHolder.clearContext();
+                writeUnauthorized(response, "User not found");
+                return;
+            }
         }
         filterChain.doFilter(request, response);
     }
@@ -58,5 +70,16 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             return bearerToken.substring(7, bearerToken.length());
         }
         return null;
+    }
+
+    private void writeUnauthorized(HttpServletResponse response, String message) throws IOException {
+        if (response.isCommitted()) {
+            return;
+        }
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write("{\"error\":\"unauthorized\",\"message\":\"" + message + "\"}");
+        response.getWriter().flush();
     }
 }
