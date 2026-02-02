@@ -52,6 +52,7 @@
     "chooseDate": "Choose a date for a desk",
     "desk": "Desk",
     "chooseDesk": "Choose a desk",
+    "home": "Home",
 
     "chosenDate": "Chosen Date",
     "groundFloor": "Ground Floor",
@@ -220,6 +221,19 @@
     ,"helpEditWorkstation":"Please choose an existing room with an click on it. After this choose the workstation to be changed. After this take the changes you want."
     ,"helpDeleteWorkstation":"Please choose an existing room with an click on it. After this choose an workstation to delete it."
     ,"bookingsSum":"Bookings sum"
+    ,"noMatchingBookingsForSelectedFilter":"No matching bookings for selected filter."
+    ,"filters":"Filters"
+    ,"desksTitle":"Desks"
+    ,"parkingsTitle":"Parkings"
+    ,"filter":"Filter"
+    ,"rooms":"Rooms"
+    ,"deskTypes":"Desk types"
+    ,"parkingTypes":"Parking types"
+    ,"parking":"Parking"
+    ,"switchToParking":"Switch to parking"
+    ,"switchToDesk":"Switch to desk"
+    ,"selectedDateLabel":"Selected date"
+    ,"addBooking":"Add booking"
     ,"enableFilter":"Enable Filter"
     ,"column":"Column"
     ,"condition":"Condition"
