@@ -8,9 +8,9 @@ import EditRoom from './Room/EditRoom';
 import AddWorkstation from './Workstation/AddWorkstation';
 import EditWorkstation from './Workstation/EditWorkstation';
 import DeleteWorkstation from './Workstation/DeleteWorkstation';
-import AddEmployee from './UserManagement/AddEmployee';
-import DeleteEmployee from './UserManagement/DeleteEmployee';
-import EditEmployee from './UserManagement/EditEmployee';
+import AddUser from './UserManagement/AddUser';
+import DeleteUser from './UserManagement/DeleteUser';
+import EditUser from './UserManagement/EditUser';
 import OverviewBookings from './Bookings/OverviewBookings';
 import { useTranslation } from 'react-i18next';
 import {BootstrapEmployeeDialog, BootstrapWorkstationDialog, BootstrapDialog } from '../Bootstrap';
@@ -18,7 +18,7 @@ import LayoutPageAdmin from '../Templates/LayoutPageAdmin';
 
 const AdminPage = () => {
   const { t } = useTranslation();
-  const [showEmployeeButtons, setShowEmployeeButtons] = useState(false);
+  const [showUserButtons, setShowUserButtons] = useState(false);
   const [showWorkstationButtons, setShowWorkstationButtons] = useState(false);
   const [showBookingButtons, setShowBookingButtons] = useState(false);
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
@@ -27,15 +27,15 @@ const AdminPage = () => {
   const [isAddWorkstationOpen, setIsAddWorkstationOpen] = useState(false);
   const [isEditWorkstationOpen, setIsEditWorkstationOpen] = useState(false);
   const [isDeleteWorkstationOpen, setIsDeleteWorkstationOpen] = useState(false);
-  const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
-  const [isEditEmployeeOpen, setIsEditEmployeeOpen] = useState(false);
-  const [isDeleteEmployeeOpen, setIsDeleteEmployeeOpen] = useState(false);
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isEditUserOpen, setIsEditUserOpen] = useState(false);
+  const [isDeleteUserOpen, setIsDeleteUserOpen] = useState(false);
 
   const [isOverviewBookingsOpen, setIsOverviewBookingsOpen] = useState(false);
 
-  const toggleEmployeeButtons = () => {
-    setShowEmployeeButtons(!showEmployeeButtons);
-    if (showEmployeeButtons === false) {
+  const toggleUserButtons = () => {
+    setShowUserButtons(!showUserButtons);
+    if (showUserButtons === false) {
       setShowWorkstationButtons(false);
       setShowBookingButtons(false);
     }
@@ -44,7 +44,7 @@ const AdminPage = () => {
   const toggleWorkstationButtons = () => {
     setShowWorkstationButtons(!showWorkstationButtons);
     if (showWorkstationButtons === false) {
-      setShowEmployeeButtons(false);
+      setShowUserButtons(false);
       setShowBookingButtons(false);
     }
   };
@@ -53,7 +53,7 @@ const AdminPage = () => {
     setShowBookingButtons(!showBookingButtons);
     setIsOverviewBookingsOpen(!isOverviewBookingsOpen);
     if (showBookingButtons === false) {
-      setShowEmployeeButtons(false);
+      setShowUserButtons(false);
       setShowWorkstationButtons(false);
     }
   };
@@ -64,9 +64,9 @@ const AdminPage = () => {
   const toggleAddWorkstationModal = () => setIsAddWorkstationOpen(!isAddWorkstationOpen);
   const toggleEditWorkstationModal = () => setIsEditWorkstationOpen(!isEditWorkstationOpen);
   const toggleDeleteWorkstationModal = () => setIsDeleteWorkstationOpen(!isDeleteWorkstationOpen);
-  const toggleAddEmployeeModal = () => setIsAddEmployeeOpen(!isAddEmployeeOpen);
-  const toggleEditEmployeeModal = () => setIsEditEmployeeOpen(!isEditEmployeeOpen);
-  const toggleDeleteEmployeeModal = () => setIsDeleteEmployeeOpen(!isDeleteEmployeeOpen);
+  const toggleAddUserModal = () => setIsAddUserOpen(!isAddUserOpen);
+  const toggleEditUserModal = () => setIsEditUserOpen(!isEditUserOpen);
+  const toggleDeleteUserModal = () => setIsDeleteUserOpen(!isDeleteUserOpen);
   
   return (
     <LayoutPageAdmin
@@ -75,7 +75,7 @@ const AdminPage = () => {
     >
       
       <div className='user-management-container'>
-        <button id='userManagement' className='user-management-button' onClick={toggleEmployeeButtons}>
+        <button id='userManagement' className='user-management-button' onClick={toggleUserButtons}>
           {t('userManagement')}
         </button>
         <FaAddressBook className='logo' />
@@ -93,15 +93,15 @@ const AdminPage = () => {
         <FaBook className='logo' />
       </div>
     
-    <div className={`button-wrapper ${showEmployeeButtons ? 'visible' : ''}`}>
-      <button id='addEmployee' className='my-button' onClick={toggleAddEmployeeModal}>
-        {t('addEmployee')}
+    <div className={`button-wrapper ${showUserButtons ? 'visible' : ''}`}>
+      <button id='addUser' className='my-button' onClick={toggleAddUserModal}>
+        {t('addUser')}
       </button>
-      <button  id='deleteEmployee' className='my-button' onClick={toggleDeleteEmployeeModal}>
-        {t('deleteEmployee')}
+      <button id='deleteUser' className='my-button' onClick={toggleDeleteUserModal}>
+        {t('deleteUser')}
       </button>
-      <button id='editEmployee' className='my-button' onClick={toggleEditEmployeeModal}>
-        {t('editEmployee')}
+      <button id='editUser' className='my-button' onClick={toggleEditUserModal}>
+        {t('editUser')}
       </button>
     </div>
     <div className={`button-wrapper ${showWorkstationButtons ? 'visible' : ''}`}>
@@ -145,16 +145,16 @@ const AdminPage = () => {
         <DeleteWorkstation isOpen={isDeleteWorkstationOpen} onClose={setIsDeleteWorkstationOpen.bind(null, !isDeleteWorkstationOpen)} />
       </BootstrapDialog>
 
-      <BootstrapWorkstationDialog onClose={setIsAddEmployeeOpen.bind(null, !isAddEmployeeOpen)} aria-labelledby='customized-dialog-title' open={isAddEmployeeOpen}>
-        <AddEmployee isOpen={isAddEmployeeOpen} onClose={setIsAddEmployeeOpen.bind(null, !isAddEmployeeOpen)} />
+      <BootstrapWorkstationDialog onClose={setIsAddUserOpen.bind(null, !isAddUserOpen)} aria-labelledby='customized-dialog-title' open={isAddUserOpen}>
+        <AddUser isOpen={isAddUserOpen} onClose={setIsAddUserOpen.bind(null, !isAddUserOpen)} />
       </BootstrapWorkstationDialog>
 
-      <BootstrapEmployeeDialog onClose={setIsEditEmployeeOpen.bind(null, !isEditEmployeeOpen)} aria-labelledby='customized-dialog-title' open={isEditEmployeeOpen}>
-        <EditEmployee isOpen={isEditEmployeeOpen} onClose={setIsEditEmployeeOpen.bind(null, !isEditEmployeeOpen)} />
+      <BootstrapEmployeeDialog onClose={setIsEditUserOpen.bind(null, !isEditUserOpen)} aria-labelledby='customized-dialog-title' open={isEditUserOpen}>
+        <EditUser isOpen={isEditUserOpen} onClose={setIsEditUserOpen.bind(null, !isEditUserOpen)} />
       </BootstrapEmployeeDialog>
 
-      <BootstrapEmployeeDialog onClose={setIsDeleteEmployeeOpen.bind(null, !isDeleteEmployeeOpen)} aria-labelledby='customized-dialog-title' open={isDeleteEmployeeOpen}>
-        <DeleteEmployee  onClose={setIsDeleteEmployeeOpen.bind(null, !isDeleteEmployeeOpen)} isOpen={isDeleteEmployeeOpen} />
+      <BootstrapEmployeeDialog onClose={setIsDeleteUserOpen.bind(null, !isDeleteUserOpen)} aria-labelledby='customized-dialog-title' open={isDeleteUserOpen}>
+        <DeleteUser onClose={setIsDeleteUserOpen.bind(null, !isDeleteUserOpen)} isOpen={isDeleteUserOpen} />
       </BootstrapEmployeeDialog>
 
       <BootstrapEmployeeDialog onClose={setIsOverviewBookingsOpen.bind(null, !isOverviewBookingsOpen)} aria-labelledby='customized-dialog-title' open={isOverviewBookingsOpen}>

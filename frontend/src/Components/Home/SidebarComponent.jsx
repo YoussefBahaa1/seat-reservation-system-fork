@@ -199,7 +199,7 @@ const SidebarComponent = () => {
             {t('bookings')}
           </MenuItem>
 
-          {/*Search*/}
+          {/*Series*/}
           <SubMenu active={activeTab === 'series'} icon={<IoIosAlbums />} label={t('series')}>
             <MenuItem id='sidebar_manageseries' icon={<IoIosCheckbox />} onClick={() => {navigate('/manageseries', { replace: true });}}>
               {t('manage')}
@@ -209,7 +209,7 @@ const SidebarComponent = () => {
             </MenuItem>
           </SubMenu> 
 
-          {/*Settings*/}
+          {/*Search*/}
           <SubMenu id='sidebar_search0' icon={<IoSearchSharp />}  label={t('search')}>
             <MenuItem id='sidebar_search' icon={<MeetingRoomIcon/>} onClick={
               () => handleClick('roomSearch')}
@@ -228,7 +228,8 @@ const SidebarComponent = () => {
               {t('colleagues')}
             </MenuItem>
           </SubMenu>
-
+          
+          {/*Settings*/}
           <SubMenu id='sidebar_settings0' icon={<IoIosSettings/>} label={t('settings')}>
             <MenuItem
               id='sidebar_language'

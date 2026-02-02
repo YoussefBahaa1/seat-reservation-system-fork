@@ -1,31 +1,33 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Chip } from '@mui/material';
-import FilterEmployee from './FilterEmployee';
+import FilterUser from './FilterUser';
 
-function EmployeeTable({ employees, onAction, action, t, onDisableMfa }) {
+function UserTable({ users, onAction, action, t, onDisableMfa }) {
   const [filterFunction, setFilterFunction] = React.useState(() => (_)=>{return true});
 
-  const filteredEmployees = employees.filter(filterFunction);  
+  const filteredUsers = users.filter(filterFunction);
   
   return (
     <>
-      <FilterEmployee setFilterFunction={setFilterFunction} />
+      <FilterUser setFilterFunction={setFilterFunction} />
 
       <TableContainer component={Paper} style={{ maxHeight: '400px', overflow: 'auto' }}>
-        <Table stickyHeader sx={{ minWidth: 550, marginTop: 1, maxHeight:'400px' }}>
+        <Table stickyHeader sx={{ minWidth: 700, marginTop: 1, maxHeight:'400px' }}>
           <TableHead sx={{backgroundColor: 'green', color:'white'}}>
             <TableRow>
               <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white'}}>{t("email")}</TableCell>
               <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t("name")}</TableCell>
               <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t("surname")}</TableCell>
               <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t("admin")}</TableCell>
+              <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t("employee")}</TableCell>
+              <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t("servicePersonnel")}</TableCell>
               <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>MFA</TableCell>
               <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t("visibility")}</TableCell>
               <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }} colSpan={2}>{t("action")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredEmployees.map((row) => (
+            {filteredUsers.map((row) => (
               <TableRow id={row.email} key={row.id}>
                 <TableCell sx={{textAlign: 'center', fontSize:14, fontWeight:400 }} >
                   {row.email}
@@ -38,6 +40,12 @@ function EmployeeTable({ employees, onAction, action, t, onDisableMfa }) {
                 </TableCell>
                 <TableCell sx={{textAlign: 'center', fontSize:14, fontWeight:400 }} >
                   {row.admin ? t('true') : t('false')}
+                </TableCell>
+                <TableCell sx={{textAlign: 'center', fontSize:14, fontWeight:400 }} >
+                  {row.employee ? t('true') : t('false')}
+                </TableCell>
+                <TableCell sx={{textAlign: 'center', fontSize:14, fontWeight:400 }} >
+                  {row.servicePersonnel ? t('true') : t('false')}
                 </TableCell>
                 <TableCell sx={{textAlign: 'center', fontSize:14, fontWeight:400 }} >
                   {row.mfaEnabled ? (
@@ -68,4 +76,4 @@ function EmployeeTable({ employees, onAction, action, t, onDisableMfa }) {
   );
 }
 
-export default EmployeeTable;
+export default UserTable;

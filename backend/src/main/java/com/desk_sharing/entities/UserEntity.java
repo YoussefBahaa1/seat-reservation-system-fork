@@ -51,6 +51,18 @@ public class UserEntity {
         return roles.stream()
             .anyMatch(role -> role.getName().equals("ROLE_ADMIN"));
     }
+    
+    @Transient
+    public boolean isEmployee() {
+        return roles.stream()
+            .anyMatch(role -> role.getName().equals("ROLE_EMPLOYEE"));
+    }
+    
+    @Transient
+    public boolean isServicePersonnel() {
+        return roles.stream()
+            .anyMatch(role -> role.getName().equals("ROLE_SERVICE_PERSONNEL"));
+    }
   
     public UserEntity(UserEntity other) {
         this.id = other.getId();

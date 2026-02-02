@@ -1,8 +1,9 @@
 #!/bin/bash
+set -euo pipefail
 
 cleanup() {
     echo "Ctrl+C gedrückt. Führe 'docker compose down' aus..."
-    docker compose stop
+    docker compose down
     exit 0
 }
 
@@ -30,14 +31,21 @@ fi
 # Create logs dir if not exist.
 mkdir -p backend/logs_dev_backend/
 
-DOCKER_BUILDKIT=1 docker compose --env-file .env build \
-    --build-arg CACHEBUST=$(date +%s) \
-    --build-arg http_proxy=$http_proxy \
-    --build-arg https_proxy=$https_proxy
+if [ "${NO_CACHE:-false}" = "true" ]; then
+  DOCKER_BUILDKIT=1 docker compose --env-file .env build --no-cache \
+      --build-arg CACHEBUST="$(date +%s)" \
+      --build-arg http_proxy="${http_proxy-}" \
+      --build-arg https_proxy="${https_proxy-}"
+else
+  DOCKER_BUILDKIT=1 docker compose --env-file .env build \
+      --build-arg CACHEBUST="$(date +%s)" \
+      --build-arg http_proxy="${http_proxy-}" \
+      --build-arg https_proxy="${https_proxy-}"
+fi
 
 
-docker compose up
+docker compose up --force-recreate
 
 
 echo "Skript beendet. Führe 'docker compose down' aus..."
-docker compose stop
+docker compose down

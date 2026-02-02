@@ -2,34 +2,34 @@ import DeleteFf from '../../DeleteFf';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { useTranslation } from "react-i18next";
-import EmployeeTable from './EmployeeTable';
+import UserTable from './UserTable';
 import {getRequest, deleteRequest} from '../../RequestFunctions/RequestFunctions';
 import LayoutModalAdmin from '../../Templates/LayoutModalAdmin';
 
-export default function DeleteEmployee({ isOpen, onClose }) {
+export default function DeleteUser({ isOpen, onClose }) {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const [currUserId, setCurrUserId] = useState(-1);
   const { t } = useTranslation();
-  const [allEmployee, setAllEmployee] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [openFfDialog, setOpenFfDialog] = useState(false);
-  const getAllEmployee = useCallback(
+  const getAllUsers = useCallback(
     async () => {
       getRequest(
         `${process.env.REACT_APP_BACKEND_URL}/admin/users/get`,
         headers.current,
-        setAllEmployee,
-        () => {console.log('Failed to fetch all employees in DeleteEmployee.js')}
+        setAllUsers,
+        () => {console.log('Failed to fetch all users in DeleteUser.js')}
       );
     },
-    [headers, setAllEmployee]
+    [headers, setAllUsers]
   );
   
-  // Init fetch of the employees
+  // Init fetch of the users
   useEffect(() => {
-    getAllEmployee();
-  }, [getAllEmployee]);
+    getAllUsers();
+  }, [getAllUsers]);
 
-  async function deleteEmployeeById(id) {
+  async function deleteUserById(id) {
     setCurrUserId(id);
     deleteRequest(
       `${process.env.REACT_APP_BACKEND_URL}/admin/users/${id}`,
@@ -40,27 +40,27 @@ export default function DeleteEmployee({ isOpen, onClose }) {
         }
         else {
           toast.success(t('userDeleted'));
-          getAllEmployee();
+          getAllUsers();
         }
       },
-      () => {console.log('Failed to delete employee in DeleteEmployee.js.')}
+      () => {console.log('Failed to delete user in DeleteUser.js.')}
     );    
   };
 
-  async function deleteEmployeeByIdFf(id) {
+  async function deleteUserByIdFf(id) {
     deleteRequest(
       `${process.env.REACT_APP_BACKEND_URL}/admin/users/ff/${id}`,
       headers.current,
       (data) => {
         if (data) {
           toast.success(t('userDeleted'));
-          getAllEmployee();
+          getAllUsers();
         }
         else {
           toast.error(t('userDeletionFailed'));
         }
       },
-      () => {console.log('Failed to delete employee fast forward in DeleteEmployee.js.')}
+      () => {console.log('Failed to delete user fast forward in DeleteUser.js.')}
     );
   };
 
@@ -72,15 +72,15 @@ export default function DeleteEmployee({ isOpen, onClose }) {
     <LayoutModalAdmin
       onClose={onClose}
       isOpen={isOpen}
-      title={t('deleteEmployee')}
+      title={t('deleteUser')}
     >
       <DeleteFf 
         open={openFfDialog}
         onClose={closeDialog}
-        onDelete={deleteEmployeeByIdFf.bind(null, currUserId)}
-        text={t('fFDeleteEmployee')}
+        onDelete={deleteUserByIdFf.bind(null, currUserId)}
+        text={t('fFDeleteUser')}
       />
-      <EmployeeTable employees={allEmployee} onAction={deleteEmployeeById} action={t("delete").toUpperCase()} t={t}/>
+      <UserTable users={allUsers} onAction={deleteUserById} action={t("delete").toUpperCase()} t={t}/>
     </LayoutModalAdmin>
   );
 }

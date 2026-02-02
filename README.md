@@ -19,7 +19,12 @@ Web application that allows to book workspaces in an office.
 - After the containers are running, execute `./scripts/db/init/initDatabase.sh` to initialize the database with the default users.
 After these steps, the desk-sharing-tool is initially running. Make sure to replace default passwords when running a public server. 
 
-Afterwards, you can visit the project page (default `http://localhost:3001`). You can use the default credentials (test.user@mail.de / test and test.admin@mail.de / test).
+Afterwards, you can visit the project page (default `http://localhost:3001`). You can use the default credentials:
+- **Admin**: test.admin@mail.de / test
+- **Employee**: test.employee@mail.de / test
+- **Service Personnel**: test.servicepersonnel@mail.de / test
+
+(See [docs/DefaultTestUsers.md](docs/DefaultTestUsers.md) for a complete list of test accounts)
 
 
 ### TLS Configuration 
@@ -90,10 +95,12 @@ A list of most of the params is in the following table:
 | ERROR_WRONG_PW | Error if the password is wrong. This value is an key in frontend/src/locales | "ERROR_WRONG_PW" | Needed |
 | http_proxy | The proxy server for http | http://proxy.de:3128 | Not needed |
 | https_proxy | The proxy server for https | http://proxy.de:3128 | Not needed |
-| TEST_USER_MAIL | Mail for a test user | test.user@mail.de | Needed for tests |
+| TEST_EMPLOYEE_MAIL | Mail for a test employee | test.employee@mail.de | Needed for tests |
 | TEST_ADMIN_MAIL | Mail for a test admin | test.admin@mail.de | Needed for tests |
-| TEST_USER_PW | PW for test user | test | Needed for tests |
+| TEST_SERVICE_PERSONNEL_MAIL | Mail for a test employee | test.employee@mail.de | Needed for tests |
+| TEST_EMPLOYEE_PW | PW for test employee | test | Needed for tests |
 | TEST_ADMIN_PW | PW for test admin | test | Needed for tests |
+| TEST_SERVICE_PERSONNEL_PW | PW for test admin | test | Needed for tests |
 | FRONTEND_TARGET | Set build to production | "production_runtime" | Needed. Dont change | 
 | FRONTEND_KEY_FILE | Name of the frontend tls key file (unencrypted) | frontend.key | Needed. Must be in $PATH_TO_TLS/frontend/. |
 | FRONTEND_CRT_FILE | Name of the frontend tls crt file | frontend.crt | Needed.  Must be in $PATH_TO_TLS/frontend/. | 

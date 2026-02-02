@@ -148,6 +148,11 @@
     "addEmployee": "Add Employee",
     "deleteEmployee": "Delete Employee",
     "editEmployee": "Edit Employee",
+    "addUser": "Add User",
+    "deleteUser": "Delete User",
+    "editUser": "Edit User",
+    "employee": "Employee",
+    "servicePersonnel": "Service Personnel",
     "name": "Name",
     "surname": "Surname",
     "action": "Action",
@@ -211,6 +216,7 @@
     "fFDeleteWorkStation":"All bookings that belongs to this desk wil also be deleted.",
     "fFDeleteRoom":"All desks and bookings that belongs to this room will also be deleted.",
     "fFDeleteEmployee":"All bookings that belongs to this user will also be deleted.",
+    "fFDeleteUser":"All bookings that belongs to this user will also be deleted.",
     "helpAddRoom":"Please choose a location for an new room on the map and click on it.<br/>Additionally provide all necessary informations and push <strong>Submit</strong>."
     ,"helpChooseRoom":"Please choose an existing room and click on it."
     ,"helpCreateBooking":"Please choose first an desk and then a timespan. Finish with a push on <strong>Book</strong>."
