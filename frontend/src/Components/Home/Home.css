@@ -148,16 +148,17 @@
   background-color: #3174ad;
   color: #ffffff;
   border-radius: 8px;
-  padding: 8px 12px;
-  min-width: 160px;
+  padding: 4px 6px;
+  min-width: 90px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
 }
 
 .home-day-event-title {
   font-weight: 600;
-  margin-bottom: 4px;
+  font-size: 0.9rem;
+  margin-bottom: 2px;
 }
 
 .home-day-event-time {
-  font-size: 0.85rem;
+  font-size: 0.70rem;
 }
