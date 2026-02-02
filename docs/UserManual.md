@@ -2,7 +2,7 @@
 
 ## User management
 ### Add new user
-After you executed initDatabase.sh you can login as test.admin@mail.de with the password test. With this account you can start to add your real users. It is important that, after you setup youre real world users, you delete this user with this unsafe password.
+After you executed initDatabase.sh you can login as test.admin@mail.de with the password test. With this account you can start to add your real users. It is important that, after you setup your real world users, you delete all test users with their unsafe passwords. See [DefaultTestUsers.md](DefaultTestUsers.md) for a complete list of test accounts.
 
 A step by step guide how to add a new user is seen in the following list:
 

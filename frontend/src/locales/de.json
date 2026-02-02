@@ -148,6 +148,11 @@
     "addEmployee": "Mitarbeiter Hinzufügen",
     "deleteEmployee": "Mitarbeiter Entfernen",
     "editEmployee": "Mitarbeiter Bearbeiten",
+    "addUser": "Nutzer Hinzufügen",
+    "deleteUser": "Nutzer Entfernen",
+    "editUser": "Nutzer Bearbeiten",
+    "employee": "Mitarbeiter",
+    "servicePersonnel": "Servicepersonal",
     "name": "Vorname",
     "surname": "Nachname",
     "action": "Aktion",
@@ -211,6 +216,7 @@
     "fFDeleteWorkStation":"Es werden neben dem Arbeitsplatz auch alle damit verbundenen Buchungen gelöscht.",
     "fFDeleteRoom":"Es werden neben dem Raum auch alle damit verbundenen Tische und Buchungen gelöscht.",
     "fFDeleteEmployee":"Es werden neben dem Nutzer auch alle damit verbundenen Buchungen gelöscht.",
+    "fFDeleteUser":"Es werden neben dem Nutzer auch alle damit verbundenen Buchungen gelöscht.",
     "helpAddRoom":"Bitte wählen Sie einen Ort für ein neues Büro auf der Karte und klicken Sie darauf.<br/>Anschließend geben Sie alle nötigen Informationen ein und wählen <strong>Einreichen</strong>."
     ,"helpChooseRoom":"Bitte wählen Sie ein existierendes Büro aus und klicken hierauf."
     ,"helpCreateBooking":"Bitte wählen Sie zuerst ein Arbeitsplatz und dann eine Zeitspanne aus. Klicken Sie anschließend <strong>Buchen</strong>."

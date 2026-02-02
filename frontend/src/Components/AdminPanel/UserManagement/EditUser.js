@@ -1,40 +1,42 @@
-import { FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField } from '@mui/material';
+import { FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, Checkbox } from '@mui/material';
 import { toast } from 'react-toastify';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from "react-i18next";
-import EmployeeTable from './EmployeeTable';
+import UserTable from './UserTable';
 import { putRequest, getRequest, postRequest } from '../../RequestFunctions/RequestFunctions';
 import LayoutModalAdmin from '../../Templates/LayoutModalAdmin';
 
-export default function EditEmployee({ isOpen, onClose }) {
+export default function EditUser({ isOpen, onClose }) {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const { t } = useTranslation();
-  const [allEmployee, setAllEmployee] = useState([]);
-  const [isEditEmployeeOpen, setIsEditEmployeeOpen] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [id, setId] = useState('');
   const [email, setEmail] = useState('');
   const [name, setName ] = useState('');
   const [surname, setSurname] = useState('');
   //const [visibility, setVisibility] = useState();
   const [isAdmin, setIsAdmin] = useState();
+  const [isEmployee, setIsEmployee] = useState();
+  const [isServicePersonnel, setIsServicePersonnel] = useState();
   
-  const getAllEmployee = useCallback(
+  const getAllUsers = useCallback(
     async () => {
       getRequest(
         `${process.env.REACT_APP_BACKEND_URL}/admin/users/get`,
         headers.current,
-        setAllEmployee,
-        () => {console.log('Failed to fetch all employees in EditEmployee.js')}
+        setAllUsers,
+        () => {console.log('Failed to fetch all users in EditUser.js')}
       );
     },
-    [setAllEmployee]
+    [setAllUsers]
   );
 
   useEffect(() => {
-    getAllEmployee();
-  }, [getAllEmployee]);
+    getAllUsers();
+  }, [getAllUsers]);
 
-  async function updateEmployee() {
+  async function updateUser() {
     if(!email  || !name || !surname){
       toast.error(t('fields_not_empty'));
       return false;
@@ -47,32 +49,36 @@ export default function EditEmployee({ isOpen, onClose }) {
         toast.success(t('userUpdated'));
         onClose();
       },
-      () => {console.log('Failed to update employee in EditEmployeeModal.js');},
+      () => {console.log('Failed to update user in EditUserModal.js');},
       JSON.stringify({
         'userId':id,
         'email': email,
         'name': name,
         'surname': surname,
         'admin': isAdmin,
+        'employee': isEmployee,
+        'servicePersonnel': isServicePersonnel,
         'visibility': true//visibility
       })
     );
   }
 
-  function editEmployeeById(id){
-    // Usally there is one and only on employee with the requested id. 
-    const potential_employees = allEmployee.filter(employee => employee.id === id);
+  function editUserById(id){
+    // Usually there is one and only one user with the requested id.
+    const potentialUsers = allUsers.filter((user) => user.id === id);
     try {
-      const to_be_edited_employee = potential_employees.at(0);
-      setId(to_be_edited_employee.id);
-      setEmail(to_be_edited_employee.email);
-      setName(to_be_edited_employee.name);
-      setSurname(to_be_edited_employee.surname);
-      setIsAdmin(to_be_edited_employee.admin);
-      //setVisibility(to_be_edited_employee.visibility);
-      setIsEditEmployeeOpen(true);
+      const toBeEditedUser = potentialUsers.at(0);
+      setId(toBeEditedUser.id);
+      setEmail(toBeEditedUser.email);
+      setName(toBeEditedUser.name);
+      setSurname(toBeEditedUser.surname);
+      setIsAdmin(toBeEditedUser.admin);
+      setIsEmployee(toBeEditedUser.employee);
+      setIsServicePersonnel(toBeEditedUser.servicePersonnel);
+      //setVisibility(toBeEditedUser.visibility);
+      setIsEditUserOpen(true);
     } catch (e) {
-      console.error(`Error in editEmployeeById with employee with the id ${id}: ${e.message}.`)
+      console.error(`Error in editUserById with user with the id ${id}: ${e.message}.`)
     }
   }
 
@@ -85,7 +91,7 @@ export default function EditEmployee({ isOpen, onClose }) {
       headers.current,
       () => {
         toast.success(t('mfaDisabledSuccess'));
-        getAllEmployee(); // Refresh the list
+        getAllUsers(); // Refresh the list
       },
       () => {
         toast.error('Failed to disable MFA');
@@ -95,25 +101,25 @@ export default function EditEmployee({ isOpen, onClose }) {
 
   return (
     <LayoutModalAdmin
-      title={t('editEmployee')}
+      title={t('editUser')}
       onClose={onClose}
       isOpen={isOpen}
     >
-      <EmployeeTable 
-        employees={allEmployee} 
-        onAction={editEmployeeById} 
+      <UserTable 
+        users={allUsers} 
+        onAction={editUserById} 
         action={t("edit").toUpperCase()} 
         t={t}
         onDisableMfa={disableMfaForUser}
       />
       <LayoutModalAdmin
-        isOpen={isEditEmployeeOpen}
-        onClose={setIsEditEmployeeOpen.bind(null, !isEditEmployeeOpen)}
-        submit={updateEmployee}
+        isOpen={isEditUserOpen}
+        onClose={setIsEditUserOpen.bind(null, !isEditUserOpen)}
+        submit={updateUser}
         submitTxt={t('update')}
       >
         <br/>
-        <FormControl required={true} id='editEmployee-setEmail' size='small' fullWidth variant='standard'>
+        <FormControl required={true} id='editUser-setEmail' size='small' fullWidth variant='standard'>
           <TextField
             id='standard-adornment-reason'
             label={t('email')}
@@ -124,7 +130,7 @@ export default function EditEmployee({ isOpen, onClose }) {
           />
         </FormControl>
         <br/><br/>
-        <FormControl required={true} id='editEmployeeModal-setName' size='small' fullWidth variant='standard'>
+        <FormControl required={true} id='editUserModal-setName' size='small' fullWidth variant='standard'>
           <TextField
             id='standard-adornment-reason'
             label={t('name')}
@@ -135,7 +141,7 @@ export default function EditEmployee({ isOpen, onClose }) {
           />
         </FormControl>
         <br/><br/>
-        <FormControl required={true} id='editEmployeeModal-setSurname' size='small' fullWidth variant='standard'>
+        <FormControl required={true} id='editUserModal-setSurname' size='small' fullWidth variant='standard'>
           <TextField
             id='standard-adornment-reason'
             label={t('surname')}
@@ -146,19 +152,49 @@ export default function EditEmployee({ isOpen, onClose }) {
           />
         </FormControl>
         <br/><br/>
-        <FormControl id='editEmployeeModal-setIsAdmin'>
+        <FormControl id='editUserModal-setIsAdmin'>
           <FormLabel id='ratioIsAdmin'>{t('admin')}</FormLabel>
             <RadioGroup
               row
               aria-labelledby='ratioIsAdmin'
               value={isAdmin}
               onChange={(e)=> {
-                setIsAdmin(e.target.value)}
-              }
+                const adminValue = e.target.value === 'true' || e.target.value === true;
+                setIsAdmin(adminValue);
+                // If admin is set, disable employee/service personnel checkboxes
+                if (adminValue) {
+                  setIsEmployee(false);
+                  setIsServicePersonnel(false);
+                }
+              }}
             >
             <FormControlLabel id='radioAdmin_true' value={true} control={<Radio />} label={t('true')} />
             <FormControlLabel id='radioAdmin_false' value={false} control={<Radio />} label={t('false')} />
           </RadioGroup>
+        </FormControl>
+        <br/><br/>
+        <FormControl id='editUser-roles'>
+          <FormLabel>{t('employee')} / {t('servicePersonnel')}</FormLabel>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isEmployee || false}
+                onChange={(e) => setIsEmployee(e.target.checked)}
+                disabled={isAdmin}
+              />
+            }
+            label={t('employee')}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isServicePersonnel || false}
+                onChange={(e) => setIsServicePersonnel(e.target.checked)}
+                disabled={isAdmin}
+              />
+            }
+            label={t('servicePersonnel')}
+          />
         </FormControl>
         {/*<br/><br/>
         <FormControl>

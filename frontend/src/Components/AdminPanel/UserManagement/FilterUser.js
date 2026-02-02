@@ -5,11 +5,11 @@ import { useTranslation } from 'react-i18next';
 /**
  * Depending on the parameters set in this components an filter function is created.
  * This filter function is returned to the parent component. This function is applied to
- * filter employees.
+ * filter users.
  * 
  * @param {*} setFilterFunction Set the created filter function to be used in the parent component.
  */
-export default function FilterEmployee({ setFilterFunction }) {
+export default function FilterUser({ setFilterFunction }) {
     const { t } = useTranslation();
     const [isEnabled, setIsEnabled] = useState(false);
     const [field, setField] = useState('');
@@ -63,7 +63,7 @@ export default function FilterEmployee({ setFilterFunction }) {
                 label={t('enableFilter')}
                 style={{ minWidth: '150px' }}
             />
-            <FormControl id='filterEmployee_handleFieldChange' variant='outlined' fullWidth disabled={!isEnabled}>
+            <FormControl id='filterUser_handleFieldChange' variant='outlined' fullWidth disabled={!isEnabled}>
                 <InputLabel>{t('column')}</InputLabel>
                 <Select
                     value={field}
@@ -75,7 +75,7 @@ export default function FilterEmployee({ setFilterFunction }) {
                     <MenuItem value='email'>Email</MenuItem>
                 </Select>
             </FormControl>
-            <FormControl id='filterEmployee_handleConditionChange' variant='outlined' fullWidth disabled={!isEnabled}>
+            <FormControl id='filterUser_handleConditionChange' variant='outlined' fullWidth disabled={!isEnabled}>
                 <InputLabel>{t('condition')}</InputLabel>
                 <Select
                     value={condition}
@@ -86,7 +86,7 @@ export default function FilterEmployee({ setFilterFunction }) {
                     <MenuItem value='is_equal'>{t('isEqual')}</MenuItem>
                 </Select>
             </FormControl>
-            <FormControl id='filterEmployee_handleTextChange' variant='outlined' fullWidth disabled={!isEnabled}>
+            <FormControl id='filterUser_handleTextChange' variant='outlined' fullWidth disabled={!isEnabled}>
             <TextField 
                 placeholder={t('enterText')}
                 value={text}

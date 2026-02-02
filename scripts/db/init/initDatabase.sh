@@ -26,7 +26,7 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
     scripts/db/exec_db.sh init/insertRoomTypes.sql
     # Insert buzildings, floors, rooms and desks.
     scripts/db/exec_db.sh init/insertBuilding.sql
-    # Insert test user and test admin.
+    # Insert test users: admins, employees, and service personnel.
     scripts/db/exec_db.sh init/insertTestUsers.sql
 else
     echo "Bye"

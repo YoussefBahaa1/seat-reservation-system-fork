@@ -229,6 +229,7 @@ public class AdminController {
             
             return new ResponseEntity<>("Email ist bereits vergeben!", HttpStatus.BAD_REQUEST);
         }
+        
         final UserEntity user = new UserEntity();
         user.setPassword(passwordEncoder.encode((registerDto.getPassword())));
         user.setEmail(registerDto.getEmail());
@@ -236,12 +237,34 @@ public class AdminController {
         user.setSurname(registerDto.getSurname());
         user.setVisibility(registerDto.isVisibility());
         
-        // If the user is an admin grant the matching privileges.
-        final Role role = registerDto.isAdmin() ? 
-            roleRepository.findByName("ROLE_ADMIN").get() : 
-            roleRepository.findByName("ROLE_USER").get();
+        // Assign roles based on the flags
+        List<Role> roles = new ArrayList<>();
         
-        user.setRoles(Collections.singletonList(role));
+        if (registerDto.isAdmin()) {
+            // Admin only - admins inherit employee and service personnel via role hierarchy
+            Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                .orElseThrow(() -> new RuntimeException("ROLE_ADMIN not found"));
+            roles.add(adminRole);
+        } else {
+            // Non-admin: assign employee and/or service personnel roles
+            if (!registerDto.isEmployee() && !registerDto.isServicePersonnel()) {
+                return new ResponseEntity<>("User must have at least one role (employee or service personnel)", HttpStatus.BAD_REQUEST);
+            }
+            
+            if (registerDto.isEmployee()) {
+                Role employeeRole = roleRepository.findByName("ROLE_EMPLOYEE")
+                    .orElseThrow(() -> new RuntimeException("ROLE_EMPLOYEE not found"));
+                roles.add(employeeRole);
+            }
+            
+            if (registerDto.isServicePersonnel()) {
+                Role servicePersonnelRole = roleRepository.findByName("ROLE_SERVICE_PERSONNEL")
+                    .orElseThrow(() -> new RuntimeException("ROLE_SERVICE_PERSONNEL not found"));
+                roles.add(servicePersonnelRole);
+            }
+        }
+        
+        user.setRoles(roles);
         userRepository.save(user);
         return new ResponseEntity<>("User registered success!", HttpStatus.OK);
     }

@@ -10,4 +10,6 @@ public class RegisterDto {
     private String surname;
     private boolean visibility;
     private boolean admin;
+    private boolean employee;
+    private boolean servicePersonnel;
 }

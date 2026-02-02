@@ -16,6 +16,8 @@ public class UserDto {
     private String surname;
     private boolean visibility;
     private boolean admin;
+    private boolean employee;
+    private boolean servicePersonnel;
     private Floor default_floor;
     private ViewMode defaViewMode;
 }

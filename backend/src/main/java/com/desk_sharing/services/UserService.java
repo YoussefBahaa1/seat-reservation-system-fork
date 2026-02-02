@@ -240,6 +240,8 @@ public class UserService  {
         userFromDB.setVisibility(userDto.isVisibility());
 
         setAdmin(userFromDB, userDto.isAdmin());
+        setEmployee(userFromDB, userDto.isEmployee());
+        setServicePersonnel(userFromDB, userDto.isServicePersonnel());
 
         return userRepository.save(userFromDB);
     }
@@ -256,6 +258,38 @@ public class UserService  {
         }
         else if (!shallAdmin && userFromDB.isAdmin()) {
             userRoles.remove(adminRole);
+        }
+        return true;
+    }
+    
+    public boolean setEmployee(final UserEntity userFromDB, boolean shallEmployee) {
+        final List<Role> userRoles = userFromDB.getRoles();
+        final Role employeeRole = roleRepository.findByName("ROLE_EMPLOYEE").isPresent() ? roleRepository.findByName("ROLE_EMPLOYEE").get() : null;
+        if (employeeRole == null) {
+            System.out.println("ERROR: ROLE_EMPLOYEE was not found.");
+            return false;
+        }
+        if (shallEmployee && !userFromDB.isEmployee()) {
+            userRoles.add(employeeRole);
+        }
+        else if (!shallEmployee && userFromDB.isEmployee()) {
+            userRoles.remove(employeeRole);
+        }
+        return true;
+    }
+    
+    public boolean setServicePersonnel(final UserEntity userFromDB, boolean shallServicePersonnel) {
+        final List<Role> userRoles = userFromDB.getRoles();
+        final Role servicePersonnelRole = roleRepository.findByName("ROLE_SERVICE_PERSONNEL").isPresent() ? roleRepository.findByName("ROLE_SERVICE_PERSONNEL").get() : null;
+        if (servicePersonnelRole == null) {
+            System.out.println("ERROR: ROLE_SERVICE_PERSONNEL was not found.");
+            return false;
+        }
+        if (shallServicePersonnel && !userFromDB.isServicePersonnel()) {
+            userRoles.add(servicePersonnelRole);
+        }
+        else if (!shallServicePersonnel && userFromDB.isServicePersonnel()) {
+            userRoles.remove(servicePersonnelRole);
         }
         return true;
     }
