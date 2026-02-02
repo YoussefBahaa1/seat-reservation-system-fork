@@ -23,6 +23,7 @@ import com.desk_sharing.model.BookingDTO;
 import com.desk_sharing.model.BookingEditDTO;
 import com.desk_sharing.model.BookingProjectionDTO;
 import com.desk_sharing.model.BookingsForDeskDTO;
+import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.services.BookingService;
 import com.desk_sharing.services.UserService;
@@ -140,5 +141,18 @@ public class BookingController {
     public Dictionary<Date, Integer> getAllBookingsForDate(@RequestBody List<Date> days) {       
         userService.logging("getAllBookingsForDate( " + days.toString() + " )");
         return bookingService.getAllBookingsForDates(days);
+    }
+
+    //Endpoint to get all bookings for a specific day as BookingDayEventDTOs
+    @GetMapping("/day/{date}")
+    public ResponseEntity<List<BookingDayEventDTO>> getBookingsForDay(@PathVariable("date") String date) {
+        userService.logging("getBookingsForDay( " + date + " )");
+        try {
+            Date parsedDate = Date.valueOf(date);
+            List<BookingDayEventDTO> bookings = bookingService.getBookingEventsForDate(parsedDate);
+            return new ResponseEntity<>(bookings, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 }
