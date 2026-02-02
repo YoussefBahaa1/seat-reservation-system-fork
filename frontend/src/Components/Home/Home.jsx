@@ -282,7 +282,7 @@ const Home = () => {
         startAccessor='start'
         endAccessor='end'
         views={['month']}
-        style={{ height: 500 }}
+        style={{ height: 720 }}
         onSelectSlot={handleSelectSlot}
         selectable={true}
         onKeyPressEvent={(data) => console.log(data)}

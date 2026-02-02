@@ -137,7 +137,6 @@
   gap: 6px;
   flex-wrap: nowrap;
   overflow-x: auto;
-  padding-bottom: 4px;
 }
 
 .home-day-block-events:last-child {
@@ -160,5 +159,5 @@
 }
 
 .home-day-event-time {
-  font-size: 0.70rem;
+  font-size: 0.9rem;
 }
