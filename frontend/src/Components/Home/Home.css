@@ -76,6 +76,10 @@
   background: #d7ecdf;
 }
 
+.home-selected-day {
+  background-color: #f3f3f3;
+}
+
 .home-calendar-footer {
   display: flex;
   justify-content: space-between;

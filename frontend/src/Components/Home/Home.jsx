@@ -285,6 +285,11 @@ const Home = () => {
         style={{ height: 720 }}
         onSelectSlot={handleSelectSlot}
         selectable={true}
+        dayPropGetter={(date) => ({
+          className: moment(date).isSame(selectedDate, 'day')
+            ? 'home-selected-day'
+            : ''
+        })}
         onKeyPressEvent={(data) => console.log(data)}
         messages={{
           next: t('next'),
