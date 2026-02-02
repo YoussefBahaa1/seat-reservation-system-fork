@@ -30,6 +30,15 @@ export default function DeleteUser({ isOpen, onClose }) {
   }, [getAllUsers]);
 
   async function deleteUserById(id) {
+    // Find user email for confirmation message
+    const user = allUsers.find(u => u.id === id);
+    const userEmail = user ? user.email : '';
+    
+    // Show confirmation dialog before deletion
+    if (!window.confirm(`${t('confirmDeleteUser')}\n\n${userEmail}`)) {
+      return;
+    }
+    
     setCurrUserId(id);
     deleteRequest(
       `${process.env.REACT_APP_BACKEND_URL}/admin/users/${id}`,

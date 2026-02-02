@@ -9,6 +9,7 @@
     "defaults":"Voreinstellung",
     "help":"Hilfe",
     "any": "Jedes",
+    "match": "Übereinstimmung",
     "login": "Anmeldung",
     "forgotPassword": "Passwort Vergessen",
     "passwordsDontMatch": "Bitte geben Sie zweimal ihr neues Passwort ein",
@@ -153,6 +154,7 @@
     "editUser": "Nutzer Bearbeiten",
     "employee": "Mitarbeiter",
     "servicePersonnel": "Servicepersonal",
+    "role": "Rolle",
     "name": "Vorname",
     "surname": "Nachname",
     "action": "Aktion",
@@ -226,6 +228,8 @@
     ,"helpDeleteWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Danach wählen Sie den zu löschenden Arbeitsplatz aus."
     ,"bookingsSum":"Buchungen Gesamt"
     ,"enableFilter":"Filter aktivieren"
+    ,"addFilter":"Filter hinzufügen"
+    ,"removeFilter":"Filter entfernen"
     ,"column":"Spalte"
     ,"condition":"Bedingung"
     ,"contains":"Enthält"
@@ -276,4 +280,26 @@
     ,"mfaSettings":"MFA-Einstellungen"
     ,"mfaRecovery":"MFA deaktivieren (Wiederherstellung)"
     ,"mfaRecoveryConfirm":"Sind Sie sicher, dass Sie MFA für diesen Benutzer deaktivieren möchten?"
+
+    ,"department":"Abteilung"
+    ,"activity":"Aktivität"
+    ,"active":"Aktiv"
+    ,"deactivated":"Deaktiviert"
+    ,"deactivate":"Deaktivieren"
+    ,"reactivate":"Reaktivieren"
+    ,"deactivateReactivateUser":"Benutzer deaktivieren/reaktivieren"
+    ,"confirmToggleActive":"Sind Sie sicher, dass Sie"
+    ,"userDeactivated":"Benutzer erfolgreich deaktiviert"
+    ,"userReactivated":"Benutzer erfolgreich reaktiviert"
+    ,"toggleActiveFailed":"Benutzerstatus konnte nicht geändert werden"
+    
+    ,"resetPassword":"Passwort zurücksetzen"
+    ,"confirmPassword":"Passwort bestätigen"
+    ,"confirmResetPassword":"Zurücksetzen bestätigen"
+    ,"passwordMismatch":"Passwörter stimmen nicht überein"
+    ,"passwordResetSuccess":"Passwort erfolgreich zurückgesetzt"
+    ,"passwordResetFailed":"Passwort konnte nicht zurückgesetzt werden"
+    
+    ,"confirmDeleteUser":"Diese Aktion löscht den Benutzer dauerhaft und kann nicht rückgängig gemacht werden."
+    ,"value":"Wert"
 }

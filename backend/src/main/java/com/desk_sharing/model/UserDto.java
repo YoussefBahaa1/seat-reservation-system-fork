@@ -14,6 +14,7 @@ public class UserDto {
     private String password;
     private String name;
     private String surname;
+    private String department;
     private boolean visibility;
     private boolean admin;
     private boolean employee;

@@ -9,6 +9,7 @@
     "defaults":"Defaults",
     "help":"Help",
     "any": "Any",
+    "match": "Match",
     "login": "Login",
     "forgotPassword": "Forgot Password",
     "passwordsDontMatch": "New passwords do not match",
@@ -153,6 +154,7 @@
     "editUser": "Edit User",
     "employee": "Employee",
     "servicePersonnel": "Service Personnel",
+    "role": "Role",
     "name": "Name",
     "surname": "Surname",
     "action": "Action",
@@ -226,6 +228,8 @@
     ,"helpDeleteWorkstation":"Please choose an existing room with an click on it. After this choose an workstation to delete it."
     ,"bookingsSum":"Bookings sum"
     ,"enableFilter":"Enable Filter"
+    ,"addFilter":"Add Filter"
+    ,"removeFilter":"Remove Filter"
     ,"column":"Column"
     ,"condition":"Condition"
     ,"contains":"Contains"
@@ -276,4 +280,26 @@
     ,"mfaSettings":"MFA Settings"
     ,"mfaRecovery":"Disable MFA (Recovery)"
     ,"mfaRecoveryConfirm":"Are you sure you want to disable MFA for this user?"
+
+    ,"department":"Department"
+    ,"activity":"Activity"
+    ,"active":"Active"
+    ,"deactivated":"Deactivated"
+    ,"deactivate":"Deactivate"
+    ,"reactivate":"Reactivate"
+    ,"deactivateReactivateUser":"Deactivate/Reactivate User"
+    ,"confirmToggleActive":"Are you sure you want to"
+    ,"userDeactivated":"User deactivated successfully"
+    ,"userReactivated":"User reactivated successfully"
+    ,"toggleActiveFailed":"Failed to change user status"
+    
+    ,"resetPassword":"Reset Password"
+    ,"confirmPassword":"Confirm Password"
+    ,"confirmResetPassword":"Confirm Reset"
+    ,"passwordMismatch":"Passwords do not match"
+    ,"passwordResetSuccess":"Password reset successfully"
+    ,"passwordResetFailed":"Failed to reset password"
+    
+    ,"confirmDeleteUser":"This action will permanently delete the user and cannot be undone."
+    ,"value":"Value"
 }

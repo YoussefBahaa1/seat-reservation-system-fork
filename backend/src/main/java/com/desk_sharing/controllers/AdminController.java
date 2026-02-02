@@ -225,6 +225,12 @@ public class AdminController {
     @PostMapping("users")
     public ResponseEntity<String> register(@RequestBody RegisterDto registerDto) {
         userService.logging("register( " + registerDto.getEmail() + ", " + registerDto.getName() + ", " + registerDto.getSurname() + ", " + registerDto.getName() + " )");
+        
+        // Validate email format
+        if (registerDto.getEmail() == null || !isValidEmail(registerDto.getEmail())) {
+            return new ResponseEntity<>("Invalid email format", HttpStatus.BAD_REQUEST);
+        }
+        
         if (userRepository.existsByEmail(registerDto.getEmail())) {
             
             return new ResponseEntity<>("Email ist bereits vergeben!", HttpStatus.BAD_REQUEST);
@@ -235,7 +241,9 @@ public class AdminController {
         user.setEmail(registerDto.getEmail());
         user.setName(registerDto.getName());
         user.setSurname(registerDto.getSurname());
+        user.setDepartment(registerDto.getDepartment());
         user.setVisibility(registerDto.isVisibility());
+        user.setActive(true); // New users are active by default
         
         // Assign roles based on the flags
         List<Role> roles = new ArrayList<>();
@@ -267,6 +275,12 @@ public class AdminController {
         user.setRoles(roles);
         userRepository.save(user);
         return new ResponseEntity<>("User registered success!", HttpStatus.OK);
+    }
+    
+    // Email validation helper
+    private boolean isValidEmail(String email) {
+        String emailRegex = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
+        return email != null && email.matches(emailRegex);
     }
 
     /**
@@ -318,8 +332,54 @@ public class AdminController {
             return new ResponseEntity<>("Failed to disable MFA: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    
+    /**
+     * Reset password for a user (admin endpoint).
+     * Admins can reset any user's password without knowing the current password.
+     * @param id The id of the user whose password should be reset.
+     * @param request Request body containing "newPassword".
+     * @return Success or error response.
+     */
+    @PutMapping("users/{id}/password/reset")
+    public ResponseEntity<String> resetUserPassword(@PathVariable("id") int id, @RequestBody java.util.Map<String, String> request) {
+        userService.logging("resetUserPassword( " + id + " )");
+        String newPassword = request.get("newPassword");
+        if (newPassword == null || newPassword.isEmpty()) {
+            return new ResponseEntity<>("New password is required", HttpStatus.BAD_REQUEST);
+        }
+        try {
+            UserEntity user = userRepository.getReferenceById(id);
+            user.setPassword(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+            userService.logging("Admin reset password for user id: " + id);
+            return new ResponseEntity<>("Password reset successfully", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Failed to reset password: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
-    ////////////////
-
+    /**
+     * Set user active status (deactivate/reactivate).
+     * @param id The id of the user to deactivate/reactivate.
+     * @param request Request body containing "active" boolean.
+     * @return Updated user entity or error.
+     */
+    @PutMapping("users/{id}/active")
+    public ResponseEntity<?> setUserActiveStatus(@PathVariable("id") int id, @RequestBody java.util.Map<String, Boolean> request) {
+        userService.logging("setUserActiveStatus( " + id + ", " + request.get("active") + " )");
+        try {
+            Boolean active = request.get("active");
+            if (active == null) {
+                return new ResponseEntity<>("Active status is required", HttpStatus.BAD_REQUEST);
+            }
+            UserEntity user = userRepository.getReferenceById(id);
+            user.setActive(active);
+            userRepository.save(user);
+            userService.logging("Admin set active=" + active + " for user id: " + id);
+            return new ResponseEntity<>(new UserEntity(user), HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Failed to update user status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
    
 }

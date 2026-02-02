@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useTranslation } from "react-i18next";
 import {postRequest} from '../../RequestFunctions/RequestFunctions';
 import LayoutModalAdmin from '../../Templates/LayoutModalAdmin';
+import isEmail from '../../misc/isEmail';
 
 export default function AddUser({ isOpen, onClose }) {
   const headers =  useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -12,6 +13,7 @@ export default function AddUser({ isOpen, onClose }) {
   const [password, setPassword] = useState('');
   const [name, setName ] = useState('');
   const [surname, setSurname] = useState('');
+  const [department, setDepartment] = useState('');
   //const [visibility, setVisibility] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEmployee, setIsEmployee] = useState(true);
@@ -20,6 +22,11 @@ export default function AddUser({ isOpen, onClose }) {
   async function addUser(){
     if(!email || !password || !name || !surname){
         toast.error(t('fields_not_empty'));
+        return false;
+    }
+    // Validate email format
+    if(!isEmail(email.trim())){
+        toast.error(t('invalidEmail'));
         return false;
     }
     postRequest(
@@ -38,6 +45,7 @@ export default function AddUser({ isOpen, onClose }) {
         'password': password,
         'name': name,
         'surname': surname,
+        'department': department,
         'admin': isAdmin,
         'employee': isEmployee,
         'servicePersonnel': isServicePersonnel,
@@ -96,6 +104,17 @@ export default function AddUser({ isOpen, onClose }) {
           type={'text'}
           value={surname}
           onChange={(e)=>setSurname(e.target.value)}
+        />
+      </FormControl>
+      <br/><br/>
+      <FormControl id='addUser-setDepartment' size='small' fullWidth variant='standard'>
+        <TextField
+          id='standard-adornment-reason-department'
+          label={t('department')}
+          size='small'
+          type={'text'}
+          value={department}
+          onChange={(e)=>setDepartment(e.target.value)}
         />
       </FormControl>
       <br/><br/>

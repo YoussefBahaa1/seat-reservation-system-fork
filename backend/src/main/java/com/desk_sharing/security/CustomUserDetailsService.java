@@ -31,7 +31,17 @@ public class CustomUserDetailsService  implements UserDetailsService {
         if (user == null) {
             throw new UsernameNotFoundException("Email " + username + " not found");
         }
-        return new User(user.getEmail(), user.getPassword(), mapRolesToAuthorities(user.getRoles()));
+        // Use Spring Security User constructor that includes enabled flag
+        // enabled = user.isActive(), accountNonExpired = true, credentialsNonExpired = true, accountNonLocked = true
+        return new User(
+            user.getEmail(), 
+            user.getPassword(), 
+            user.isActive(),  // enabled - deactivated users cannot log in
+            true,              // accountNonExpired
+            true,              // credentialsNonExpired
+            true,              // accountNonLocked
+            mapRolesToAuthorities(user.getRoles())
+        );
     }
 
     private Collection<GrantedAuthority> mapRolesToAuthorities(List<Role> roles) {

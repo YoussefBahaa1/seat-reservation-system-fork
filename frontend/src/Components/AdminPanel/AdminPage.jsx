@@ -11,6 +11,7 @@ import DeleteWorkstation from './Workstation/DeleteWorkstation';
 import AddUser from './UserManagement/AddUser';
 import DeleteUser from './UserManagement/DeleteUser';
 import EditUser from './UserManagement/EditUser';
+import DeactivateUser from './UserManagement/DeactivateUser';
 import OverviewBookings from './Bookings/OverviewBookings';
 import { useTranslation } from 'react-i18next';
 import {BootstrapEmployeeDialog, BootstrapWorkstationDialog, BootstrapDialog } from '../Bootstrap';
@@ -29,6 +30,7 @@ const AdminPage = () => {
   const [isDeleteWorkstationOpen, setIsDeleteWorkstationOpen] = useState(false);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
+  const [isDeactivateUserOpen, setIsDeactivateUserOpen] = useState(false);
   const [isDeleteUserOpen, setIsDeleteUserOpen] = useState(false);
 
   const [isOverviewBookingsOpen, setIsOverviewBookingsOpen] = useState(false);
@@ -66,6 +68,7 @@ const AdminPage = () => {
   const toggleDeleteWorkstationModal = () => setIsDeleteWorkstationOpen(!isDeleteWorkstationOpen);
   const toggleAddUserModal = () => setIsAddUserOpen(!isAddUserOpen);
   const toggleEditUserModal = () => setIsEditUserOpen(!isEditUserOpen);
+  const toggleDeactivateUserModal = () => setIsDeactivateUserOpen(!isDeactivateUserOpen);
   const toggleDeleteUserModal = () => setIsDeleteUserOpen(!isDeleteUserOpen);
   
   return (
@@ -97,11 +100,14 @@ const AdminPage = () => {
       <button id='addUser' className='my-button' onClick={toggleAddUserModal}>
         {t('addUser')}
       </button>
-      <button id='deleteUser' className='my-button' onClick={toggleDeleteUserModal}>
-        {t('deleteUser')}
-      </button>
       <button id='editUser' className='my-button' onClick={toggleEditUserModal}>
         {t('editUser')}
+      </button>
+      <button id='deactivateReactivateUser' className='my-button' onClick={toggleDeactivateUserModal}>
+        {t('deactivateReactivateUser')}
+      </button>
+      <button id='deleteUser' className='my-button' onClick={toggleDeleteUserModal}>
+        {t('deleteUser')}
       </button>
     </div>
     <div className={`button-wrapper ${showWorkstationButtons ? 'visible' : ''}`}>
@@ -151,6 +157,10 @@ const AdminPage = () => {
 
       <BootstrapEmployeeDialog onClose={setIsEditUserOpen.bind(null, !isEditUserOpen)} aria-labelledby='customized-dialog-title' open={isEditUserOpen}>
         <EditUser isOpen={isEditUserOpen} onClose={setIsEditUserOpen.bind(null, !isEditUserOpen)} />
+      </BootstrapEmployeeDialog>
+
+      <BootstrapEmployeeDialog onClose={setIsDeactivateUserOpen.bind(null, !isDeactivateUserOpen)} aria-labelledby='customized-dialog-title' open={isDeactivateUserOpen}>
+        <DeactivateUser isOpen={isDeactivateUserOpen} onClose={setIsDeactivateUserOpen.bind(null, !isDeactivateUserOpen)} />
       </BootstrapEmployeeDialog>
 
       <BootstrapEmployeeDialog onClose={setIsDeleteUserOpen.bind(null, !isDeleteUserOpen)} aria-labelledby='customized-dialog-title' open={isDeleteUserOpen}>
