@@ -1,39 +1,301 @@
--- normal user
-insert into users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
-select 
-    'test.user@mail.de', 
-    'Max', 
-    '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
-    'Mustermann',
-    0x1,
-    (select floor_id from floors where floors.name='Musteretage 1'),
-    (select view_mode_id from view_modes where view_modes.view_mode_name='day')
-WHERE NOT EXISTS (
-    SELECT 1 FROM users WHERE users.email = 'test.user@mail.de'
-); 
+-- Test password hash for "test": $2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK
 
-insert into user_roles (user_id, role_id) 
-select 
-    (select id from users where users.email = 'test.user@mail.de'),
-    (select id from roles where roles.name = 'ROLE_USER')
-;
+-- ===========================
+-- ADMIN USERS (2)
+-- ===========================
 
--- admin user
-insert into users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
-select 
+-- Admin 1
+INSERT INTO users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
+SELECT 
     'test.admin@mail.de', 
-    'Maxi', 
+    'Admin', 
     '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
-    'Musterfrau',
+    'One',
     0x1,
-    (select floor_id from floors where floors.name='Musteretage 2'),
-    (select view_mode_id from view_modes where view_modes.view_mode_name='week')
+    (SELECT floor_id FROM floors WHERE floors.name='Musteretage 1'),
+    (SELECT view_mode_id FROM view_modes WHERE view_modes.view_mode_name='day')
 WHERE NOT EXISTS (
     SELECT 1 FROM users WHERE users.email = 'test.admin@mail.de'
 ); 
 
-insert into user_roles (user_id, role_id) 
-select 
-    (select id from users where users.email = 'test.admin@mail.de'),
-    (select id from roles where roles.name = 'ROLE_ADMIN')
-;
+INSERT INTO user_roles (user_id, role_id) 
+SELECT 
+    (SELECT id FROM users WHERE users.email = 'test.admin@mail.de'),
+    (SELECT id FROM roles WHERE roles.name = 'ROLE_ADMIN')
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_roles 
+    WHERE user_id = (SELECT id FROM users WHERE email = 'test.admin@mail.de')
+    AND role_id = (SELECT id FROM roles WHERE name = 'ROLE_ADMIN')
+);
+
+-- Admin 2
+INSERT INTO users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
+SELECT 
+    'test.admin2@mail.de', 
+    'Admin', 
+    '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
+    'Two',
+    0x1,
+    (SELECT floor_id FROM floors WHERE floors.name='Musteretage 2'),
+    (SELECT view_mode_id FROM view_modes WHERE view_modes.view_mode_name='week')
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE users.email = 'test.admin2@mail.de'
+); 
+
+INSERT INTO user_roles (user_id, role_id) 
+SELECT 
+    (SELECT id FROM users WHERE users.email = 'test.admin2@mail.de'),
+    (SELECT id FROM roles WHERE roles.name = 'ROLE_ADMIN')
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_roles 
+    WHERE user_id = (SELECT id FROM users WHERE email = 'test.admin2@mail.de')
+    AND role_id = (SELECT id FROM roles WHERE name = 'ROLE_ADMIN')
+);
+
+-- ===========================
+-- EMPLOYEE USERS (8)
+-- ===========================
+
+-- Employee 1
+INSERT INTO users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
+SELECT 
+    'test.employee@mail.de', 
+    'Employee', 
+    '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
+    'One',
+    0x1,
+    (SELECT floor_id FROM floors WHERE floors.name='Musteretage 1'),
+    (SELECT view_mode_id FROM view_modes WHERE view_modes.view_mode_name='day')
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE users.email = 'test.employee@mail.de'
+); 
+
+INSERT INTO user_roles (user_id, role_id) 
+SELECT 
+    (SELECT id FROM users WHERE users.email = 'test.employee@mail.de'),
+    (SELECT id FROM roles WHERE roles.name = 'ROLE_EMPLOYEE')
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_roles 
+    WHERE user_id = (SELECT id FROM users WHERE email = 'test.employee@mail.de')
+    AND role_id = (SELECT id FROM roles WHERE name = 'ROLE_EMPLOYEE')
+);
+
+-- Employee 2
+INSERT INTO users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
+SELECT 
+    'test.employee2@mail.de', 
+    'Employee', 
+    '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
+    'Two',
+    0x1,
+    (SELECT floor_id FROM floors WHERE floors.name='Musteretage 1'),
+    (SELECT view_mode_id FROM view_modes WHERE view_modes.view_mode_name='day')
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE users.email = 'test.employee2@mail.de'
+); 
+
+INSERT INTO user_roles (user_id, role_id) 
+SELECT 
+    (SELECT id FROM users WHERE users.email = 'test.employee2@mail.de'),
+    (SELECT id FROM roles WHERE roles.name = 'ROLE_EMPLOYEE')
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_roles 
+    WHERE user_id = (SELECT id FROM users WHERE email = 'test.employee2@mail.de')
+    AND role_id = (SELECT id FROM roles WHERE name = 'ROLE_EMPLOYEE')
+);
+
+-- Employee 3
+INSERT INTO users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
+SELECT 
+    'test.employee3@mail.de', 
+    'Employee', 
+    '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
+    'Three',
+    0x1,
+    (SELECT floor_id FROM floors WHERE floors.name='Musteretage 1'),
+    (SELECT view_mode_id FROM view_modes WHERE view_modes.view_mode_name='day')
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE users.email = 'test.employee3@mail.de'
+); 
+
+INSERT INTO user_roles (user_id, role_id) 
+SELECT 
+    (SELECT id FROM users WHERE users.email = 'test.employee3@mail.de'),
+    (SELECT id FROM roles WHERE roles.name = 'ROLE_EMPLOYEE')
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_roles 
+    WHERE user_id = (SELECT id FROM users WHERE email = 'test.employee3@mail.de')
+    AND role_id = (SELECT id FROM roles WHERE name = 'ROLE_EMPLOYEE')
+);
+
+-- Employee 4
+INSERT INTO users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
+SELECT 
+    'test.employee4@mail.de', 
+    'Employee', 
+    '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
+    'Four',
+    0x1,
+    (SELECT floor_id FROM floors WHERE floors.name='Musteretage 2'),
+    (SELECT view_mode_id FROM view_modes WHERE view_modes.view_mode_name='week')
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE users.email = 'test.employee4@mail.de'
+); 
+
+INSERT INTO user_roles (user_id, role_id) 
+SELECT 
+    (SELECT id FROM users WHERE users.email = 'test.employee4@mail.de'),
+    (SELECT id FROM roles WHERE roles.name = 'ROLE_EMPLOYEE')
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_roles 
+    WHERE user_id = (SELECT id FROM users WHERE email = 'test.employee4@mail.de')
+    AND role_id = (SELECT id FROM roles WHERE name = 'ROLE_EMPLOYEE')
+);
+
+-- Employee 5
+INSERT INTO users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
+SELECT 
+    'test.employee5@mail.de', 
+    'Employee', 
+    '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
+    'Five',
+    0x1,
+    (SELECT floor_id FROM floors WHERE floors.name='Musteretage 2'),
+    (SELECT view_mode_id FROM view_modes WHERE view_modes.view_mode_name='week')
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE users.email = 'test.employee5@mail.de'
+); 
+
+INSERT INTO user_roles (user_id, role_id) 
+SELECT 
+    (SELECT id FROM users WHERE users.email = 'test.employee5@mail.de'),
+    (SELECT id FROM roles WHERE roles.name = 'ROLE_EMPLOYEE')
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_roles 
+    WHERE user_id = (SELECT id FROM users WHERE email = 'test.employee5@mail.de')
+    AND role_id = (SELECT id FROM roles WHERE name = 'ROLE_EMPLOYEE')
+);
+
+-- Employee 6
+INSERT INTO users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
+SELECT 
+    'test.employee6@mail.de', 
+    'Employee', 
+    '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
+    'Six',
+    0x1,
+    (SELECT floor_id FROM floors WHERE floors.name='Musteretage 1'),
+    (SELECT view_mode_id FROM view_modes WHERE view_modes.view_mode_name='month')
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE users.email = 'test.employee6@mail.de'
+); 
+
+INSERT INTO user_roles (user_id, role_id) 
+SELECT 
+    (SELECT id FROM users WHERE users.email = 'test.employee6@mail.de'),
+    (SELECT id FROM roles WHERE roles.name = 'ROLE_EMPLOYEE')
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_roles 
+    WHERE user_id = (SELECT id FROM users WHERE email = 'test.employee6@mail.de')
+    AND role_id = (SELECT id FROM roles WHERE name = 'ROLE_EMPLOYEE')
+);
+
+-- Employee 7
+INSERT INTO users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
+SELECT 
+    'test.employee7@mail.de', 
+    'Employee', 
+    '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
+    'Seven',
+    0x1,
+    (SELECT floor_id FROM floors WHERE floors.name='Musteretage 1'),
+    (SELECT view_mode_id FROM view_modes WHERE view_modes.view_mode_name='day')
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE users.email = 'test.employee7@mail.de'
+); 
+
+INSERT INTO user_roles (user_id, role_id) 
+SELECT 
+    (SELECT id FROM users WHERE users.email = 'test.employee7@mail.de'),
+    (SELECT id FROM roles WHERE roles.name = 'ROLE_EMPLOYEE')
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_roles 
+    WHERE user_id = (SELECT id FROM users WHERE email = 'test.employee7@mail.de')
+    AND role_id = (SELECT id FROM roles WHERE name = 'ROLE_EMPLOYEE')
+);
+
+-- Employee 8
+INSERT INTO users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
+SELECT 
+    'test.employee8@mail.de', 
+    'Employee', 
+    '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
+    'Eight',
+    0x1,
+    (SELECT floor_id FROM floors WHERE floors.name='Musteretage 2'),
+    (SELECT view_mode_id FROM view_modes WHERE view_modes.view_mode_name='week')
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE users.email = 'test.employee8@mail.de'
+); 
+
+INSERT INTO user_roles (user_id, role_id) 
+SELECT 
+    (SELECT id FROM users WHERE users.email = 'test.employee8@mail.de'),
+    (SELECT id FROM roles WHERE roles.name = 'ROLE_EMPLOYEE')
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_roles 
+    WHERE user_id = (SELECT id FROM users WHERE email = 'test.employee8@mail.de')
+    AND role_id = (SELECT id FROM roles WHERE name = 'ROLE_EMPLOYEE')
+);
+
+-- ===========================
+-- SERVICE PERSONNEL USERS (2)
+-- ===========================
+
+-- Service Personnel 1
+INSERT INTO users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
+SELECT 
+    'test.servicepersonnel@mail.de', 
+    'Service', 
+    '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
+    'One',
+    0x1,
+    (SELECT floor_id FROM floors WHERE floors.name='Musteretage 1'),
+    (SELECT view_mode_id FROM view_modes WHERE view_modes.view_mode_name='day')
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE users.email = 'test.servicepersonnel@mail.de'
+); 
+
+INSERT INTO user_roles (user_id, role_id) 
+SELECT 
+    (SELECT id FROM users WHERE users.email = 'test.servicepersonnel@mail.de'),
+    (SELECT id FROM roles WHERE roles.name = 'ROLE_SERVICE_PERSONNEL')
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_roles 
+    WHERE user_id = (SELECT id FROM users WHERE email = 'test.servicepersonnel@mail.de')
+    AND role_id = (SELECT id FROM roles WHERE name = 'ROLE_SERVICE_PERSONNEL')
+);
+
+-- Service Personnel 2
+INSERT INTO users (email,name,password,surname,visibility,default_floor_id,default_view_mode_id)
+SELECT 
+    'test.servicepersonnel2@mail.de', 
+    'Service', 
+    '$2a$10$Ur3L01HGEDVmroCR6QTi7OLbz0SZ9hQFvHg0KW25YvVIEXoLeiarK', 
+    'Two',
+    0x1,
+    (SELECT floor_id FROM floors WHERE floors.name='Musteretage 2'),
+    (SELECT view_mode_id FROM view_modes WHERE view_modes.view_mode_name='week')
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE users.email = 'test.servicepersonnel2@mail.de'
+); 
+
+INSERT INTO user_roles (user_id, role_id) 
+SELECT 
+    (SELECT id FROM users WHERE users.email = 'test.servicepersonnel2@mail.de'),
+    (SELECT id FROM roles WHERE roles.name = 'ROLE_SERVICE_PERSONNEL')
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_roles 
+    WHERE user_id = (SELECT id FROM users WHERE email = 'test.servicepersonnel2@mail.de')
+    AND role_id = (SELECT id FROM roles WHERE name = 'ROLE_SERVICE_PERSONNEL')
+);
