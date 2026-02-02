@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Button, Typography/*, FormControl, RadioGroup, FormControlLabel, Radio */} from '@mui/material';
+import { Box, Button, Typography, IconButton, Tooltip/*, FormControl, RadioGroup, FormControlLabel, Radio */} from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -7,9 +7,10 @@ import 'react-confirm-alert/src/react-confirm-alert.css';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { FaStar, FaRegStar } from 'react-icons/fa';
 
 import LayoutPage from '../../Templates/LayoutPage.jsx';
-import { getRequest } from '../../RequestFunctions/RequestFunctions';
+import { getRequest, postRequest, deleteRequest } from '../../RequestFunctions/RequestFunctions';
 import bookingPostRequest from '../../misc/bookingPostRequest.js';
 //import { buildFullDaySlots } from './buildFullDaySlots.js';
 
@@ -28,6 +29,7 @@ const Booking = () => {
   const [event, setEvent] = useState({});
   const [clickedDeskId, setClickedDeskId] = useState(null);
   const [clickedDeskRemark, setClickedDeskRemark] = useState('');
+  const [isFavourite, setIsFavourite] = useState(false);
 
   const eventRef = useRef(event);
   const eventsRef = useRef(events);
@@ -176,11 +178,57 @@ if (startDay.getTime() === today.getTime()) {
   // Fetch desks when roomId changes
   useEffect(() => { if (roomId) fetchDesks(); }, [roomId, fetchDesks]);
 
+  const refreshFavouriteStatus = useCallback(() => {
+    const userId = localStorage.getItem('userId');
+    if (!userId || !roomId) return;
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/favourites/${userId}/room/${roomId}/isFavourite`,
+      headers.current,
+      (res) => setIsFavourite(Boolean(res)),
+      () => setIsFavourite(false)
+    );
+  }, [roomId]);
+
+  // Check favourite status for the current room when room changes
+  useEffect(() => {
+    refreshFavouriteStatus();
+  }, [refreshFavouriteStatus]);
+
   // Reload bookings when clicked desk changes
   useEffect(() => { if (clickedDeskId) loadBookings(); }, [clickedDeskId, loadBookings]);
 
   // Set locale for calendar
   useEffect(() => { moment.locale(i18n.language); }, [i18n.language]);
+
+  const toggleFavourite = () => {
+    const userId = localStorage.getItem('userId');
+    if (!userId || !roomId) return;
+
+    const onSuccess = () => {
+      setIsFavourite((prev) => !prev);
+      toast.success(!isFavourite ? t('addFavourite') : t('removeFavourite'));
+    };
+    const onFail = () => {
+      refreshFavouriteStatus();
+      toast.error(t('favouriteToggleError'));
+    };
+
+    if (isFavourite) {
+      deleteRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/favourites/${userId}/room/${roomId}`,
+        headers.current,
+        onSuccess,
+        onFail
+      );
+    } else {
+      postRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/favourites/${userId}/room/${roomId}`,
+        headers.current,
+        onSuccess,
+        onFail
+      );
+    }
+  };
 
   /** ----- HELPER ----- */
   const getHeadline = () => t('availableDesks') + (room ? ` in ${room.remark}` : '');
@@ -204,7 +252,12 @@ if (startDay.getTime() === today.getTime()) {
 
   /** ----- JSX ----- */
   return (
-    <LayoutPage title={getHeadline()} helpText={t('helpCreateBooking')} useGenericBackButton withPaddingX>
+    <LayoutPage
+      title={getHeadline()}
+      helpText={t('helpCreateBooking')}
+      useGenericBackButton
+      withPaddingX
+    >
       <Box sx={{ display: 'flex', width: '100%' }}>
         {/* Desks List */}
         <Box id="desks" sx={{ width: '20%', paddingRight: '20px' }}>
@@ -241,6 +294,17 @@ if (startDay.getTime() === today.getTime()) {
 
         {/* Calendar + Controls */}
         <Box sx={{ width: '80%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, marginRight: '10px' }}>
+          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', pr: 2 }}>
+            <Tooltip title={isFavourite ? t('removeFavourite') : t('addFavourite')}>
+              <IconButton
+                onClick={toggleFavourite}
+                aria-label="toggle-favourite"
+                sx={{ color: isFavourite ? '#ffb300' : '#9e9e9e', fontSize: '22px' }}
+              >
+                {isFavourite ? <FaStar /> : <FaRegStar />}
+              </IconButton>
+            </Tooltip>
+          </Box>
           {/*<FormControl>
             <RadioGroup
               row
