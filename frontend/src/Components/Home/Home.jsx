@@ -271,6 +271,13 @@ const Home = () => {
     const handleAddBookingClick = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (mode === 'parking') {
+        if (date instanceof Date && !Number.isNaN(date.valueOf())) {
+          sessionStorage.setItem('carparkSelectedDate', date.toISOString());
+        }
+        navigate('/carpark', { state: { date } });
+        return;
+      }
       navigate("/floor", { state: { date } });
     };
 
