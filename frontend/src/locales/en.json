@@ -30,6 +30,24 @@
     "settingsUpdated": "Settings successful updated.",
     "settingsUpdatedFail": "Settings was not updated.",   
     "visibility": "Visibility",
+    "visibilityMode": "Visibility",
+    "abbreviationCap": "Abbreviation",
+    "you": "You",
+    "visibilityHelper": "Choose how your name is shown to other users.",
+    "favourites": "Favourites",
+    "favouritesHelper": "Save rooms you book often. Click to open booking; unstar to remove.",
+    "addFavourite": "Added to favourites",
+    "removeFavourite": "Removed from favourites",
+    "favouritesEmpty": "You have no favourites yet. Star a room to save it.",
+    "favouriteToggleError": "Could not update favourites",
+    "goToBooking": "Go to booking",
+    "rooms": "Rooms",
+    "parking": "Parking",
+    "parkingComingSoon": "Parking favourites coming soon.",
+    "loading": "Loading",
+    "roomSection": "Rooms",
+    "parkingSection": "Parking (coming soon)",
+    "goToBooking": "Go to booking",
     "logout": "Logout",
     "hello": "Hello",
 
@@ -304,3 +322,4 @@
     ,"confirmDeleteUser":"This action will permanently delete the user and cannot be undone."
     ,"value":"Value"
 }
+

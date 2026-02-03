@@ -77,10 +77,13 @@ public class MfaController {
         org.springframework.security.authentication.UsernamePasswordAuthenticationToken auth = 
             new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(email, null, null);
         String accessToken = jwtGenerator.generateToken(auth);
+        String visibilityMode = user.getVisibilityMode() != null
+            ? user.getVisibilityMode().name()
+            : com.desk_sharing.entities.VisibilityMode.FULL_NAME.name();
         
         userService.logging("MFA verification successful for user: " + email);
         
-        return new ResponseEntity<>(
+        return ResponseEntity.ok(
             new AuthResponseDTO(
                 accessToken,
                 user.getEmail(),
@@ -88,9 +91,12 @@ public class MfaController {
                 user.getName(),
                 user.getSurname(),
                 user.isAdmin(),
-                user.isVisibility()
-            ),
-            HttpStatus.OK
+                user.isVisibility(),
+                visibilityMode,
+                "SUCCESS",
+                false,
+                null
+            )
         );
     }
     
@@ -106,7 +112,7 @@ public class MfaController {
         
         UserEntity user = userRepository.findByEmail(email);
         if (user == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         
         // Generate a new secret

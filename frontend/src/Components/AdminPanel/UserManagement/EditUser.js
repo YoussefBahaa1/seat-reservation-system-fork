@@ -21,6 +21,7 @@ export default function EditUser({ isOpen, onClose }) {
   const [isAdmin, setIsAdmin] = useState();
   const [isEmployee, setIsEmployee] = useState();
   const [isServicePersonnel, setIsServicePersonnel] = useState();
+  const [visibilityMode, setVisibilityMode] = useState('FULL_NAME');
   // Password reset state
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -70,7 +71,7 @@ export default function EditUser({ isOpen, onClose }) {
         'admin': isAdmin,
         'employee': isEmployee,
         'servicePersonnel': isServicePersonnel,
-        'visibility': true//visibility
+        'visibility': visibilityMode
       })
     );
   }
@@ -88,6 +89,7 @@ export default function EditUser({ isOpen, onClose }) {
       setIsEmployee(toBeEditedUser.employee);
       setIsServicePersonnel(toBeEditedUser.servicePersonnel);
       setDepartment(toBeEditedUser.department || '');
+      setVisibilityMode(toBeEditedUser.visibility || 'FULL_NAME');
       // Reset password fields when opening edit modal
       setShowResetPassword(false);
       setNewPassword('');

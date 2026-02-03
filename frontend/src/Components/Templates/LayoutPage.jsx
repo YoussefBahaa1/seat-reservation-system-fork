@@ -1,9 +1,9 @@
 import SidebarComponent from '../Home/SidebarComponent.jsx';
-import { Box, Typography, Divider} from '@mui/material';
+import { Box, Typography, Divider } from '@mui/material';
 import InfoModal from '../InfoModal.jsx';
 import GenericBackButton from '../GenericBackButton.js';
-import {LayoutPage_theme} from './LayoutPage.theme.js';
-/** 
+import { LayoutPage_theme } from './LayoutPage.theme.js';
+/**
  * Simple template for pages.
  * 
  * @param title The title of the page. 
@@ -11,9 +11,10 @@ import {LayoutPage_theme} from './LayoutPage.theme.js';
  * @param useGenericBackButton If true an button is displayed with that the user can navigate back.
  * @param withSidebar If true the sidebar is displayed.
  * @param withPaddingX If true around the content is an padding in x direction. 
+ * @param actionElement Optional element (icon/button) displayed next to the title (right aligned).
  * @param children The content of the page.
  */
-const LayoutPage = ({title, helpText, useGenericBackButton=false, withSidebar=true, withPaddingX=false, children}) => {
+const LayoutPage = ({ title, helpText, useGenericBackButton = false, withSidebar = true, withPaddingX = false, actionElement = null, children }) => {
 
     return (
         <Box
@@ -21,10 +22,12 @@ const LayoutPage = ({title, helpText, useGenericBackButton=false, withSidebar=tr
         >
             {withSidebar && <SidebarComponent />}
             <Box sx={LayoutPage_theme.content}>
-                <Typography variant='h4' component='h1' sx={LayoutPage_theme.h1}>
-                    {title}
-                </Typography>
-                
+                <Box sx={LayoutPage_theme.headerRow}>
+                    <Typography variant='h4' component='h1' sx={LayoutPage_theme.h1}>
+                        {title}
+                    </Typography>
+                    {actionElement}
+                </Box>
                 <Divider sx={LayoutPage_theme.divider} />
                 <br/>
                 {helpText !== '' && <InfoModal text={helpText}/>}

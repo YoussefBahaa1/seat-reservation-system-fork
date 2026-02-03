@@ -5,7 +5,7 @@ import { Sidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
 import { RiAdminFill } from "react-icons/ri";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FaLock, FaBookmark } from "react-icons/fa";
+import { FaLock, FaBookmark, FaStar } from "react-icons/fa";
 import ChangePassword from "./ChangePassword";
 import LogoutConfirmationModal from "./LogoutConfirmationModal";
 import MfaSettings from "./MfaSettings";
@@ -15,10 +15,12 @@ import { AiFillPlusCircle } from 'react-icons/ai';
 import { IoIosCheckbox, IoIosSettings, IoIosAlbums } from 'react-icons/io';
 import { IoSearchSharp } from 'react-icons/io5';
 import { HiOutlineSparkles } from 'react-icons/hi2';
+import { MdVisibility } from 'react-icons/md';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { AiOutlineTeam } from "react-icons/ai";
 import Defaults from "./Defaults";
+import VisibilityPreferences from "./VisibilityPreferences";
 import i18n from '../../i18n';
 
 const SidebarComponent = () => {
@@ -33,6 +35,7 @@ const SidebarComponent = () => {
   const [isLogoutConfirmationOpen, setIsLogoutConfirmationOpen] = useState(false);
   const [isDefaultsModalOpen, setIsDefaultsModalOpen] = useState(false);
   const [isMfaSettingsOpen, setIsMfaSettingsOpen] = useState(false);
+  const [isVisibilityModalOpen, setIsVisibilityModalOpen] = useState(false);
   
   useEffect(() => {
     if (location.pathname === '/admin') {
@@ -47,6 +50,9 @@ const SidebarComponent = () => {
       setActiveTab('bookings');
       //setSeriesSubMenuOpen(false);
       
+    }
+    if (location.pathname === '/favourites') {
+      setActiveTab('favourites');
     }
     if (location.pathname === '/manageseries' || location.pathname === '/createseries') {
       setActiveTab('series');
@@ -82,6 +88,10 @@ const SidebarComponent = () => {
         navigate("/freeDesks", { replace: true });
         break;
 
+      case 'favourites':
+        navigate("/favourites", { replace: true });
+        break;
+
       case 'roomSearch':
         navigate("/roomSearch", { replace: true });
         break;
@@ -102,6 +112,9 @@ const SidebarComponent = () => {
 
       case 'defaults':
         setIsDefaultsModalOpen(true);
+        break;
+      case 'visibilityPrefs':
+        setIsVisibilityModalOpen(true);
         break;
 
       case 'colleagues':
@@ -199,6 +212,15 @@ const SidebarComponent = () => {
             {t('bookings')}
           </MenuItem>
 
+          <MenuItem
+            id='sidebar_favourites'
+            active={activeTab === 'favourites'}
+            icon={<FaStar />}
+            onClick={() => handleClick('favourites')}
+          >
+            {t('favourites')}
+          </MenuItem>
+
           {/*Series*/}
           <SubMenu active={activeTab === 'series'} icon={<IoIosAlbums />} label={t('series')}>
             <MenuItem id='sidebar_manageseries' icon={<IoIosCheckbox />} onClick={() => {navigate('/manageseries', { replace: true });}}>
@@ -245,6 +267,12 @@ const SidebarComponent = () => {
                 () => handleClick('defaults')}>
                   {t('defaults')}
               </MenuItem>
+              <MenuItem 
+                id='sidebar_visibility' 
+                icon={<MdVisibility />} onClick={
+                () => handleClick('visibilityPrefs')}>
+                  {t('visibility')}
+              </MenuItem>
             <MenuItem id='sidebar_changePassword' icon={<FaLock/>} onClick={() => handleClick('changePassword')}>
               {t('password')}
             </MenuItem>
@@ -262,6 +290,10 @@ const SidebarComponent = () => {
       <Defaults 
         isOpen={isDefaultsModalOpen}
         onClose={setIsDefaultsModalOpen.bind(null, false)}
+      />
+      <VisibilityPreferences 
+        isOpen={isVisibilityModalOpen}
+        onClose={setIsVisibilityModalOpen.bind(null, false)}
       />
       <ChangePassword
         isOpen={isChangePasswordModalOpen}
