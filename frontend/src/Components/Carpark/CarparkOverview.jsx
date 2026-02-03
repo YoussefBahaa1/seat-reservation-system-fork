@@ -1,5 +1,6 @@
 import { Box, Button, Chip, Divider, Paper, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { postRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
@@ -8,6 +9,7 @@ import CreateTimePicker from '../misc/CreateTimePicker';
 import LayoutPage from '../Templates/LayoutPage';
 
 const CARPARK_SVG_URL = '/Assets/carpark_overview_ready.svg';
+const CARPARK_SELECTED_DATE_KEY = 'carparkSelectedDate';
 
 const parseFloatAttr = (el, name, fallback = 0) => {
   const raw = el.getAttribute(name);
@@ -53,6 +55,7 @@ const getSpotMetaFromDataset = (rect) => ({
 
 const CarparkOverview = () => {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
   const containerRef = useRef(null);
   const cleanupRef = useRef([]);
   const selectedRectRef = useRef(null);
@@ -64,7 +67,20 @@ const CarparkOverview = () => {
   const [hoveredSpot, setHoveredSpot] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [zoom, setZoom] = useState(1);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const fromState = location.state?.date ? new Date(location.state.date) : null;
+    if (fromState && !Number.isNaN(fromState.valueOf())) {
+      return fromState;
+    }
+    const stored = sessionStorage.getItem(CARPARK_SELECTED_DATE_KEY);
+    if (stored) {
+      const parsed = new Date(stored);
+      if (!Number.isNaN(parsed.valueOf())) {
+        return parsed;
+      }
+    }
+    return new Date();
+  });
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('10:00');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -284,6 +300,11 @@ const CarparkOverview = () => {
     svgRef.current.style.transform = `scale(${zoom})`;
     svgRef.current.style.transformOrigin = '0 0';
   }, [zoom]);
+
+  useEffect(() => {
+    if (!selectedDate || Number.isNaN(selectedDate.valueOf())) return;
+    sessionStorage.setItem(CARPARK_SELECTED_DATE_KEY, selectedDate.toISOString());
+  }, [selectedDate]);
 
   const spotForPanel = selectedSpot ?? hoveredSpot;
   const isSpecialSpot = spotForPanel?.special === true;
