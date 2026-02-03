@@ -6,6 +6,7 @@ import com.desk_sharing.entities.Room;
 import com.desk_sharing.model.BookingDTO;
 import com.desk_sharing.model.BookingEditDTO;
 import com.desk_sharing.model.BookingProjectionDTO;
+import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
 import com.desk_sharing.repositories.RoomRepository;
@@ -225,6 +226,12 @@ public class BookingService {
 
     public List<Booking> getAllBookingsForDate(Date date) {
         return bookingRepository.getBookingForDate(date);
+    }
+
+    //Gets bookings for a specific day and return BookingDayEventDTOs
+    public List<BookingDayEventDTO> getBookingEventsForDate(Date date) {
+        List<Booking> bookings = bookingRepository.getBookingForDate(date);
+        return bookings.stream().map(BookingDayEventDTO::new).toList();
     }
 
 	public Booking editBookingTimings(final BookingEditDTO booking) {

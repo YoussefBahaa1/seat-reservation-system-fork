@@ -50,7 +50,7 @@ public class UserEntity {
     private Floor default_floor;
     // The default view in the calendar in MyBookings.jsx. Either "day", "week" or "month".
     @ManyToOne(cascade =  { CascadeType.PERSIST })
-    @JoinColumn(name = "defaultViewModeId", nullable = true)
+    @JoinColumn(name = "default_view_mode_id", nullable = true)
     private ViewMode defaultViewMode;
 
     @ManyToMany(fetch = FetchType.EAGER)

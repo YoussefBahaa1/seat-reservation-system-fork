@@ -6,6 +6,7 @@ import org.springframework.security.authentication.AuthenticationManager;import 
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -57,6 +58,8 @@ public class SecurityConfiguration {
             // Stateless communication.
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // Allow CORS preflight requests without authentication.
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Allow unauthenticated users to contact /users/login endpoint.
                 .requestMatchers("/users/login").permitAll()
                 // Allow MFA verification endpoint (second step of login)
@@ -71,4 +74,3 @@ public class SecurityConfiguration {
         return http.build();
     }
 }
-
