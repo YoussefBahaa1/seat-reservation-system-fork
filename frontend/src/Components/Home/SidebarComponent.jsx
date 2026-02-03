@@ -19,6 +19,7 @@ import { MdVisibility } from 'react-icons/md';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { AiOutlineTeam } from "react-icons/ai";
+import { MdLocalParking } from 'react-icons/md';
 import Defaults from "./Defaults";
 import VisibilityPreferences from "./VisibilityPreferences";
 import i18n from '../../i18n';
@@ -61,6 +62,9 @@ const SidebarComponent = () => {
     if (location.pathname === '/freeDesks') {
       setActiveTab('freeDesks');
       //setSeriesSubMenuOpen(false);
+    }
+    if (location.pathname === '/carpark') {
+      setActiveTab('carpark');
     }
 
   }, [location.pathname, activeTab]);
@@ -121,6 +125,10 @@ const SidebarComponent = () => {
         navigate("/colleagues", { replace: true });
         break;
 
+      case 'carpark':
+        navigate("/carpark", { replace: true });
+        break;
+
       case 'logout':
         setIsLogoutConfirmationOpen(true);
         break;
@@ -144,7 +152,15 @@ const SidebarComponent = () => {
   };
 
   const handleLogoutConfirmed = () => {
-    localStorage.removeItem('userId'); // Clear the user's session
+    // Clear the user's session (auth + cached user info).
+    sessionStorage.removeItem('headers');
+    sessionStorage.removeItem('accessToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('email');
+    localStorage.removeItem('name');
+    localStorage.removeItem('surname');
+    localStorage.removeItem('admin');
+    localStorage.removeItem('visibility');
     // Reset language to browser preference for the unauthenticated screens
     const browserLang = navigator.language.split('-')[0] || 'en';
     i18n.changeLanguage(browserLang);
@@ -248,6 +264,14 @@ const SidebarComponent = () => {
             </MenuItem>
             <MenuItem id='sidebar_colleagues' icon={<AiOutlineTeam />} onClick={() => handleClick('colleagues')}>
               {t('colleagues')}
+            </MenuItem>
+            <MenuItem
+              id='sidebar_carpark'
+              active={activeTab === 'carpark'}
+              icon={<MdLocalParking />}
+              onClick={() => handleClick('carpark')}
+            >
+              {t('carpark')}
             </MenuItem>
           </SubMenu>
           

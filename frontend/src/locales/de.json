@@ -30,6 +30,7 @@
     "settingsUpdated": "Einstellungen erfolgreich aktualisiert.",
     "settingsUpdatedFail": "Einstellungen konnten nicht aktualisiert werden.",   
     "visibility": "Sichtbarkeit",
+    "carpark": "Parkplatz",
     "visibilityMode": "Sichtbarkeit",
     "abbreviationCap": "Abkürzung",
     "you": "Du",
@@ -45,11 +46,8 @@
     "parking": "Parken",
     "parkingComingSoon": "Parkplatz-Favoriten folgen bald.",
     "loading": "Lade",
-    "addFavourite": "Zu Favoriten hinzugefügt",
-    "removeFavourite": "Aus Favoriten entfernt",
     "roomSection": "Räume",
     "parkingSection": "Parkplätze (bald verfügbar)",
-    "goToBooking": "Zur Buchung",
     "logout": "Abmeldung",
     "hello": "Hallo",
 
@@ -73,6 +71,7 @@
     "chooseDate": "Datum für eine Arbeitsplatzreservierung wählen",
     "desk": "Tisch",
     "chooseDesk": "Tischauswahl",
+    "home": "Startseite",
 
     "chosenDate": "Datum",
     "groundFloor": "Erdgeschoss",
@@ -247,6 +246,17 @@
     ,"helpEditWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Anschließend wählen Sie bitte den jeweiligen Arbeitsplatz aus. Im Anschluss können Sie die Änderungen definieren."
     ,"helpDeleteWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Danach wählen Sie den zu löschenden Arbeitsplatz aus."
     ,"bookingsSum":"Buchungen Gesamt"
+    ,"noMatchingBookingsForSelectedFilter":"Keine passenden Buchungen fuer den ausgewaehlten Filter."
+    ,"filters":"Filter"
+    ,"desksTitle":"Arbeitsplaetze"
+    ,"parkingsTitle":"Parkplaetze"
+    ,"filter":"Filter"
+    ,"deskTypes":"Arbeitsplatztypen"
+    ,"parkingTypes":"Parkplatztypen"
+    ,"switchToParking":"Zu Parkplatz wechseln"
+    ,"switchToDesk":"Zu Arbeitsplatz wechseln"
+    ,"selectedDateLabel":"Ausgewähltes Datum"
+    ,"addBooking":"Buchung hinzufügen"
     ,"enableFilter":"Filter aktivieren"
     ,"addFilter":"Filter hinzufügen"
     ,"removeFilter":"Filter entfernen"
@@ -277,6 +287,34 @@
     ,"timePassed": "Diese Uhrzeit liegt bereits in der Vergangenheit."
     
     ,"colleagues":"Kollegen"
+
+    ,"carparkTitle":"Parkplatz-Übersicht"
+    ,"carparkHelp":"Klicken Sie auf einen Parkplatz, um Details zu sehen."
+    ,"carparkHintClick":"Zum Anzeigen bewegen, zum Auswählen klicken."
+    ,"carparkReset":"Zurücksetzen"
+    ,"carparkRefresh":"Aktualisieren"
+    ,"carparkDetails":"Details"
+    ,"carparkNoSelection":"Kein Parkplatz ausgewählt."
+    ,"carparkSpot":"Platz"
+    ,"carparkTypeStall":"Markierter Platz"
+    ,"carparkTypeEmpty":"Unmarkierter Platz"
+    ,"carparkStandard":"Standard"
+    ,"carparkSpecialCase":"Sonderfall"
+    ,"carparkContactStaff":"Bitte wenden Sie sich an das Personal, um diesen Platz zu reservieren."
+    ,"carparkReserve":"Reservieren"
+    ,"carparkLegendAvailable":"Frei"
+    ,"carparkLegendOccupied":"Belegt"
+    ,"carparkLegendBlocked":"Gesperrt"
+    ,"carparkStatus_AVAILABLE":"Frei"
+    ,"carparkStatus_OCCUPIED":"Belegt"
+    ,"carparkStatus_BLOCKED":"Gesperrt"
+    ,"carparkStatus_UNKNOWN":"Unbekannt"
+    ,"carparkReservedByMe":"mein"
+    ,"carparkOccupied":"Dieser Platz ist im gewählten Zeitraum belegt."
+    ,"carparkBlocked":"Dieser Platz ist gesperrt."
+    ,"carparkAvailable":"Dieser Platz ist im gewählten Zeitraum verfügbar."
+    ,"carparkSelected":"Ausgewählt"
+    ,"carparkHover":"Hover"
 
     ,"ERROR_USER_NOT_FOUND_IN_AD":"Nutzer wurde nicht im AD gefunden."
     ,"ERROR_USER_NOT_FOUND_IN_DAO":"Nutzer wurde nicht in lokaled DB gefunden."

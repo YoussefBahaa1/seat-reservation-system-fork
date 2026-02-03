@@ -31,9 +31,12 @@ public class CorsConfig {
         if (strictCors) {
             // Only allow our origins.
             configuration.setAllowedOrigins(allowedOrigins);
-            configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE"));
+            // Include OPTIONS for browser preflight.
+            configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS"));
             configuration.addAllowedHeader("Content-Type");
             configuration.addAllowedHeader("Authorization");
+            // Allow credentials (cookies/authorization) for strict origins as well.
+            configuration.setAllowCredentials(true);
         }
         else {
             // Allow all origins.

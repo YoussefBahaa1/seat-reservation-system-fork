@@ -30,6 +30,7 @@
     "settingsUpdated": "Settings successful updated.",
     "settingsUpdatedFail": "Settings was not updated.",   
     "visibility": "Visibility",
+    "carpark": "Car park",
     "visibilityMode": "Visibility",
     "abbreviationCap": "Abbreviation",
     "you": "You",
@@ -47,7 +48,6 @@
     "loading": "Loading",
     "roomSection": "Rooms",
     "parkingSection": "Parking (coming soon)",
-    "goToBooking": "Go to booking",
     "logout": "Logout",
     "hello": "Hello",
 
@@ -70,6 +70,7 @@
     "chooseDate": "Choose a date for a desk",
     "desk": "Desk",
     "chooseDesk": "Choose a desk",
+    "home": "Home",
 
     "chosenDate": "Chosen Date",
     "groundFloor": "Ground Floor",
@@ -245,6 +246,17 @@
     ,"helpEditWorkstation":"Please choose an existing room with an click on it. After this choose the workstation to be changed. After this take the changes you want."
     ,"helpDeleteWorkstation":"Please choose an existing room with an click on it. After this choose an workstation to delete it."
     ,"bookingsSum":"Bookings sum"
+    ,"noMatchingBookingsForSelectedFilter":"No matching bookings for selected filter."
+    ,"filters":"Filters"
+    ,"desksTitle":"Desks"
+    ,"parkingsTitle":"Parkings"
+    ,"filter":"Filter"
+    ,"deskTypes":"Desk types"
+    ,"parkingTypes":"Parking types"
+    ,"switchToParking":"Switch to parking"
+    ,"switchToDesk":"Switch to desk"
+    ,"selectedDateLabel":"Selected date"
+    ,"addBooking":"Add booking"
     ,"enableFilter":"Enable Filter"
     ,"addFilter":"Add Filter"
     ,"removeFilter":"Remove Filter"
@@ -275,6 +287,34 @@
     ,"timePassed": "This time has already passed."
 
     ,"colleagues":"Colleagues"
+
+    ,"carparkTitle":"Car park overview"
+    ,"carparkHelp":"Click a parking spot to view details."
+    ,"carparkHintClick":"Hover for details, click to select."
+    ,"carparkReset":"Reset"
+    ,"carparkRefresh":"Refresh"
+    ,"carparkDetails":"Details"
+    ,"carparkNoSelection":"No spot selected."
+    ,"carparkSpot":"Spot"
+    ,"carparkTypeStall":"Marked spot"
+    ,"carparkTypeEmpty":"Unmarked spot"
+    ,"carparkStandard":"Standard"
+    ,"carparkSpecialCase":"Special case"
+    ,"carparkContactStaff":"Contact staff to reserve this spot."
+    ,"carparkReserve":"Reserve"
+    ,"carparkLegendAvailable":"Available"
+    ,"carparkLegendOccupied":"Occupied"
+    ,"carparkLegendBlocked":"Blocked"
+    ,"carparkStatus_AVAILABLE":"Available"
+    ,"carparkStatus_OCCUPIED":"Occupied"
+    ,"carparkStatus_BLOCKED":"Blocked"
+    ,"carparkStatus_UNKNOWN":"Unknown"
+    ,"carparkReservedByMe":"mine"
+    ,"carparkOccupied":"This spot is occupied in the selected time window."
+    ,"carparkBlocked":"This spot is blocked."
+    ,"carparkAvailable":"This spot is available in the selected time window."
+    ,"carparkSelected":"Selected"
+    ,"carparkHover":"Hover"
 
     ,"ERROR_USER_NOT_FOUND_IN_AD":"User was not found in ad."
     ,"ERROR_USER_NOT_FOUND_IN_DAO":"User was not found in local database."

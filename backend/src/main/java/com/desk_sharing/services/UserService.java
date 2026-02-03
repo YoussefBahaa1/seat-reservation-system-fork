@@ -63,11 +63,11 @@ public class UserService  {
         // True if a user with the provided email is known to the internal db.
         final boolean daoUserExists = userRepository.findByEmail(email) != null;
         
-        // If the user is not found in ldap and in the database we return null
-        // to indicate that the user is not known..
+        // If the user is not found in ldap and in the database we signal an error.
+        // Returning null would lead to a 200 OK with an empty body, which the frontend treats as "login failed".
         if (!ldapUserExists && !daoUserExists) {
             logging("User with email " + email + "tried to login. But user is not known." );
-            return null;
+            throw new DaoUserNotFoundException("User not found.");
         }       
 
         // Check if mail exists and password is correct.

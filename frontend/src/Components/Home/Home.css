@@ -37,3 +37,175 @@
 .admin-content {
   padding: 20px; /* Add padding to the content */
 }
+
+.home-booking-event {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+.home-add-booking-btn {
+  background: #ffffff;
+  color: #3174ad;
+  border: 1px solid #3174ad;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.home-add-booking-btn:hover {
+  background: #eaf2fb;
+}
+
+.home-bookings-sum {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  color: #ffffff;
+}
+
+.rbc-toolbar .rbc-btn-group button {
+  background: #e4f3ea;
+  border: 1px solid #b7e0c8;
+  color: #0b5f2a;
+}
+
+.rbc-toolbar .rbc-btn-group button:hover {
+  background: #d7ecdf;
+}
+
+.home-rbc-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.home-rbc-toolbar-label {
+  flex: 1;
+  text-align: center;
+}
+
+.home-rbc-toolbar-right {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 48px;
+
+}
+
+.home-selected-day {
+  background-color: #f3f3f3;
+}
+
+.home-calendar-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.home-calendar-controls {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-filter-label {
+  font-weight: 400;
+  color: #000000;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.home-mode-toggle {
+  background-color: #008444 !important;
+  color: #ffffff !important;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-mode-toggle:hover {
+  background-color: #006b36 !important;
+}
+
+.home-mode-toggle:focus,
+.home-mode-toggle:focus-visible {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+
+.home-rbc-toolbar-right {
+  margin-right: 8px;
+}
+
+.home-filter-select {
+  min-width: 260px;
+}
+
+.home-selected-date {
+  color: #000000;
+  font-weight: 400;
+  margin-right: 20px;
+}
+
+.home-day-events {
+  margin-top: 16px;
+}
+
+.home-day-block {
+  border-top: 3px solid #008444;
+  padding: 10px 0 14px;
+}
+
+.home-day-block:last-child {
+  border-bottom: 3px solid #008444;
+}
+
+.home-day-block-label {
+  font-weight: 400;
+  color: #000000;
+  margin-bottom: 8px;
+  margin-left: 5px;
+}
+
+.home-day-block-events {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.home-day-block-events:last-child {
+  margin-left:5px;
+}
+
+.home-day-event {
+  background-color: #3174ad;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 4px 6px;
+  min-width: 90px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.home-day-event-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 2px;
+}
+
+.home-day-event-time {
+  font-size: 0.9rem;
+}
