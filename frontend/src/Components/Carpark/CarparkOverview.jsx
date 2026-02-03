@@ -523,9 +523,9 @@ const CarparkOverview = () => {
                   ? t('carparkBlocked')
                   : isOccupied
                     ? t('carparkOccupied')
-                : i18n.language === 'de'
-                  ? 'Hinweis: Diese Seite ist aktuell nur eine interaktive Übersicht (ohne Backend-Buchung).'
-                  : 'Note: This page is currently just an interactive overview (no backend booking yet).'}
+                    : isAvailable
+                      ? t('carparkAvailable')
+                : t('carparkHintClick')}
             </Typography>
           </Paper>
         </Box>

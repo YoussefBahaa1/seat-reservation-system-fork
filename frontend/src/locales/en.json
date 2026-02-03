@@ -287,6 +287,7 @@
     ,"carparkReservedByMe":"mine"
     ,"carparkOccupied":"This spot is occupied in the selected time window."
     ,"carparkBlocked":"This spot is blocked."
+    ,"carparkAvailable":"This spot is available in the selected time window."
     ,"carparkSelected":"Selected"
     ,"carparkHover":"Hover"
 
