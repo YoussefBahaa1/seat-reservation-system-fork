@@ -12,14 +12,15 @@ public class AuthResponseDTO {
     private final String surname;
     private final boolean admin;
     private final boolean visibility;
+    private final String visibilityMode;
     private final String message;
-    
+
     // MFA fields
     private final boolean requiresMfa;
     private final String mfaToken;
 
     public static AuthResponseDTO FailRepsonse(final String email, final String message) {
- return new AuthResponseDTO("", email, 0, "", "", false, false, message, false, "");
+        return new AuthResponseDTO("", email, 0, "", "", false, false, "FULL_NAME", message, false, null);
     }
 
     /**
@@ -35,20 +36,21 @@ public class AuthResponseDTO {
         final String visibilityMode,
         final String mfaToken
     ) {
-        return new AuthResponseDTO("", email, id, name, surname, admin, visibility, "MFA_REQUIRED", true, mfaToken);
+        return new AuthResponseDTO("", email, id, name, surname, admin, visibility, visibilityMode, "MFA_REQUIRED", true, mfaToken);
     }
 
     /**
      * Full constructor with all fields
      */
     public AuthResponseDTO(
-        final String accessToken, 
-        final String email, 
-        final int id, 
-        final String name, 
-        final String surname, 
-        final boolean admin, 
+        final String accessToken,
+        final String email,
+        final int id,
+        final String name,
+        final String surname,
+        final boolean admin,
         final boolean visibility,
+        final String visibilityMode,
         final String message,
         final boolean requiresMfa,
         final String mfaToken
@@ -60,8 +62,25 @@ public class AuthResponseDTO {
         this.surname = surname;
         this.admin = admin;
         this.visibility = visibility;
+        this.visibilityMode = visibilityMode;
         this.message = message;
         this.requiresMfa = requiresMfa;
         this.mfaToken = mfaToken;
+    }
+
+    /**
+     * Success response constructor (backward compatible)
+     */
+    public AuthResponseDTO(
+        final String accessToken,
+        final String email,
+        final int id,
+        final String name,
+        final String surname,
+        final boolean admin,
+        final boolean visibility,
+        final String visibilityMode
+    ) {
+        this(accessToken, email, id, name, surname, admin, visibility, visibilityMode, "SUCCESS", false, null);
     }
 }

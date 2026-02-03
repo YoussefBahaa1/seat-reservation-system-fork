@@ -119,9 +119,10 @@ public class UserService  {
             user.getSurname(),
             user.isAdmin(),
             user.isVisibility(),
+            mode.name(),
             "SUCCESS",
             false,
-            ""
+            null
         );
     }
 

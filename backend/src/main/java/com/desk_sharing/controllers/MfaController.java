@@ -77,6 +77,9 @@ public class MfaController {
         org.springframework.security.authentication.UsernamePasswordAuthenticationToken auth = 
             new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(email, null, null);
         String accessToken = jwtGenerator.generateToken(auth);
+        String visibilityMode = user.getVisibilityMode() != null
+            ? user.getVisibilityMode().name()
+            : com.desk_sharing.entities.VisibilityMode.FULL_NAME.name();
         
         userService.logging("MFA verification successful for user: " + email);
         
@@ -89,9 +92,10 @@ public class MfaController {
                 user.getSurname(),
                 user.isAdmin(),
                 user.isVisibility(),
-                "MFA_SUCCESS",
+                visibilityMode,
+                "SUCCESS",
                 false,
-                ""
+                null
             )
         );
     }
