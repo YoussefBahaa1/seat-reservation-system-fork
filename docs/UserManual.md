@@ -176,6 +176,26 @@ Follow the next steps to change your password.
 7. Click `SUBMIT`.
 8. A small window will appear with the information that the password was changed successfully.
 
+### Visibility
+Choose how your name is shown to other users (admins still see full names).
+
+1. Login
+2. Click `Settings` -> `Visibility`.
+3. Pick one option: `Name`, `Abbreviation`, or `Anonymous`.
+4. Click `SUBMIT`. Your preference is saved per user and persists through logout/login.
+
+### Favourites
+Save rooms you book often and jump back to them quickly.
+
+On the room booking screen: click the star in the top-right. Empty = not a favourite; filled = favourite. Click to toggle.
+
+From the sidebar: click `Favourites` (between Bookings and Search) to:
+1. See your saved rooms (per-user, persistent).
+2. Click BOOK to open that room’s booking view.
+3. Click the star to remove.
+
+Favourite Rooms also come up first in RoomSearch
+
 ## Create a booking
 The main task of this tool is to let the user create bookings in defined time ranges on specific desks.
 For this we assume that an admin already include at least a building with a floor that contains a room with an desk.
@@ -191,6 +211,18 @@ For this we assume that an admin already include at least a building with a floo
 9. After you choose a valid time range it will appear grey.
 10. Click `BOOK` on the bottom of the view.
 11. You will be asked if you like to commit this booking. Click either yes or no. If you clicked yes a message will appear, informing you the the booking was successfull.
+
+## Create a parking spot booking
+This tool allows any logged-in user to book a parking spot.
+
+1. Login
+2. Navigate thorough the sidebar to the Search tab.
+3. Select Parking
+4. Above the parking street plan you can select a valid date and time for your booking.
+5. In the parking street plan you hover over any spot to view it's details and select (press on) any available spot (highlighted green).
+6. After selecting an available spot you can press the Reserve button to book it for the selected time.
+7. Your parking spot is now booked, now after un-selecting that spot or refreshing the page you'll see that spot is turned red.
+8. For any spot highlighted red, you can hover over it to see who has booked it (does show yourself as well).
 
 ## Create and manage series bookings
 A series allows the user to create bookings in fixed intervals on a choosen desk between an start date and end date.
