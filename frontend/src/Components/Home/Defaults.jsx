@@ -70,7 +70,7 @@ const Defaults = ({ isOpen, onClose }) => {
                 else {
                     toast.error(t('settingsUpdatedFail'));
                 }
-                onClose()
+                onClose();
                 return;
             }),
             () => {
@@ -92,7 +92,7 @@ const Defaults = ({ isOpen, onClose }) => {
                 placement='top'
                 title={i18n.language === 'de' 
                 ? 'Definieren Sie hier Ihre Standardansicht im Buchungskalender.' 
-                : 'Define the default view mode for the bookingcalendar.'}
+                : 'Define the default view mode for the booking calendar.'}
             >
                 <FormControl id={`formcontrol_defaultView`} required size='small' fullWidth>
                     <InputLabel>{t('defaultView')}</InputLabel>

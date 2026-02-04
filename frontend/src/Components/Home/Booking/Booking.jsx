@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Button, Typography/*, FormControl, RadioGroup, FormControlLabel, Radio */} from '@mui/material';
+import { Box, Button, Typography, IconButton, Tooltip/*, FormControl, RadioGroup, FormControlLabel, Radio */} from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -7,9 +7,10 @@ import 'react-confirm-alert/src/react-confirm-alert.css';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { FaStar, FaRegStar } from 'react-icons/fa';
 
 import LayoutPage from '../../Templates/LayoutPage.jsx';
-import { getRequest } from '../../RequestFunctions/RequestFunctions';
+import { getRequest, postRequest, deleteRequest } from '../../RequestFunctions/RequestFunctions';
 import bookingPostRequest from '../../misc/bookingPostRequest.js';
 //import { buildFullDaySlots } from './buildFullDaySlots.js';
 
@@ -21,6 +22,9 @@ const Booking = () => {
   const localizer = momentLocalizer(moment);
   const { roomId, date } = location.state;
 
+  //Safe selection of desks
+  const selectionKey = `bookingSelection:${roomId}:${date ? moment(date).format('YYYY-MM-DD') : ''}`;
+
   // States
   const [room, setRoom] = useState(null);
   const [desks, setDesks] = useState([]);
@@ -28,6 +32,7 @@ const Booking = () => {
   const [event, setEvent] = useState({});
   const [clickedDeskId, setClickedDeskId] = useState(null);
   const [clickedDeskRemark, setClickedDeskRemark] = useState('');
+  const [isFavourite, setIsFavourite] = useState(false);
 
   const eventRef = useRef(event);
   const eventsRef = useRef(events);
@@ -67,10 +72,10 @@ const Booking = () => {
           end: new Date(`${b.day}T${b.end}`),
           title:
             b.user_id.toString() === localStorage.getItem('userId')
-              ? ''
-              : b.visibility
-              ? `${b.name} ${b.surname}`
-              : t('anonymous'),
+              ? t('you')
+              : (localStorage.getItem('admin') === 'true'
+                  ? `${b.name || ''} ${b.surname || ''}`.trim() || b.displayName || ''
+                  : b.displayName || ''),
           id: b.booking_id,
         }));
         //setDeskEvents(bookingEvents);
@@ -86,6 +91,28 @@ const Booking = () => {
     const startTime = new Date(slotData.start);
     const endTime = new Date(slotData.end);
     const duration = endTime - startTime;
+
+    // Block bookings in the past
+    const now = new Date();
+    // Compare only by date
+    const startDay = new Date(startTime);
+    startDay.setHours(0, 0, 0, 0);
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    // Past day → hard block
+    if (startDay < today) {
+      toast.warning(t('datePassed')); // "This date has already passed."
+      return;
+    }
+
+// Today → start must be >= next 30-min slot boundary
+if (startDay.getTime() === today.getTime()) {
+  const earliestStart = roundUpToNextHalfHour(now);
+  if (startTime < earliestStart) {
+    toast.warning(t('timePassed')); // "This time has already passed."
+    return;
+  }
+}
 
     if (duration < 2 * 60 * 60 * 1000) {
       toast.warning(t('minimum'));
@@ -105,8 +132,13 @@ const Booking = () => {
     }
 
     const newEvent = { start: slotData.start, end: slotData.end, id: 1 };
-    setEvents([...eventsRef.current, newEvent]);
+    setEvents([
+      ...eventsRef.current.filter((e) => e.id !== 1),
+      newEvent,
+    ]);
+
     setEvent(newEvent);
+
   }, [t]);
 
   /** ----- EVENT FUNCTIONS ----- */
@@ -149,18 +181,103 @@ const Booking = () => {
   // Fetch desks when roomId changes
   useEffect(() => { if (roomId) fetchDesks(); }, [roomId, fetchDesks]);
 
+  //Load saved desk selection from sessionStorage
+  useEffect(() => {
+    if (!desks.length) return;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(selectionKey));
+      if (saved?.deskId) {
+        const match = desks.find((desk) => desk.id === saved.deskId);
+        if (match) {
+          setClickedDeskId(match.id);
+          setClickedDeskRemark(match.remark || '');
+        }
+      }
+    } catch {
+      // ignore invalid stored value
+    }
+  }, [desks, selectionKey]);
+
+  const refreshFavouriteStatus = useCallback(() => {
+    const userId = localStorage.getItem('userId');
+    if (!userId || !roomId) return;
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/favourites/${userId}/room/${roomId}/isFavourite`,
+      headers.current,
+      (res) => setIsFavourite(Boolean(res)),
+      () => setIsFavourite(false)
+    );
+  }, [roomId]);
+
+  // Check favourite status for the current room when room changes
+  useEffect(() => {
+    refreshFavouriteStatus();
+  }, [refreshFavouriteStatus]);
+
   // Reload bookings when clicked desk changes
   useEffect(() => { if (clickedDeskId) loadBookings(); }, [clickedDeskId, loadBookings]);
 
   // Set locale for calendar
   useEffect(() => { moment.locale(i18n.language); }, [i18n.language]);
 
+  const toggleFavourite = () => {
+    const userId = localStorage.getItem('userId');
+    if (!userId || !roomId) return;
+
+    const onSuccess = () => {
+      setIsFavourite((prev) => !prev);
+      toast.success(!isFavourite ? t('addFavourite') : t('removeFavourite'));
+    };
+    const onFail = () => {
+      refreshFavouriteStatus();
+      toast.error(t('favouriteToggleError'));
+    };
+
+    if (isFavourite) {
+      deleteRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/favourites/${userId}/room/${roomId}`,
+        headers.current,
+        onSuccess,
+        onFail
+      );
+    } else {
+      postRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/favourites/${userId}/room/${roomId}`,
+        headers.current,
+        onSuccess,
+        onFail
+      );
+    }
+  };
+
   /** ----- HELPER ----- */
   const getHeadline = () => t('availableDesks') + (room ? ` in ${room.remark}` : '');
 
+  function roundUpToNextHalfHour(d) {
+    const rounded = new Date(d);
+    rounded.setSeconds(0);
+    rounded.setMilliseconds(0);
+
+    const m = rounded.getMinutes();
+    if (m === 0 || m === 30) return rounded;
+
+    if (m < 30) {
+      rounded.setMinutes(30);
+    } else {
+      rounded.setMinutes(0);
+      rounded.setHours(rounded.getHours() + 1);
+    }
+    return rounded;
+  }
+
   /** ----- JSX ----- */
   return (
-    <LayoutPage title={getHeadline()} helpText={t('helpCreateBooking')} useGenericBackButton withPaddingX>
+    <LayoutPage
+      title={getHeadline()}
+      helpText={t('helpCreateBooking')}
+      useGenericBackButton
+      withPaddingX
+    >
       <Box sx={{ display: 'flex', width: '100%' }}>
         {/* Desks List */}
         <Box id="desks" sx={{ width: '20%', paddingRight: '20px' }}>
@@ -183,6 +300,9 @@ const Booking = () => {
                   onClick={() => {
                     setClickedDeskId(desk.id);
                     setClickedDeskRemark(desk.remark);
+
+                    // Save selection to sessionStorage 
+                    sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: desk.id }));
                   }}
                 >
                   <Typography sx={typography_sx}>{desk.remark}</Typography>
@@ -197,6 +317,17 @@ const Booking = () => {
 
         {/* Calendar + Controls */}
         <Box sx={{ width: '80%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, marginRight: '10px' }}>
+          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', pr: 2 }}>
+            <Tooltip title={isFavourite ? t('removeFavourite') : t('addFavourite')}>
+              <IconButton
+                onClick={toggleFavourite}
+                aria-label="toggle-favourite"
+                sx={{ color: isFavourite ? '#ffb300' : '#9e9e9e', fontSize: '22px' }}
+              >
+                {isFavourite ? <FaStar /> : <FaRegStar />}
+              </IconButton>
+            </Tooltip>
+          </Box>
           {/*<FormControl>
             <RadioGroup
               row

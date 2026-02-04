@@ -18,7 +18,9 @@ import CreateSeries from './Components/Series/CreateSeries';
 import FreeDesks from './Components/Home/FreeDesks';
 import RoomSearch from './Components/Home/RoomSearch';
 import Colleagues from './Components/Home/Colleagues';
+import Favourites from './Components/Home/Favourites';
 import JwtHeartbeat from './Components/misc/JwtHearbeat';
+import CarparkOverview from './Components/Carpark/CarparkOverview';
 import './i18n';
 
 function AppRoutes() {
@@ -40,6 +42,8 @@ function AppRoutes() {
         <Route path='/freedesks' element={<FreeDesks />} />
         <Route path='/roomSearch' element={<RoomSearch />} />
         <Route path='/colleagues' element={<Colleagues />} />
+        <Route path="/carpark" element={<CarparkOverview />} />
+        <Route path="/favourites" element={<Favourites />} />
         <Route path="*" element={<Navigate to="/home" />} />
       </Routes>
     </>

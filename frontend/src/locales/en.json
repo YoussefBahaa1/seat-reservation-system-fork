@@ -9,6 +9,7 @@
     "defaults":"Defaults",
     "help":"Help",
     "any": "Any",
+    "match": "Match",
     "login": "Login",
     "forgotPassword": "Forgot Password",
     "passwordsDontMatch": "New passwords do not match",
@@ -29,6 +30,24 @@
     "settingsUpdated": "Settings successful updated.",
     "settingsUpdatedFail": "Settings was not updated.",   
     "visibility": "Visibility",
+    "carpark": "Car park",
+    "visibilityMode": "Visibility",
+    "abbreviationCap": "Abbreviation",
+    "you": "You",
+    "visibilityHelper": "Choose how your name is shown to other users.",
+    "favourites": "Favourites",
+    "favouritesHelper": "Save rooms you book often. Click to open booking; unstar to remove.",
+    "addFavourite": "Added to favourites",
+    "removeFavourite": "Removed from favourites",
+    "favouritesEmpty": "You have no favourites yet. Star a room to save it.",
+    "favouriteToggleError": "Could not update favourites",
+    "goToBooking": "Go to booking",
+    "rooms": "Rooms",
+    "parking": "Parking",
+    "parkingComingSoon": "Parking favourites coming soon.",
+    "loading": "Loading",
+    "roomSection": "Rooms",
+    "parkingSection": "Parking (coming soon)",
     "logout": "Logout",
     "hello": "Hello",
 
@@ -51,6 +70,7 @@
     "chooseDate": "Choose a date for a desk",
     "desk": "Desk",
     "chooseDesk": "Choose a desk",
+    "home": "Home",
 
     "chosenDate": "Chosen Date",
     "groundFloor": "Ground Floor",
@@ -148,6 +168,12 @@
     "addEmployee": "Add Employee",
     "deleteEmployee": "Delete Employee",
     "editEmployee": "Edit Employee",
+    "addUser": "Add User",
+    "deleteUser": "Delete User",
+    "editUser": "Edit User",
+    "employee": "Employee",
+    "servicePersonnel": "Service Personnel",
+    "role": "Role",
     "name": "Name",
     "surname": "Surname",
     "action": "Action",
@@ -211,6 +237,7 @@
     "fFDeleteWorkStation":"All bookings that belongs to this desk wil also be deleted.",
     "fFDeleteRoom":"All desks and bookings that belongs to this room will also be deleted.",
     "fFDeleteEmployee":"All bookings that belongs to this user will also be deleted.",
+    "fFDeleteUser":"All bookings that belongs to this user will also be deleted.",
     "helpAddRoom":"Please choose a location for an new room on the map and click on it.<br/>Additionally provide all necessary informations and push <strong>Submit</strong>."
     ,"helpChooseRoom":"Please choose an existing room and click on it."
     ,"helpCreateBooking":"Please choose first an desk and then a timespan. Finish with a push on <strong>Book</strong>."
@@ -219,7 +246,20 @@
     ,"helpEditWorkstation":"Please choose an existing room with an click on it. After this choose the workstation to be changed. After this take the changes you want."
     ,"helpDeleteWorkstation":"Please choose an existing room with an click on it. After this choose an workstation to delete it."
     ,"bookingsSum":"Bookings sum"
+    ,"noMatchingBookingsForSelectedFilter":"No matching bookings for selected filter."
+    ,"filters":"Filters"
+    ,"desksTitle":"Desks"
+    ,"parkingsTitle":"Parkings"
+    ,"filter":"Filter"
+    ,"deskTypes":"Desk types"
+    ,"parkingTypes":"Parking types"
+    ,"switchToParking":"Switch to parking"
+    ,"switchToDesk":"Switch to desk"
+    ,"selectedDateLabel":"Selected date"
+    ,"addBooking":"Add booking"
     ,"enableFilter":"Enable Filter"
+    ,"addFilter":"Add Filter"
+    ,"removeFilter":"Remove Filter"
     ,"column":"Column"
     ,"condition":"Condition"
     ,"contains":"Contains"
@@ -243,10 +283,83 @@
     ,"startTimeBiggerThanStartTime":"Start time must not be greater than the end time."
     ,"seriesDurationTooLong":"The duration of the series booking is too long."
     ,"noDesksForRange":"For the specified time range and building no desk is available."
+    ,"datePassed": "This date has passed."
+    ,"timePassed": "This time has already passed."
 
     ,"colleagues":"Colleagues"
+
+    ,"carparkTitle":"Car park overview"
+    ,"carparkHelp":"Click a parking spot to view details."
+    ,"carparkHintClick":"Hover for details, click to select."
+    ,"carparkReset":"Reset"
+    ,"carparkRefresh":"Refresh"
+    ,"carparkDetails":"Details"
+    ,"carparkNoSelection":"No spot selected."
+    ,"carparkSpot":"Spot"
+    ,"carparkTypeStall":"Marked spot"
+    ,"carparkTypeEmpty":"Unmarked spot"
+    ,"carparkStandard":"Standard"
+    ,"carparkSpecialCase":"Special case"
+    ,"carparkContactStaff":"Contact staff to reserve this spot."
+    ,"carparkReserve":"Reserve"
+    ,"carparkLegendAvailable":"Available"
+    ,"carparkLegendOccupied":"Occupied"
+    ,"carparkLegendBlocked":"Blocked"
+    ,"carparkStatus_AVAILABLE":"Available"
+    ,"carparkStatus_OCCUPIED":"Occupied"
+    ,"carparkStatus_BLOCKED":"Blocked"
+    ,"carparkStatus_UNKNOWN":"Unknown"
+    ,"carparkReservedByMe":"mine"
+    ,"carparkOccupied":"This spot is occupied in the selected time window."
+    ,"carparkBlocked":"This spot is blocked."
+    ,"carparkAvailable":"This spot is available in the selected time window."
+    ,"carparkSelected":"Selected"
+    ,"carparkHover":"Hover"
 
     ,"ERROR_USER_NOT_FOUND_IN_AD":"User was not found in ad."
     ,"ERROR_USER_NOT_FOUND_IN_DAO":"User was not found in local database."
     ,"ERROR_WRONG_PW":"Wrong Password."
+    ,"ERROR_USER_DEACTIVATED":"Account is deactivated. Please contact an administrator."
+
+    ,"mfaRequired":"MFA verification required"
+    ,"mfaCodeLabel":"Enter 6-digit code from your authenticator app"
+    ,"mfaVerify":"Verify"
+    ,"mfaInvalidCode":"Invalid code. Please try again."
+    ,"mfaTokenExpired":"MFA session expired. Please login again."
+    ,"mfaSetup":"MFA Setup"
+    ,"mfaEnable":"Enable MFA"
+    ,"mfaDisable":"Disable MFA"
+    ,"mfaEnabled":"MFA is enabled"
+    ,"mfaDisabled":"MFA is disabled"
+    ,"mfaScanQrCode":"Scan this QR code with your authenticator app"
+    ,"mfaEnterCode":"Enter a code from your authenticator app to confirm setup"
+    ,"mfaEnterCodeOrPassword":"Enter your password or current MFA code to disable"
+    ,"mfaEnabledSuccess":"MFA enabled successfully"
+    ,"mfaDisabledSuccess":"MFA disabled successfully"
+    ,"mfaSettings":"MFA Settings"
+    ,"mfaRecovery":"Disable MFA (Recovery)"
+    ,"mfaRecoveryConfirm":"Are you sure you want to disable MFA for this user?"
+
+    ,"department":"Department"
+    ,"activity":"Activity"
+    ,"active":"Active"
+    ,"deactivated":"Deactivated"
+    ,"deactivate":"Deactivate"
+    ,"reactivate":"Reactivate"
+    ,"deactivateReactivateUser":"Deactivate/Reactivate User"
+    ,"confirmToggleActive":"Are you sure you want to"
+    ,"userDeactivated":"User deactivated successfully"
+    ,"userReactivated":"User reactivated successfully"
+    ,"toggleActiveFailed":"Failed to change user status"
+    
+    ,"resetPassword":"Reset Password"
+    ,"confirmPassword":"Confirm Password"
+    ,"confirmResetPassword":"Confirm Reset"
+    ,"passwordMismatch":"Passwords do not match"
+    ,"passwordResetSuccess":"Password reset successfully"
+    ,"passwordResetFailed":"Failed to reset password"
+    
+    ,"confirmDeleteUser":"This action will permanently delete the user and cannot be undone."
+    ,"value":"Value"
 }
+

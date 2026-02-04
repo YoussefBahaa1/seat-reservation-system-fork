@@ -3,7 +3,6 @@ package com.desk_sharing.services;
 import java.util.List;
 
 import jakarta.persistence.EntityNotFoundException;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +34,7 @@ import com.desk_sharing.entities.Booking;
 import com.desk_sharing.entities.Floor;
 import com.desk_sharing.entities.Role;
 import com.desk_sharing.entities.Series;
+import com.desk_sharing.entities.VisibilityMode;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,11 +63,11 @@ public class UserService  {
         // True if a user with the provided email is known to the internal db.
         final boolean daoUserExists = userRepository.findByEmail(email) != null;
         
-        // If the user is not found in ldap and in the database we return null
-        // to indicate that the user is not known..
+        // If the user is not found in ldap and in the database we signal an error.
+        // Returning null would lead to a 200 OK with an empty body, which the frontend treats as "login failed".
         if (!ldapUserExists && !daoUserExists) {
             logging("User with email " + email + "tried to login. But user is not known." );
-            return null;
+            throw new DaoUserNotFoundException("User not found.");
         }       
 
         // Check if mail exists and password is correct.
@@ -83,6 +83,30 @@ public class UserService  {
         if (user == null) {
             throw new UsernameNotFoundException("Username not found after login.");
         }
+        
+        // Check if user account is deactivated
+        if (!user.isActive()) {
+            logging("Login attempt rejected for deactivated user: " + email);
+            throw new BadCredentialsException("Account is deactivated. Please contact an administrator.");
+        }
+
+        // Check if MFA is enabled for this user
+        VisibilityMode mode = user.getVisibilityMode() != null ? user.getVisibilityMode() : VisibilityMode.FULL_NAME;
+        if (user.isMfaEnabled()) {
+            // Generate an MFA-pending token instead of a full access token
+            final String mfaToken = jwtGenerator.generateMfaPendingToken(email);
+            logging("MFA required for user: " + email);
+            return AuthResponseDTO.MfaRequiredResponse(
+                user.getEmail(),
+                user.getId(),
+                user.getName(),
+                user.getSurname(),
+                user.isAdmin(),
+                user.isVisibility(),
+                mode.name(),
+                mfaToken
+            );
+        }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         final String token = jwtGenerator.generateToken(authentication);
@@ -94,7 +118,11 @@ public class UserService  {
             user.getName(),
             user.getSurname(),
             user.isAdmin(),
-            user.isVisibility()
+            user.isVisibility(),
+            mode.name(),
+            "SUCCESS",
+            false,
+            null
         );
     }
 
@@ -148,6 +176,23 @@ public class UserService  {
 
     public UserEntity findByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+
+    public VisibilityMode getVisibilityMode(int userId) {
+        final UserEntity user = userRepository.getReferenceById(userId);
+        return user.getVisibilityMode() == null ? VisibilityMode.FULL_NAME : user.getVisibilityMode();
+    }
+
+    public boolean setVisibilityMode(int userId, VisibilityMode mode) {
+        try {
+            final UserEntity user = userRepository.getReferenceById(userId);
+            user.setVisibilityMode(mode);
+            userRepository.save(user);
+            return true;
+        } catch (Exception e) {
+            loggingErr("Failed setVisibilityMode for user " + userId + ": " + e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -221,9 +266,24 @@ public class UserService  {
         if(userDto.getSurname() != null) {
             userFromDB.setSurname(userDto.getSurname());
         }
+        
+        // Update department if provided
+        if(userDto.getDepartment() != null) {
+            userFromDB.setDepartment(userDto.getDepartment());
+        }
+        
         userFromDB.setVisibility(userDto.isVisibility());
+        if (userDto.getVisibilityMode() != null) {
+            try {
+                userFromDB.setVisibilityMode(VisibilityMode.valueOf(userDto.getVisibilityMode()));
+            } catch (IllegalArgumentException ex) {
+                loggingErr("Invalid visibilityMode: " + userDto.getVisibilityMode());
+            }
+        }
 
         setAdmin(userFromDB, userDto.isAdmin());
+        setEmployee(userFromDB, userDto.isEmployee());
+        setServicePersonnel(userFromDB, userDto.isServicePersonnel());
 
         return userRepository.save(userFromDB);
     }
@@ -240,6 +300,38 @@ public class UserService  {
         }
         else if (!shallAdmin && userFromDB.isAdmin()) {
             userRoles.remove(adminRole);
+        }
+        return true;
+    }
+    
+    public boolean setEmployee(final UserEntity userFromDB, boolean shallEmployee) {
+        final List<Role> userRoles = userFromDB.getRoles();
+        final Role employeeRole = roleRepository.findByName("ROLE_EMPLOYEE").isPresent() ? roleRepository.findByName("ROLE_EMPLOYEE").get() : null;
+        if (employeeRole == null) {
+            System.out.println("ERROR: ROLE_EMPLOYEE was not found.");
+            return false;
+        }
+        if (shallEmployee && !userFromDB.isEmployee()) {
+            userRoles.add(employeeRole);
+        }
+        else if (!shallEmployee && userFromDB.isEmployee()) {
+            userRoles.remove(employeeRole);
+        }
+        return true;
+    }
+    
+    public boolean setServicePersonnel(final UserEntity userFromDB, boolean shallServicePersonnel) {
+        final List<Role> userRoles = userFromDB.getRoles();
+        final Role servicePersonnelRole = roleRepository.findByName("ROLE_SERVICE_PERSONNEL").isPresent() ? roleRepository.findByName("ROLE_SERVICE_PERSONNEL").get() : null;
+        if (servicePersonnelRole == null) {
+            System.out.println("ERROR: ROLE_SERVICE_PERSONNEL was not found.");
+            return false;
+        }
+        if (shallServicePersonnel && !userFromDB.isServicePersonnel()) {
+            userRoles.add(servicePersonnelRole);
+        }
+        else if (!shallServicePersonnel && userFromDB.isServicePersonnel()) {
+            userRoles.remove(servicePersonnelRole);
         }
         return true;
     }

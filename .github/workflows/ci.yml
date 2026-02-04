@@ -1,0 +1,43 @@
+name: Backend workflow
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feature/ci.yml 
+    paths:
+      - backend/**
+      - .github/workflows/ci.yml
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - backend/**
+      - .github/workflows/ci.yml
+
+jobs:
+  run_tests:
+    name: Run backend tests
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Java environment
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+        #Cache for dependencies for tests to build faster
+        cache: maven
+
+    - name: Run Maven Tests
+      run: mvn test

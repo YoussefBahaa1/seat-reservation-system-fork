@@ -1,12 +1,37 @@
 // request.js oder request.ts
 import axios from 'axios';
 
+function resolveHeaders(headers) {
+  const resolved = (headers && typeof headers === 'object') ? { ...headers } : {};
+
+  try {
+    const storedHeadersRaw = sessionStorage.getItem('headers');
+    const storedHeadersParsed = storedHeadersRaw ? JSON.parse(storedHeadersRaw) : null;
+    const storedAuth =
+      storedHeadersParsed &&
+      (storedHeadersParsed.Authorization || storedHeadersParsed.authorization);
+
+    if (storedAuth && String(storedAuth).trim()) {
+      resolved.Authorization = String(storedAuth).trim();
+    } else {
+      const storedToken = sessionStorage.getItem('accessToken');
+      if (storedToken && String(storedToken).trim()) {
+        resolved.Authorization = `Bearer ${String(storedToken).trim()}`;
+      }
+    }
+  } catch {
+    // ignore storage parse issues
+  }
+
+  return resolved;
+}
+
 async function request(type, url, headers, successFunction, failFunction, body = {}) {
   try {
     const config = {
       method: type,
       url: url,
-      headers: headers,
+      headers: resolveHeaders(headers),
       data: body, // bei GET wird data ignoriert von Axios
     };
 

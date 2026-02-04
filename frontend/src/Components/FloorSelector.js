@@ -14,6 +14,8 @@ const FloorSelector = ({
 }) => {
   const { t } = useTranslation();
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
+  const storageKey = `floorSelector:${idString}`;
+  const savedSelectionRef = useRef(null);
   const [buildings, setBuildings] = useState([]);
   const [floors, setFloors] = useState([]);
   const [building, setBuilding] = useState('');
@@ -26,6 +28,15 @@ const FloorSelector = ({
   React.useEffect(()=>{
     sendDataToParent(floor);
   },[sendDataToParent, floor]);
+
+  //Check and load saved selection from sessionStorage
+  useEffect(() => {
+    try {
+      savedSelectionRef.current = JSON.parse(sessionStorage.getItem(storageKey)) || null;
+    } catch {
+      savedSelectionRef.current = null;
+    }
+  }, [storageKey]);
 
   /**
    * Fetch all buildings. Also check if the default building was fetched.
@@ -44,6 +55,16 @@ const FloorSelector = ({
           }
           else {
             defaultBuildingWasLoaded.current = true;
+
+            //Prioritize saved building selection from sessionStorage than default 
+            const savedBuildingId = savedSelectionRef.current?.buildingId;
+            if (savedBuildingId) {
+              const savedBuilding = received_buildings.find(b => b.id === savedBuildingId);
+              if (savedBuilding) {
+                setBuilding(savedBuilding);
+                return;
+              }
+            }
             const userId = localStorage.getItem('userId');
             if (!userId) return;
             getRequest(
@@ -87,6 +108,16 @@ const FloorSelector = ({
         }
         else {
           defaultFloorWasLoaded.current = true;
+
+          //Prioritize saved floor selection from sessionStorage than default
+          const savedFloorId = savedSelectionRef.current?.floorId;
+          if (savedFloorId) {
+            const savedFloor = received_floors.find(f => f.floor_id === savedFloorId);
+            if (savedFloor) {
+              setFloor(savedFloor);
+              return;
+            }
+          }
           const userId = localStorage.getItem('userId');
           if (!userId) return;
           getRequest(
@@ -124,7 +155,13 @@ const FloorSelector = ({
                 label={t('building')}
                 onChange={(e) => {
                   setFloor('');
-                  setBuilding(buildings.find(b => b.id === e.target.value) || '');
+
+                  //Save selected building to sessionStorage 
+                  const nextBuilding = buildings.find(b => b.id === e.target.value) || '';
+                  setBuilding(nextBuilding);
+                  if (nextBuilding?.id) {
+                    sessionStorage.setItem(storageKey, JSON.stringify({ buildingId: nextBuilding.id }));
+                  }
                 }}
             >
               {buildings.map(e => {
@@ -142,7 +179,13 @@ const FloorSelector = ({
                 }
                 label={t('floor')}
                 onChange={(e) => {
-                  setFloor(floors.find(f => f.floor_id === e.target.value) || '');
+
+                  //Save selected floor to sessionStorage
+                  const nextFloor = floors.find(f => f.floor_id === e.target.value) || '';
+                  setFloor(nextFloor);
+                  if (building?.id && nextFloor?.floor_id) {
+                    sessionStorage.setItem(storageKey, JSON.stringify({ buildingId: building.id, floorId: nextFloor.floor_id }));
+                  }
                 }}
             >
               {floors.map(e => {

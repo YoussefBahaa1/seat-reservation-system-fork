@@ -9,6 +9,7 @@
     "defaults":"Voreinstellung",
     "help":"Hilfe",
     "any": "Jedes",
+    "match": "Übereinstimmung",
     "login": "Anmeldung",
     "forgotPassword": "Passwort Vergessen",
     "passwordsDontMatch": "Bitte geben Sie zweimal ihr neues Passwort ein",
@@ -29,6 +30,24 @@
     "settingsUpdated": "Einstellungen erfolgreich aktualisiert.",
     "settingsUpdatedFail": "Einstellungen konnten nicht aktualisiert werden.",   
     "visibility": "Sichtbarkeit",
+    "carpark": "Parkplatz",
+    "visibilityMode": "Sichtbarkeit",
+    "abbreviationCap": "Abkürzung",
+    "you": "Du",
+    "visibilityHelper": "Wählen Sie aus, wie Ihr Name anderen Nutzern angezeigt wird.",
+    "favourites": "Favoriten",
+    "favouritesHelper": "Speichere häufig genutzte Räume. Klick zum Buchen; Stern zum Entfernen.",
+    "addFavourite": "Zu Favoriten hinzugefügt",
+    "removeFavourite": "Aus Favoriten entfernt",
+    "favouritesEmpty": "Noch keine Favoriten. Markiere einen Raum mit dem Stern.",
+    "favouriteToggleError": "Favorit konnte nicht aktualisiert werden",
+    "goToBooking": "Zur Buchung",
+    "rooms": "Räume",
+    "parking": "Parken",
+    "parkingComingSoon": "Parkplatz-Favoriten folgen bald.",
+    "loading": "Lade",
+    "roomSection": "Räume",
+    "parkingSection": "Parkplätze (bald verfügbar)",
     "logout": "Abmeldung",
     "hello": "Hallo",
 
@@ -52,6 +71,7 @@
     "chooseDate": "Datum für eine Arbeitsplatzreservierung wählen",
     "desk": "Tisch",
     "chooseDesk": "Tischauswahl",
+    "home": "Startseite",
 
     "chosenDate": "Datum",
     "groundFloor": "Erdgeschoss",
@@ -148,6 +168,12 @@
     "addEmployee": "Mitarbeiter Hinzufügen",
     "deleteEmployee": "Mitarbeiter Entfernen",
     "editEmployee": "Mitarbeiter Bearbeiten",
+    "addUser": "Nutzer Hinzufügen",
+    "deleteUser": "Nutzer Entfernen",
+    "editUser": "Nutzer Bearbeiten",
+    "employee": "Mitarbeiter",
+    "servicePersonnel": "Servicepersonal",
+    "role": "Rolle",
     "name": "Vorname",
     "surname": "Nachname",
     "action": "Aktion",
@@ -211,6 +237,7 @@
     "fFDeleteWorkStation":"Es werden neben dem Arbeitsplatz auch alle damit verbundenen Buchungen gelöscht.",
     "fFDeleteRoom":"Es werden neben dem Raum auch alle damit verbundenen Tische und Buchungen gelöscht.",
     "fFDeleteEmployee":"Es werden neben dem Nutzer auch alle damit verbundenen Buchungen gelöscht.",
+    "fFDeleteUser":"Es werden neben dem Nutzer auch alle damit verbundenen Buchungen gelöscht.",
     "helpAddRoom":"Bitte wählen Sie einen Ort für ein neues Büro auf der Karte und klicken Sie darauf.<br/>Anschließend geben Sie alle nötigen Informationen ein und wählen <strong>Einreichen</strong>."
     ,"helpChooseRoom":"Bitte wählen Sie ein existierendes Büro aus und klicken hierauf."
     ,"helpCreateBooking":"Bitte wählen Sie zuerst ein Arbeitsplatz und dann eine Zeitspanne aus. Klicken Sie anschließend <strong>Buchen</strong>."
@@ -219,7 +246,20 @@
     ,"helpEditWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Anschließend wählen Sie bitte den jeweiligen Arbeitsplatz aus. Im Anschluss können Sie die Änderungen definieren."
     ,"helpDeleteWorkstation":"Bitte wählen Sie einen existierenden Raum durch einen Klick aus. Danach wählen Sie den zu löschenden Arbeitsplatz aus."
     ,"bookingsSum":"Buchungen Gesamt"
+    ,"noMatchingBookingsForSelectedFilter":"Keine passenden Buchungen fuer den ausgewaehlten Filter."
+    ,"filters":"Filter"
+    ,"desksTitle":"Arbeitsplaetze"
+    ,"parkingsTitle":"Parkplaetze"
+    ,"filter":"Filter"
+    ,"deskTypes":"Arbeitsplatztypen"
+    ,"parkingTypes":"Parkplatztypen"
+    ,"switchToParking":"Zu Parkplatz wechseln"
+    ,"switchToDesk":"Zu Arbeitsplatz wechseln"
+    ,"selectedDateLabel":"Ausgewähltes Datum"
+    ,"addBooking":"Buchung hinzufügen"
     ,"enableFilter":"Filter aktivieren"
+    ,"addFilter":"Filter hinzufügen"
+    ,"removeFilter":"Filter entfernen"
     ,"column":"Spalte"
     ,"condition":"Bedingung"
     ,"contains":"Enthält"
@@ -243,10 +283,82 @@
     ,"startTimeBiggerThanStartTime":"Start des Zeitintervalls darf nicht größer als Ende sein."
     ,"seriesDurationTooLong":"Die Dauer der Serienbuchung ist zu groß."
     ,"noDesksForRange":"Für die angegebene Zeitspanne/Gebäude konnte kein Arbeitsplatz gefunden werden."
+    ,"datePassed": "Dieses Datum liegt in der Vergangenheit."
+    ,"timePassed": "Diese Uhrzeit liegt bereits in der Vergangenheit."
     
     ,"colleagues":"Kollegen"
+
+    ,"carparkTitle":"Parkplatz-Übersicht"
+    ,"carparkHelp":"Klicken Sie auf einen Parkplatz, um Details zu sehen."
+    ,"carparkHintClick":"Zum Anzeigen bewegen, zum Auswählen klicken."
+    ,"carparkReset":"Zurücksetzen"
+    ,"carparkRefresh":"Aktualisieren"
+    ,"carparkDetails":"Details"
+    ,"carparkNoSelection":"Kein Parkplatz ausgewählt."
+    ,"carparkSpot":"Platz"
+    ,"carparkTypeStall":"Markierter Platz"
+    ,"carparkTypeEmpty":"Unmarkierter Platz"
+    ,"carparkStandard":"Standard"
+    ,"carparkSpecialCase":"Sonderfall"
+    ,"carparkContactStaff":"Bitte wenden Sie sich an das Personal, um diesen Platz zu reservieren."
+    ,"carparkReserve":"Reservieren"
+    ,"carparkLegendAvailable":"Frei"
+    ,"carparkLegendOccupied":"Belegt"
+    ,"carparkLegendBlocked":"Gesperrt"
+    ,"carparkStatus_AVAILABLE":"Frei"
+    ,"carparkStatus_OCCUPIED":"Belegt"
+    ,"carparkStatus_BLOCKED":"Gesperrt"
+    ,"carparkStatus_UNKNOWN":"Unbekannt"
+    ,"carparkReservedByMe":"mein"
+    ,"carparkOccupied":"Dieser Platz ist im gewählten Zeitraum belegt."
+    ,"carparkBlocked":"Dieser Platz ist gesperrt."
+    ,"carparkAvailable":"Dieser Platz ist im gewählten Zeitraum verfügbar."
+    ,"carparkSelected":"Ausgewählt"
+    ,"carparkHover":"Hover"
 
     ,"ERROR_USER_NOT_FOUND_IN_AD":"Nutzer wurde nicht im AD gefunden."
     ,"ERROR_USER_NOT_FOUND_IN_DAO":"Nutzer wurde nicht in lokaled DB gefunden."
     ,"ERROR_WRONG_PW":"Falsches Passwort."
+    ,"ERROR_USER_DEACTIVATED":"Konto ist deaktiviert. Bitte wenden Sie sich an einen Administrator."
+
+    ,"mfaRequired":"MFA-Verifizierung erforderlich"
+    ,"mfaCodeLabel":"Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein"
+    ,"mfaVerify":"Verifizieren"
+    ,"mfaInvalidCode":"Ungültiger Code. Bitte versuchen Sie es erneut."
+    ,"mfaTokenExpired":"MFA-Sitzung abgelaufen. Bitte melden Sie sich erneut an."
+    ,"mfaSetup":"MFA-Einrichtung"
+    ,"mfaEnable":"MFA aktivieren"
+    ,"mfaDisable":"MFA deaktivieren"
+    ,"mfaEnabled":"MFA ist aktiviert"
+    ,"mfaDisabled":"MFA ist deaktiviert"
+    ,"mfaScanQrCode":"Scannen Sie diesen QR-Code mit Ihrer Authenticator-App"
+    ,"mfaEnterCode":"Geben Sie einen Code aus Ihrer Authenticator-App ein, um die Einrichtung zu bestätigen"
+    ,"mfaEnterCodeOrPassword":"Geben Sie Ihr Passwort oder den aktuellen MFA-Code ein, um MFA zu deaktivieren"
+    ,"mfaEnabledSuccess":"MFA erfolgreich aktiviert"
+    ,"mfaDisabledSuccess":"MFA erfolgreich deaktiviert"
+    ,"mfaSettings":"MFA-Einstellungen"
+    ,"mfaRecovery":"MFA deaktivieren (Wiederherstellung)"
+    ,"mfaRecoveryConfirm":"Sind Sie sicher, dass Sie MFA für diesen Benutzer deaktivieren möchten?"
+
+    ,"department":"Abteilung"
+    ,"activity":"Aktivität"
+    ,"active":"Aktiv"
+    ,"deactivated":"Deaktiviert"
+    ,"deactivate":"Deaktivieren"
+    ,"reactivate":"Reaktivieren"
+    ,"deactivateReactivateUser":"Benutzer deaktivieren/reaktivieren"
+    ,"confirmToggleActive":"Sind Sie sicher, dass Sie"
+    ,"userDeactivated":"Benutzer erfolgreich deaktiviert"
+    ,"userReactivated":"Benutzer erfolgreich reaktiviert"
+    ,"toggleActiveFailed":"Benutzerstatus konnte nicht geändert werden"
+    
+    ,"resetPassword":"Passwort zurücksetzen"
+    ,"confirmPassword":"Passwort bestätigen"
+    ,"confirmResetPassword":"Zurücksetzen bestätigen"
+    ,"passwordMismatch":"Passwörter stimmen nicht überein"
+    ,"passwordResetSuccess":"Passwort erfolgreich zurückgesetzt"
+    ,"passwordResetFailed":"Passwort konnte nicht zurückgesetzt werden"
+    
+    ,"confirmDeleteUser":"Diese Aktion löscht den Benutzer dauerhaft und kann nicht rückgängig gemacht werden."
+    ,"value":"Wert"
 }

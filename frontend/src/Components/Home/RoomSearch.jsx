@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, TextField, Checkbox, FormControlLabel} from '@mui/material';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, TextField, Checkbox, FormControlLabel, IconButton} from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { getRequest, postRequest } from '../RequestFunctions/RequestFunctions';
+import { getRequest, postRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
 import CreateDatePicker from '../misc/CreateDatePicker';
 import CreateTimePicker from '../misc/CreateTimePicker';
 import LayoutPage from '../Templates/LayoutPage';
+import { FaStar, FaRegStar } from 'react-icons/fa';
 
 const RoomSearch = () => {
     const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -18,6 +19,32 @@ const RoomSearch = () => {
     const [onDate, setOnDate] = useState(false);
     const [minimalAmountOfWorkstations, setminimalAmountOfWorkstations] = useState(2);
     const [rooms, setRooms] = useState([]);
+    const [favouriteIds, setFavouriteIds] = useState(new Set());
+
+    const userId = localStorage.getItem('userId');
+
+    const refreshFavourites = useCallback(() => {
+      if (!userId) return;
+      getRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/favourites/${userId}`,
+        headers.current,
+        (data) => {
+          const ids = new Set((data || []).map((r) => r.roomId));
+          setFavouriteIds(ids);
+          setRooms((prev) => sortRooms(prev, ids));
+        },
+        () => setFavouriteIds(new Set())
+      );
+    }, [userId]);
+
+    const sortRooms = (list, favSet = favouriteIds) => {
+      return [...list].sort((a, b) => {
+        const aFav = favSet.has(a.id) ? 1 : 0;
+        const bFav = favSet.has(b.id) ? 1 : 0;
+        if (aFav !== bFav) return bFav - aFav; // favourites first
+        return (a.remark || '').localeCompare(b.remark || '');
+      });
+    };
 
     useEffect(()=>{
       // We want to get all free rooms on an fixed date. 
@@ -25,7 +52,11 @@ const RoomSearch = () => {
         postRequest(
           `${process.env.REACT_APP_BACKEND_URL}/rooms/byMinimalAmountOfWorkstationsAndFreeOnDate/${minimalAmountOfWorkstations}`,
           headers.current,
-          setRooms,
+          (data) => {
+            const sorted = sortRooms(data || []);
+            setRooms(sorted);
+            refreshFavourites();
+          },
           () => {console.log('Error fetching rooms in RoomSearch.jsx');},
           JSON.stringify({
             dates: [date],
@@ -39,11 +70,48 @@ const RoomSearch = () => {
         getRequest(
           `${process.env.REACT_APP_BACKEND_URL}/rooms/byMinimalAmountOfWorkstations/${minimalAmountOfWorkstations}`,
           headers.current,
-          setRooms,
+          (data) => {
+            const sorted = sortRooms(data || []);
+            setRooms(sorted);
+            refreshFavourites();
+          },
           () => {console.log('Error fetching rooms in RoomSearch.jsx');}
         );
       }
-    }, [onDate, minimalAmountOfWorkstations, date, startTime, endTime]);
+    }, [onDate, minimalAmountOfWorkstations, date, startTime, endTime, refreshFavourites]);
+
+    const toggleFavourite = (roomId) => {
+      if (!userId) return;
+      const isFav = favouriteIds.has(roomId);
+      const onSuccess = () => {
+        const updated = new Set(favouriteIds);
+        if (isFav) {
+          updated.delete(roomId);
+          setRooms((prev) => sortRooms(prev, updated));
+        } else {
+          updated.add(roomId);
+          setRooms((prev) => sortRooms(prev, updated));
+        }
+        setFavouriteIds(updated);
+      };
+      const onFail = () => refreshFavourites();
+
+      if (isFav) {
+        deleteRequest(
+          `${process.env.REACT_APP_BACKEND_URL}/favourites/${userId}/room/${roomId}`,
+          headers.current,
+          onSuccess,
+          onFail
+        );
+      } else {
+        postRequest(
+          `${process.env.REACT_APP_BACKEND_URL}/favourites/${userId}/room/${roomId}`,
+          headers.current,
+          onSuccess,
+          onFail
+        );
+      }
+    };
 
 
     function CreateContent() {
@@ -124,6 +192,7 @@ const RoomSearch = () => {
               <Table stickyHeader id='room_table'>
                 <TableHead>
                   <TableRow key='room_table_header' id='room_table_header'>
+                    <TableCell />
                     <TableCell>{t('roomRemark')}</TableCell>
                     <TableCell>{t('building')}</TableCell>
                     <TableCell>{t('floor')}</TableCell>
@@ -132,6 +201,15 @@ const RoomSearch = () => {
                 <TableBody>
                   {rooms.map(room => (
                     <TableRow key={room.id} id={room.id}>
+                      <TableCell padding="checkbox">
+                        <IconButton
+                          aria-label="favourite"
+                          onClick={() => toggleFavourite(room.id)}
+                          sx={{ color: favouriteIds.has(room.id) ? '#ffb300' : '#9e9e9e' }}
+                        >
+                          {favouriteIds.has(room.id) ? <FaStar /> : <FaRegStar />}
+                        </IconButton>
+                      </TableCell>
                       <TableCell id={`${room.id}_remark`}>{room.remark}</TableCell>
                       <TableCell id={`${room.id}_buildingName`}> {room.floor.building.name}</TableCell>
                       <TableCell id={`${room.id}_floorName`}>{room.floor.name}</TableCell>

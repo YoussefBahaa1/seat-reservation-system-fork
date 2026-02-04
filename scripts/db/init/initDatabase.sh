@@ -14,6 +14,13 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
     docker exec -i ${container} mariadb -p${PW_DB} < scripts/db/init/createDatabase.sql
     # Load schema definitions.
     scripts/db/import_db.sh schema.sql
+    # Apply compatible migrations (curated list)
+    for migration in scripts/db/migration/visibility_mode.sql; do
+        if [ -f "$migration" ]; then
+            rel_path="${migration#scripts/db/}"
+            scripts/db/exec_db.sh "$rel_path"
+        fi
+    done
     # Insert viewmodes
     scripts/db/exec_db.sh init/insertViewModes.sql
     # Insert equipments
@@ -26,7 +33,7 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
     scripts/db/exec_db.sh init/insertRoomTypes.sql
     # Insert buzildings, floors, rooms and desks.
     scripts/db/exec_db.sh init/insertBuilding.sql
-    # Insert test user and test admin.
+    # Insert test users: admins, employees, and service personnel.
     scripts/db/exec_db.sh init/insertTestUsers.sql
 else
     echo "Bye"

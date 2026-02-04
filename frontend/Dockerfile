@@ -28,6 +28,8 @@ ENV REACT_APP_ERROR_USER_NOT_FOUND_IN_DAO=$REACT_APP_ERROR_USER_NOT_FOUND_IN_DAO
 
 ARG REACT_APP_ERROR_WRONG_PW
 ENV REACT_APP_ERROR_WRONG_PW=$REACT_APP_ERROR_WRONG_PW
+ARG REACT_APP_ERROR_USER_DEACTIVATED
+ENV REACT_APP_ERROR_USER_DEACTIVATED=$REACT_APP_ERROR_USER_DEACTIVATED
 
 ARG TARGET
 
@@ -71,6 +73,8 @@ ENV REACT_APP_ERROR_USER_NOT_FOUND_IN_DAO=$REACT_APP_ERROR_USER_NOT_FOUND_IN_DAO
 
 ARG REACT_APP_ERROR_WRONG_PW
 ENV REACT_APP_ERROR_WRONG_PW=$REACT_APP_ERROR_WRONG_PW
+ARG REACT_APP_ERROR_USER_DEACTIVATED
+ENV REACT_APP_ERROR_USER_DEACTIVATED=$REACT_APP_ERROR_USER_DEACTIVATED
 
 ARG REACT_APP_USE_TLS
 ENV REACT_APP_USE_TLS=$REACT_APP_USE_TLS
@@ -81,10 +85,11 @@ COPY nginx.tls.conf /etc/nginx/nginx.tls.conf
 COPY nginx.notls.conf /etc/nginx/nginx.notls.conf
 
 COPY myentrypoint.sh /myentrypoint.sh
-RUN chmod +x /myentrypoint.sh
+RUN sed -i 's/\r$//' /myentrypoint.sh && chmod +x /myentrypoint.sh
 
 # Builded react file will be served as static site by nginx.
 COPY --from=builder /usr/src/app/build /usr/share/nginx/html
 
 #CMD ["nginx", "-g", "daemon off;"]
 ENTRYPOINT ["/myentrypoint.sh"]
+

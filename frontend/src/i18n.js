@@ -3,6 +3,12 @@ import { initReactI18next } from 'react-i18next';
 import enTranslation from './locales/en.json';
 import deTranslation from './locales/de.json';
 
+// Pick a language stored for the current user (if logged in), otherwise fall back
+const userId = localStorage.getItem('userId');
+const storedLanguage =
+  (userId && localStorage.getItem(`language_${userId}`)) ||
+  navigator.language.split('-')[0];
+
 i18n
   .use(initReactI18next)
   .init({
@@ -10,7 +16,7 @@ i18n
       en: { translation: enTranslation },
       de: { translation: deTranslation }
     },
-    lng: localStorage.getItem('language') || navigator.language.split('-')[0], // Use browser language if not set
+    lng: storedLanguage, // Use user-specific language if set
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false

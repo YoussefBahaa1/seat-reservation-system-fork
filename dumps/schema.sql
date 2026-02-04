@@ -254,14 +254,57 @@ CREATE TABLE `users` (
   `password` varchar(255) DEFAULT NULL,
   `surname` varchar(255) DEFAULT NULL,
   `visibility` bit(1) NOT NULL,
+  `visibility_mode` varchar(20) NOT NULL DEFAULT 'FULL_NAME',
   `default_floor_id` bigint(20) DEFAULT NULL,
   `default_view_mode_id` bigint(20) DEFAULT NULL,
+  `mfa_enabled` tinyint(1) NOT NULL DEFAULT 0,
+  `mfa_secret` varchar(255) DEFAULT NULL,
+  `department` varchar(255) DEFAULT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
   KEY `FKgmmnwlyr2ngp088pn8f4cuvc1` (`default_floor_id`),
   KEY `FKjp6pfcd725oud9va9dp4vh4s3` (`default_view_mode_id`),
   CONSTRAINT `FKgmmnwlyr2ngp088pn8f4cuvc1` FOREIGN KEY (`default_floor_id`) REFERENCES `floors` (`floor_id`),
   CONSTRAINT `FKjp6pfcd725oud9va9dp4vh4s3` FOREIGN KEY (`default_view_mode_id`) REFERENCES `view_modes` (`view_mode_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=482 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `parking_reservations`
+--
+
+DROP TABLE IF EXISTS `parking_reservations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `parking_reservations` (
+  `parking_reservation_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `spot_label` varchar(255) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `day` date NOT NULL,
+  `begin` time(6) NOT NULL,
+  `end` time(6) NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  PRIMARY KEY (`parking_reservation_id`),
+  KEY `IDX_parking_reservations_day` (`day`),
+  KEY `IDX_parking_reservations_spot_label` (`spot_label`),
+  KEY `IDX_parking_reservations_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `favourites`
+--
+DROP TABLE IF EXISTS `favourites`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `favourites` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `resource_type` varchar(20) NOT NULL,
+  `resource_id` bigint(20) NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -544,8 +587,13 @@ CREATE TABLE `users` (
   `password` varchar(255) DEFAULT NULL,
   `surname` varchar(255) DEFAULT NULL,
   `visibility` bit(1) NOT NULL,
+  `visibility_mode` varchar(20) NOT NULL DEFAULT 'FULL_NAME',
   `default_floor_id` bigint(20) DEFAULT NULL,
   `default_view_mode_id` bigint(20) DEFAULT NULL,
+  `mfa_enabled` tinyint(1) NOT NULL DEFAULT 0,
+  `mfa_secret` varchar(255) DEFAULT NULL,
+  `department` varchar(255) DEFAULT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
   KEY `FKgmmnwlyr2ngp088pn8f4cuvc1` (`default_floor_id`),
   KEY `FKjp6pfcd725oud9va9dp4vh4s3` (`default_view_mode_id`),
