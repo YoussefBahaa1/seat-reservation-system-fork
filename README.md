@@ -130,7 +130,7 @@ If you freshly cloned this project most of the tests will fail, since the test f
 
 ## Running unit tests - Sprint 1
 Start by setting the JAVA_HOME environment varible inside your environment running:
-export JAVA_HOME="(path to your JDK)"
+export JAVA_HOME="(path to your JDK)" 
 export PATH="$JAVA_HOME/bin:$PATH"
 
 Inside the same terminal, assign the filepath to \backend with:
@@ -138,4 +138,5 @@ cd backend
 
 Then run the tests with:
 mvn test
+
 
