@@ -1,0 +1,43 @@
+name: Backend workflow
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feature/ci.yml 
+    paths:
+      - backend/** 
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - backend/**
+
+jobs:
+  run_tests:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Java enviromnment
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+        #Cache for dependencies for tests to build faster
+        cache: maven
+
+    - name: Permission to execute Maven wrapper
+      run: chmod +x mvnw
+
+    - name: Build and Run Tests
+      run: ./mvnw clean test
