@@ -212,6 +212,18 @@ For this we assume that an admin already include at least a building with a floo
 10. Click `BOOK` on the bottom of the view.
 11. You will be asked if you like to commit this booking. Click either yes or no. If you clicked yes a message will appear, informing you the the booking was successfull.
 
+## Create a parking spot booking
+This tool allows any logged-in user to book a parking spot.
+
+1. Login
+2. Navigate thorough the sidebar to the Search tab.
+3. Select Parking
+4. Above the parking street plan you can select a valid date and time for your booking.
+5. In the parking street plan you hover over any spot to view it's details and select (press on) any available spot (highlighted green).
+6. After selecting an available spot you can press the Reserve button to book it for the selected time.
+7. Your parking spot is now booked, now after un-selecting that spot or refreshing the page you'll see that spot is turned red.
+8. For any spot highlighted red, you can hover over it to see who has booked it (does show yourself as well).
+
 ## Create and manage series bookings
 A series allows the user to create bookings in fixed intervals on a choosen desk between an start date and end date.
 
