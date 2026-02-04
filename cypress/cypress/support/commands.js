@@ -110,61 +110,198 @@ Cypress.Commands.add('highlightMousePosition', () => {
 });
 
 Cypress.Commands.add('logout', ()=>{
-  cy.wait(1000).then(()=>{
-    cy.get('a#sidebar_logout').click().then(()=>{
-      cy.get('button#logoutConfirmationModal_onConfirm').click().then(()=>{
+  cy.wait(1000).then(() => {
+    cy.get('body').then(($body) => {
+      const closeButtons = $body.find('button#modal_close');
+      if (closeButtons.length > 0) {
+        cy.get('button#modal_close').last().click({ force: true });
+      }
+    });
+  }).then(() => {
+    cy.get('a#sidebar_logout').click({ force: true }).then(() => {
+      cy.get('button#logoutConfirmationModal_onConfirm').click({ force: true }).then(() => {
         return cy.wrap('1');
       });
     });
   });
 });
 
-Cypress.Commands.add('login', (mail=Cypress.env('TEST_ADMIN_MAIL'), pw=Cypress.env('TEST_ADMIN_PW')) => {
-  cy.visit('/').then(()=>{
-    cy.intercept('POST', '/users/login').as('loginRequest');
-    Cypress.Promise.all([
-      cy.get('input#email').type(mail),
-      cy.get('input#password').type(pw)
-    ]).then(()=>{
-      cy.get('button#login_btn').click().then(()=>{
-        cy.wait('@loginRequest').then((interception) => {
-          const response = interception.response;
-          expect(response === null).to.equal(false);
-          const statusCode = response.statusCode;
-          expect(statusCode).to.equal(200);
-          //const body = response.body;
-          const accessToken = response.body.accessToken;
-          expect(accessToken === null).to.equal(false);
-          cy.get('[data-testid="loginErrorMsg"]').should('not.exist').then(()=>{
-            cy.wait(1000).then(()=>{
-              return cy.wrap('1');
-            })
-          });
-        });
-      });
-    }); 
-  });  
+Cypress.Commands.add('assertToastOneOf', (messages) => {
+  const candidates = Array.isArray(messages) ? messages : [messages];
+  cy.get('.Toastify__toast').should('be.visible').then(($toast) => {
+    const text = ($toast.text() || '').trim();
+    const matched = candidates.some((candidate) => text.includes(candidate));
+    expect(matched, `toast to contain one of: ${candidates.join(' | ')}`).to.equal(true);
+  });
 });
 
-Cypress.Commands.add('addUser', (mail, pw, vorname, nachname)=>{
+Cypress.Commands.add('clickFirst', (selectors, options = {}) => {
+  if (!Array.isArray(selectors) || selectors.length === 0) {
+    throw new Error('clickFirst(selectors): selectors must be a non-empty array');
+  }
+
+  return cy.get('body').then(($body) => {
+    const found = selectors.find((selector) => $body.find(selector).length > 0);
+    if (!found) {
+      throw new Error(`None of the selectors were found: ${selectors.join(', ')}`);
+    }
+    return cy.get(found).click(options);
+  });
+});
+
+Cypress.Commands.add('filterUsersByEmail', (mail) => {
+  const enableFilter = () => {
+    cy.get('input#checkbox_handleCheckboxChange')
+      .should('be.enabled')
+      .then(($checkbox) => {
+        if (!$checkbox.prop('checked')) {
+          cy.wrap($checkbox).click({ force: true });
+        }
+      });
+    cy.get('input#checkbox_handleCheckboxChange').should('be.checked');
+  };
+
+  enableFilter();
+
+  return cy.get('body').then(($body) => {
+    // New filter component (UserManagement/FilterUser.js)
+    if ($body.find('div#filterUser_field_0').length > 0) {
+      const selectOption = (controlId, option) => {
+        cy.get(`#${controlId}`)
+          .filter(':visible')
+          .first()
+          .should('not.have.class', 'Mui-disabled')
+          .within(() => {
+            cy.get('[role="button"], [role="combobox"], input')
+              .first()
+              .click({ force: true });
+          });
+        cy.get('ul[role="listbox"]')
+          .should('be.visible')
+          .within(() => {
+            cy.contains('li', option).click({ force: true });
+          });
+      };
+
+      selectOption('filterUser_field_0', /^Email$/);
+      selectOption('filterUser_condition_0', /^=$/);
+
+      cy.get('div#filterUser_text_0').find('input').clear().type(mail);
+      return;
+    }
+
+    // Legacy filter component (Employee)
+    cy.setStr('filterEmployee_handleFieldChange', 'email');
+    cy.setStr('filterEmployee_handleConditionChange', 'is_equal');
+    cy.setStr('filterEmployee_handleTextChange', mail);
+  });
+});
+
+Cypress.Commands.add('login', (mail = Cypress.env('TEST_ADMIN_MAIL'), pw = Cypress.env('TEST_ADMIN_PW'), opts = {}) => {
+  const { expectSuccess = true, expectErrorMessageOneOf = null } = opts;
+  const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+
+  cy.visit('/').then(() => {
+    cy.intercept('POST', '/users/login').as('loginRequest');
+    Cypress.Promise.all([
+      cy.get('input#email').clear().type(mail),
+      cy.get('input#password').clear().type(pw),
+    ]).then(() => {
+      cy.get('button#login_btn').click().then(() => {
+        const waitForLoginRequest = (attempt = 0) => {
+          if (attempt > 5) {
+            throw new Error(`Login request for ${mail} not observed`);
+          }
+          return cy.wait('@loginRequest').then((interception) => {
+            const body = interception.request && interception.request.body;
+            let email = '';
+            if (body) {
+              if (typeof body === 'string') {
+                try {
+                  email = JSON.parse(body).email || '';
+                } catch {
+                  email = '';
+                }
+              } else {
+                email = body.email || '';
+              }
+            }
+            if (normalizeEmail(email) !== normalizeEmail(mail)) {
+              return waitForLoginRequest(attempt + 1);
+            }
+            return interception;
+          });
+        };
+
+        waitForLoginRequest().then((interception) => {
+          const response = interception.response;
+          expect(response === null).to.equal(false);
+          if (expectSuccess) {
+            expect(response.statusCode).to.equal(200);
+          } else {
+            expect([200, 401]).to.include(response.statusCode);
+          }
+
+          const accessToken = response.body && response.body.accessToken;
+          const hasAccessToken = typeof accessToken === 'string' && accessToken.length > 0;
+          if (expectSuccess) {
+            expect(hasAccessToken, 'access token to be present').to.equal(true);
+            cy.get('#loginErrorMsg').should('not.exist');
+          } else {
+            if (expectErrorMessageOneOf) {
+              const candidates = Array.isArray(expectErrorMessageOneOf)
+                ? expectErrorMessageOneOf
+                : [expectErrorMessageOneOf];
+              cy.get('#loginErrorMsg').should('be.visible').then(($el) => {
+                const text = ($el.text() || '').trim();
+                const matched = candidates.some((candidate) => text.includes(candidate));
+                expect(matched, `login error to contain one of: ${candidates.join(' | ')}`).to.equal(true);
+              });
+            } else {
+              cy.get('#loginErrorMsg').should('be.visible');
+            }
+          }
+
+          cy.wait(500).then(() => cy.wrap('1'));
+        });
+      });
+    });
+  });
+});
+
+Cypress.Commands.add('addUser', (mail, pw, vorname, nachname, opts = {})=>{
+  const { department = '' } = opts;
   cy.visit('/admin').then(()=>{
       cy.url().should('contains', '/admin').then(()=> {
           cy.get('button#userManagement').click().then(()=>{
               //cy.get('div.employee-button-wrapper').should('be.visible').then(()=>{
-                  cy.get('button#addEmployee').click().then(()=>{
+                  cy.clickFirst(['button#addUser', 'button#addEmployee']).then(()=>{
                       cy.get('h2').should('be.visible').then(()=>{
-                          Cypress.Promise.all([
-                              cy.setStr('addEmployee-setEmail', mail),
-                              cy.setStr('addEmployee-setPassword', pw),
-                              cy.setStr('addEmployee-setName', vorname),
-                              cy.setStr('addEmployee-setSurname', nachname)
-                          ]).then(()=>{
+                          cy.get('body').then(($body) => {
+                            const isNew = $body.find('div#addUser-setEmail').length > 0;
+                            const emailId = isNew ? 'addUser-setEmail' : 'addEmployee-setEmail';
+                            const passwordId = isNew ? 'addUser-setPassword' : 'addEmployee-setPassword';
+                            const nameId = isNew ? 'addUser-setName' : 'addEmployee-setName';
+                            const surnameId = isNew ? 'addUser-setSurname' : 'addEmployee-setSurname';
+                            const departmentId = isNew ? 'addUser-setDepartment' : null;
+
+                            Cypress.Promise.all([
+                              cy.setStr(emailId, mail),
+                              cy.setStr(passwordId, pw),
+                              cy.setStr(nameId, vorname),
+                              cy.setStr(surnameId, nachname),
+                              department !== '' && departmentId ? cy.setStr(departmentId, department) : cy.wrap('1'),
+                            ]).then(() => {
                               cy.get('button#modal_submit').click().then(()=>{ //cy.contains('button', /SUBMIT/).click().then(()=>{
-                                cy.get('.Toastify__toast').should('be.visible').contains('User created successfully').then(()=>{
+                                cy.assertToastOneOf([
+                                  'User created successfully',
+                                  'Nutzer wurde erfolgreich erstellt',
+                                ]).then(()=>{
                                   return cy.wrap('1');
                                 })
                               });
-                          });;
+                            });
+                          });
                       });
                   });
               //});
@@ -178,30 +315,25 @@ Cypress.Commands.add('deleteUser', (mail, ff=false)=>{
     cy.url().should('contains', '/admin').then(()=> {
       cy.get('button#userManagement').click().then(()=>{
           //cy.get('div.employee-button-wrapper').should('be.visible').then(()=>{
-              cy.get('button#deleteEmployee').click().then(()=>{
-                  cy.get('input#checkbox_handleCheckboxChange').click().then(()=>{
-                      Cypress.Promise.all([
-                          cy.setStr('filterEmployee_handleFieldChange', 'email'),
-                          cy.setStr('filterEmployee_handleConditionChange', 'is_equal'),
-                          cy.setStr('filterEmployee_handleTextChange', mail)
-                      ]).then(()=>{
-                        cy.get('tr').find('button').click().then(()=>{
-                          if (ff) {
-                            cy.get('button#delete_ff_btn_yes').click().then(()=>{
-                              cy.get('.Toastify__toast').should('be.visible').contains('User deleted successfully').then(()=>{  
-                                return cy.wrap('1');
-                              })
-                            })
-                          }
-                          else {
-                            cy.get('.Toastify__toast').should('be.visible').contains('User deleted successfully').then(()=>{  
-                              return cy.wrap('1');
-                            })
-                          }
-                        })
-                      })
-                  })
-              })
+              cy.clickFirst(['button#deleteUser', 'button#deleteEmployee']).then(()=>{
+                cy.on('window:confirm', () => true);
+                cy.filterUsersByEmail(mail).then(() => {
+                  cy.get(`[id="${mail}"]`).find('button').click().then(() => {
+                    if (ff) {
+                      cy.get('body').then(($body) => {
+                        if ($body.find('button#delete_ff_btn_yes').length > 0) {
+                          cy.get('button#delete_ff_btn_yes').click();
+                        }
+                      });
+                    }
+
+                    cy.assertToastOneOf([
+                      'User deleted successfully',
+                      'Nutzer wurde erfolgreich gelöscht',
+                    ]).then(() => cy.wrap('1'));
+                  });
+                });
+              });
           //})
       })
     })
@@ -213,24 +345,16 @@ Cypress.Commands.add('getAmountOfUsersForMail', (mail) => {
     cy.url().should('contains', '/admin').then(()=> {
       cy.get('button#userManagement').click().then(()=>{
         //cy.get('div.employee-button-wrapper').should('be.visible').then(()=>{
-          cy.get('button#deleteEmployee').click().then(()=>{
-            cy.get('input#checkbox_handleCheckboxChange').click().then(()=>{
-              Cypress.Promise.all([
-                cy.setStr('filterEmployee_handleFieldChange', 'email'),
-                cy.setStr('filterEmployee_handleConditionChange', 'is_equal'),
-                cy.setStr('filterEmployee_handleTextChange', mail)
-              ]).then(()=>{
-                cy.wait(1000).then(()=>{
-                  const length = Cypress.$(`tr`).length - 1;
-                  cy.get('button#modal_close').click().then(()=>{
-                    //cy.logout().then(()=>{
-                      return cy.wrap(length);
-                    //});
-                  });
+          cy.clickFirst(['button#deleteUser', 'button#deleteEmployee']).then(()=>{
+            cy.filterUsersByEmail(mail).then(() => {
+              cy.wait(500).then(() => {
+                cy.get('tbody').then(($tbody) => {
+                  const length = $tbody.find('tr').length;
+                  cy.get('button#modal_close').click({ force: true }).then(() => cy.wrap(length));
                 });
-              })
-            })
-          })
+              });
+            });
+          });
         //})
       })
     })   
