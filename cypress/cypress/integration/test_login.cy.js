@@ -2,7 +2,7 @@ describe('Test login utilities', ()=> {
     
     it('Test wrong password message', ()=>{
         const errMsg = 'Login failed. Wrong Password.';
-        cy.login(Cypress.env('TEST_ADMIN_MAIL'), 'foo').then(()=>{
+        cy.login(Cypress.env('TEST_ADMIN_MAIL'), 'foo', { expectSuccess: false, expectErrorMessageOneOf: [errMsg] }).then(()=>{
             cy.get('.Toastify__toast').should('be.visible').contains(errMsg).then(()=>{
                 cy.get('div#loginErrorMsg').contains(errMsg).then(()=>{
                     cy.wrap('1');

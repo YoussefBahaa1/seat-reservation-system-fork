@@ -7,38 +7,73 @@ After you executed initDatabase.sh you can login as test.admin@mail.de with the 
 A step by step guide how to add a new user is seen in the following list:
 
 1. Login as user with ADMIN role.
-2. On the On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
+2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
 3. Click on `User Management`.
-4. Click on `Add Employee`. 
-5. Provide the email, a default password, the name and the surname of the new user.
-If the user shall be grandted admin rights select true. False otherwise.
-9. Click `Submit`.
-10. A small window will appear with the information that the user was creaded successfully.
+4. Click on `Add User`.
+5. Provide the user's `Email`, a default `Password`, `Name`, and `Surname`.
+6. (Optional) Provide a `Department`.
+7. Select the user's role(s):
+   - If the user should be an admin, set `Admin` to `True`. (Admins inherit Employee and Service Personnel permissions via role hierarchy.)
+   - If the user is not an admin, select at least one of: `Employee`, `Service Personnel`. (Both can be selected.)
+8. Click `Submit`.
+9. A small window will appear with the information that the user was created successfully.
+
+Notes:
+- Email addresses are validated. Only valid email formats are accepted.
+- New users are active by default.
 
 ### Delete user
 1. Login as user with ADMIN role.
-2. On the on the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
+2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
 3. Click on `User Management`.
-4. Click on `Delete Employee`. 
-5. For a faster search enable filter. As column you choose Email. As the condition you choose =. Then paste the email of the user you want to delete in the last text box.
-6. A row with informations about the user will appear. Click on `DELETE`.
+4. Click on `Delete User`.
+5. (Optional) For a faster search enable filter:
+   - Turn on `Enable Filter`.
+   - Choose a `Column` (e.g., Email), choose a `Condition` (`contains` or `is equal`), and enter text.
+   - You can add multiple filters and choose whether to match `All` or `Any` filters.
+6. Click `DELETE` for the selected user. You will be asked to confirm the deletion.
 7. If the user has done at least one booking a window will appear. You will be asked to delete all bookings that belong to the user. Click `YES`.
-7. A small window will appear with the information that the user was deleted.
+8. A small window will appear with the information that the user was deleted.
 
-### Roles and changes for users
-A basic role hierarchy is implemented. A user has per default the role USER. If this user needs to do some special tasks like adding other users or add/delete rooms he must be granted the role ADMIN. 
-A admin can do everything a normal user can do, plus all the administrative tasks. 
-So this only can be done via gui if the executing user is a admin by himself. To do so:
+Tip: Some columns are boolean and can be filtered with `True/False` (e.g., Activity and MFA).
+
+### Deactivate / Reactivate user
+Deactivating a user locks them out of the system without deleting their account (soft lockout). Their history and data are retained, and they can be reactivated later.
+
 1. Login as user with ADMIN role.
 2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
 3. Click on `User Management`.
-4. You can either add, delete or edit an employee. Given that you want to grant a normal user admin rights we click on `Edit Employee`. 
-5. For a faster search enable filter. As column you choose Email. As the condition you choose =. Then paste the email of the user you want to change in the last text box.
-6. A row with informations about the user will appear. Click on `EDIT`.
-7. A window appears where you can change attributes of the user. (Note that for now the password cant be changed. Must be done in the future!)
-8. Set Admin to True (or change any other attribute you like).
+4. Click on `Deactivate/Reactivate User`.
+5. (Optional) Use the filter to find the target user (see the filtering notes in the Delete section).
+6. Click `DEACTIVATE` to lock the account, or `REACTIVATE` to restore access.
+7. A confirmation prompt appears before the action is applied.
+
+Notes:
+- Deactivated users appear with Activity = `deactivated` and are shown at the bottom of the user table.
+- Deactivated users cannot log in until reactivated.
+
+### Roles and changes for users
+A basic role hierarchy is implemented:
+- `ROLE_ADMIN` inherits permissions from `ROLE_EMPLOYEE` and `ROLE_SERVICE_PERSONNEL`.
+- Non-admin users must have at least one of: Employee, Service Personnel (or both).
+
+Admins can manage user properties via the admin panel (email, name, surname, department, roles) and can additionally perform administrative actions like password resets and account deactivation.
+
+To edit a user's roles or profile:
+1. Login as user with ADMIN role.
+2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
+3. Click on `User Management`.
+4. Click on `Edit User`.
+5. (Optional) Enable filter and search for the user by Email (or other fields). You can add multiple filters and match `All`/`Any`.
+6. Click on `EDIT` for the selected user.
+7. Update the user's attributes (email, name, surname, department, and roles). Email format is validated.
+8. (Optional) Click `Reset Password` and enter the new password twice to confirm the reset.
 9. Click `Update`.
 10. A small window will appear with the information that the user was changed.
+
+MFA notes (admins only):
+- Admins can enable/disable MFA for their own account under `Settings` -> `MFA Settings`.
+- If an admin is locked out due to MFA, another admin can disable MFA for that user via the admin user table (recovery flow).
 
 ## Room and desk management
 ### Create a new room
@@ -149,7 +184,7 @@ Often you want to sit next to your colleagues. To do so you must know the rooms 
 ### Change language
 1. Login
 2. On the left side you will see the row called `Settings`. Click on it.
-3. Three settings options will be shown.
+3. A list of settings options will be shown.
 4. Click on `Deutsch` if you want to change the language from english to german or `English` otherwise.
 
 ### Defaults
@@ -157,7 +192,7 @@ A user can change the default floor, which is displayed first when a booking is 
 
 1. Login
 2. On the left side you will see the row called `Settings`. Click on it.
-3. Three settings options will be shown.
+3. A list of settings options will be shown.
 4. Click on `Defaults`.
 5. Change the default viewmode for the calendar. Select between day, week or month.
 6. Choose your default floor. This floor is displayed first when you want to book a desk. To do so choose the building and the concrete floor.
@@ -169,12 +204,22 @@ Follow the next steps to change your password.
 
 1. Login
 2. On the left side you will see the row called `Settings`. Click on it.
-3. Three settings options will be shown.
+3. A list of settings options will be shown.
 4. Click on `Password`.
 5. Enter your current password.
 6. Enter the new password. Confirm the new password by enter it again.
 7. Click `SUBMIT`.
 8. A small window will appear with the information that the password was changed successfully.
+
+### MFA Settings (admins only)
+Admins can optionally enable Multi-Factor Authentication (MFA) using a TOTP authenticator app (e.g., Google Authenticator).
+
+1. Login as a user with ADMIN role.
+2. Click `Settings` -> `MFA Settings`.
+3. Click `Enable MFA`.
+4. Scan the displayed QR code with your authenticator app.
+5. Enter the 6-digit code from the app to confirm setup.
+6. To disable MFA later, click `Disable MFA` and confirm using either your password or a current 6-digit code.
 
 ### Visibility
 Choose how your name is shown to other users (admins still see full names).
