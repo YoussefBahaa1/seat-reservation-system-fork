@@ -176,6 +176,26 @@ Follow the next steps to change your password.
 7. Click `SUBMIT`.
 8. A small window will appear with the information that the password was changed successfully.
 
+### Visibility
+Choose how your name is shown to other users (admins still see full names).
+
+1. Login
+2. Click `Settings` -> `Visibility`.
+3. Pick one option: `Name`, `Abbreviation`, or `Anonymous`.
+4. Click `SUBMIT`. Your preference is saved per user and persists through logout/login.
+
+### Favourites
+Save rooms you book often and jump back to them quickly.
+
+On the room booking screen: click the star in the top-right. Empty = not a favourite; filled = favourite. Click to toggle.
+
+From the sidebar: click `Favourites` (between Bookings and Search) to:
+1. See your saved rooms (per-user, persistent).
+2. Click BOOK to open that room’s booking view.
+3. Click the star to remove.
+
+Favourite Rooms also come up first in RoomSearch
+
 ## Create a booking
 The main task of this tool is to let the user create bookings in defined time ranges on specific desks.
 For this we assume that an admin already include at least a building with a floor that contains a room with an desk.
