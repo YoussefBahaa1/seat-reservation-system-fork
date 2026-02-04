@@ -6,14 +6,17 @@ on:
       - main
       - develop
       - feature/ci.yml 
+      -tests-ricardo
     paths:
-      - backend/** 
+      - backend/**
+      - .github/workflows/ci.yml
   pull_request:
     branches:
       - main
       - develop
     paths:
       - backend/**
+      - .github/workflows/ci.yml
 
 jobs:
   run_tests:
@@ -27,7 +30,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Set up Java enviromnment
+    - name: Set up Java environment
       uses: actions/setup-java@v3
       with:
         java-version: '17'
