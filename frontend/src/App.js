@@ -25,34 +25,64 @@ import './i18n';
 
 function AppRoutes() {
   const location = useLocation();
+  const isAuthenticated = Boolean(
+    sessionStorage.getItem('accessToken') && localStorage.getItem('userId')
+  );
+
   const isLoginPage = location.pathname === "/";
+
+  // Require authentication for protected screens
+  const RequireAuth = ({ children }) => (
+    isAuthenticated ? children : <Navigate to="/" replace />
+  );
+
+  // Keep users out of login when already authenticated
+  const RedirectIfAuth = ({ children }) => (
+    isAuthenticated ? <Navigate to="/home" replace /> : children
+  );
 
   return (
     <>
-      {!isLoginPage && <JwtHeartbeat />}
+      {isAuthenticated && !isLoginPage && <JwtHeartbeat />}
       <Routes>
-        <Route exact path="/" element={<LoginPage />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/floor" element={<Floor />} />
-        <Route path="/desks" element={<Booking />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/mybookings" element={<MyBookings />} />
-        <Route path="/manageseries" element={<ManageSeries />} />
-        <Route path="/createseries" element={<CreateSeries />} />
-        <Route path='/freedesks' element={<FreeDesks />} />
-        <Route path='/roomSearch' element={<RoomSearch />} />
-        <Route path='/colleagues' element={<Colleagues />} />
-        <Route path="/carpark" element={<CarparkOverview />} />
-        <Route path="/favourites" element={<Favourites />} />
-        <Route path="*" element={<Navigate to="/home" />} />
+        <Route
+          exact
+          path="/"
+          element={(
+            <RedirectIfAuth>
+              <LoginPage />
+            </RedirectIfAuth>
+          )}
+        />
+        <Route path="/home" element={<RequireAuth><Home /></RequireAuth>} />
+        <Route path="/floor" element={<RequireAuth><Floor /></RequireAuth>} />
+        <Route path="/desks" element={<RequireAuth><Booking /></RequireAuth>} />
+        <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
+        <Route path="/mybookings" element={<RequireAuth><MyBookings /></RequireAuth>} />
+        <Route path="/manageseries" element={<RequireAuth><ManageSeries /></RequireAuth>} />
+        <Route path="/createseries" element={<RequireAuth><CreateSeries /></RequireAuth>} />
+        <Route path='/freedesks' element={<RequireAuth><FreeDesks /></RequireAuth>} />
+        <Route path='/roomSearch' element={<RequireAuth><RoomSearch /></RequireAuth>} />
+        <Route path='/colleagues' element={<RequireAuth><Colleagues /></RequireAuth>} />
+        <Route path="/carpark" element={<RequireAuth><CarparkOverview /></RequireAuth>} />
+        <Route path="/favourites" element={<RequireAuth><Favourites /></RequireAuth>} />
+        <Route
+          path="*"
+          element={<Navigate to={isAuthenticated ? "/home" : "/"} replace />}
+        />
       </Routes>
     </>
   );
 }
 
 function App() {
+  const basename = React.useMemo(() => {
+    if (process.env.REACT_APP_BASENAME) return process.env.REACT_APP_BASENAME;
+    return window.location.pathname.startsWith('/frontend-main') ? '/frontend-main' : '/';
+  }, []);
+
   return (
-    <Router>
+    <Router basename={basename}>
       <AppRoutes />
     </Router>
   );
