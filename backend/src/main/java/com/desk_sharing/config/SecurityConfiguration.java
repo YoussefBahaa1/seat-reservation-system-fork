@@ -66,6 +66,8 @@ public class SecurityConfiguration {
                 .requestMatchers("/users/mfa/verify").permitAll()
                 // Users must have role admin for everything under /admin/ 
                 .requestMatchers("/admin/**").hasRole("ADMIN")
+                // Parking review endpoints are admin-only.
+                .requestMatchers("/parking/review/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .authenticationManager(authManager)

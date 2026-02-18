@@ -1,6 +1,7 @@
 package com.desk_sharing.services;
 
 import com.desk_sharing.entities.ParkingReservation;
+import com.desk_sharing.entities.ParkingReservationStatus;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
@@ -46,29 +47,38 @@ class ParkingAvailabilityTest {
 
         LocalDate day = LocalDate.now().plusDays(1);
         ParkingAvailabilityRequestDTO request = new ParkingAvailabilityRequestDTO();
-        request.setSpotLabels(List.of("23", "  1  ", "1", "2"));
+        request.setSpotLabels(List.of("23", "  1  ", "1", "2", "3"));
         request.setDay(day.toString());
         request.setBegin("10:00");
         request.setEnd("10:30");
 
         when(parkingReservationRepository.findOccupiedSpotLabels(any(Date.class), any(List.class), any(Time.class), any(Time.class)))
-                .thenReturn(List.of("1", "2"));
+                .thenReturn(List.of("1", "2", "3"));
 
         ParkingReservation mine = new ParkingReservation();
         mine.setId(555L);
         mine.setUserId(42);
+        mine.setStatus(ParkingReservationStatus.APPROVED);
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("1"), any(Time.class), any(Time.class)))
                 .thenReturn(List.of(mine));
 
         ParkingReservation notMine = new ParkingReservation();
         notMine.setId(777L);
         notMine.setUserId(99);
+        notMine.setStatus(ParkingReservationStatus.APPROVED);
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("2"), any(Time.class), any(Time.class)))
                 .thenReturn(List.of(notMine));
 
+        ParkingReservation pending = new ParkingReservation();
+        pending.setId(888L);
+        pending.setUserId(99);
+        pending.setStatus(ParkingReservationStatus.PENDING);
+        when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("3"), any(Time.class), any(Time.class)))
+                .thenReturn(List.of(pending));
+
         List<ParkingAvailabilityResponseDTO> resp = service.getAvailability(request);
 
-        assertThat(resp).hasSize(3);
+        assertThat(resp).hasSize(4);
         var byLabel = resp.stream().collect(java.util.stream.Collectors.toMap(ParkingAvailabilityResponseDTO::getSpotLabel, r -> r));
 
         assertThat(byLabel.get("23").getStatus()).isEqualTo("BLOCKED");
@@ -83,9 +93,13 @@ class ParkingAvailabilityTest {
         assertThat(byLabel.get("2").isReservedByMe()).isFalse();
         assertThat(byLabel.get("2").getReservationId()).isNull();
 
+        assertThat(byLabel.get("3").getStatus()).isEqualTo("PENDING");
+        assertThat(byLabel.get("3").isReservedByMe()).isFalse();
+        assertThat(byLabel.get("3").getReservationId()).isNull();
+
         ArgumentCaptor<List<String>> labelsCaptor = ArgumentCaptor.forClass(List.class);
         verify(parkingReservationRepository).findOccupiedSpotLabels(any(Date.class), labelsCaptor.capture(), any(Time.class), any(Time.class));
-        assertThat(labelsCaptor.getValue()).containsExactly("23", "1", "2");
+        assertThat(labelsCaptor.getValue()).containsExactly("23", "1", "2", "3");
     }
 
     private void authenticateAs(int userId, String email) {
@@ -101,4 +115,3 @@ class ParkingAvailabilityTest {
         when(userRepository.findByEmail(anyString())).thenReturn(user);
     }
 }
-

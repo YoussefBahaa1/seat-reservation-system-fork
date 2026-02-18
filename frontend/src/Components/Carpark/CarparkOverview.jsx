@@ -10,6 +10,36 @@ import LayoutPage from '../Templates/LayoutPage';
 
 const CARPARK_SVG_URL = '/Assets/carpark_overview_ready.svg';
 const CARPARK_SELECTED_DATE_KEY = 'carparkSelectedDate';
+const CARPARK_DEFAULT_DURATION_MINUTES = 120;
+const CARPARK_MIN_LEAD_MINUTES = 30;
+
+const formatTimeHHMM = (d) =>
+  `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+const roundUpToHalfHour = (d) => {
+  const rounded = new Date(d);
+  rounded.setSeconds(0, 0);
+
+  const m = rounded.getMinutes();
+  if (m === 0 || m === 30) return rounded;
+
+  if (m < 30) rounded.setMinutes(30);
+  else {
+    rounded.setMinutes(0);
+    rounded.setHours(rounded.getHours() + 1);
+  }
+  return rounded;
+};
+
+const getDefaultTimeRange = () => {
+  const leadTime = new Date(Date.now() + CARPARK_MIN_LEAD_MINUTES * 60 * 1000);
+  const start = roundUpToHalfHour(leadTime);
+  const end = new Date(start.getTime() + CARPARK_DEFAULT_DURATION_MINUTES * 60 * 1000);
+  return {
+    startTime: formatTimeHHMM(start),
+    endTime: formatTimeHHMM(end),
+  };
+};
 
 const parseFloatAttr = (el, name, fallback = 0) => {
   const raw = el.getAttribute(name);
@@ -62,6 +92,7 @@ const CarparkOverview = () => {
   const svgRef = useRef(null);
   const headersRef = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const spotRectsByLabelRef = useRef(new Map());
+  const initialTimeRangeRef = useRef(getDefaultTimeRange());
 
   const [selectedSpot, setSelectedSpot] = useState(null);
   const [hoveredSpot, setHoveredSpot] = useState(null);
@@ -81,8 +112,8 @@ const CarparkOverview = () => {
     }
     return new Date();
   });
-  const [startTime, setStartTime] = useState('08:00');
-  const [endTime, setEndTime] = useState('10:00');
+  const [startTime, setStartTime] = useState(initialTimeRangeRef.current.startTime);
+  const [endTime, setEndTime] = useState(initialTimeRangeRef.current.endTime);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
@@ -134,6 +165,7 @@ const CarparkOverview = () => {
         .carpark-spot.carpark-selected { fill: #1976d2 !important; }
         .carpark-spot:focus { outline: none; }
         .carpark-status-available { fill: #2e7d32 !important; }
+        .carpark-status-pending { fill: #f9a825 !important; }
         .carpark-status-occupied { fill: #c62828 !important; }
         .carpark-status-blocked { fill: #9e9e9e !important; }
       `;
@@ -309,6 +341,7 @@ const CarparkOverview = () => {
   const spotForPanel = selectedSpot ?? hoveredSpot;
   const isSpecialSpot = spotForPanel?.special === true;
   const isBlocked = spotForPanel?.status === 'BLOCKED' || isSpecialSpot;
+  const isPending = spotForPanel?.status === 'PENDING';
   const isOccupied = spotForPanel?.status === 'OCCUPIED';
   const isAvailable = spotForPanel?.status === 'AVAILABLE';
 
@@ -350,7 +383,7 @@ const CarparkOverview = () => {
         }
 
         for (const [label, rect] of spotRectsByLabelRef.current.entries()) {
-          rect.classList.remove('carpark-status-available', 'carpark-status-occupied', 'carpark-status-blocked');
+          rect.classList.remove('carpark-status-available', 'carpark-status-pending', 'carpark-status-occupied', 'carpark-status-blocked');
 
           const row = statusByLabel.get(label);
           const status = row?.status ?? (label === '23' ? 'BLOCKED' : 'AVAILABLE');
@@ -359,6 +392,7 @@ const CarparkOverview = () => {
           rect.dataset.spotReservationId = row?.reservationId ? String(row.reservationId) : '';
 
           if (status === 'AVAILABLE') rect.classList.add('carpark-status-available');
+          if (status === 'PENDING') rect.classList.add('carpark-status-pending');
           if (status === 'OCCUPIED') rect.classList.add('carpark-status-occupied');
           if (status === 'BLOCKED') rect.classList.add('carpark-status-blocked');
         }
@@ -395,8 +429,9 @@ const CarparkOverview = () => {
     postRequest(
       `${process.env.REACT_APP_BACKEND_URL}/parking/reservations`,
       headersRef.current,
-      () => {
-        toast.success(t('booked'));
+      (data) => {
+        if (String(data?.status || '') === 'PENDING') toast.success(t('carparkReviewSubmitted'));
+        else toast.success(t('booked'));
         refreshAvailability();
       },
       (errorCode) => {
@@ -449,6 +484,7 @@ const CarparkOverview = () => {
           </Button>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip size="small" label={t('carparkLegendAvailable')} sx={{ bgcolor: '#2e7d32', color: '#fff' }} />
+            <Chip size="small" label={t('carparkLegendPending')} sx={{ bgcolor: '#f9a825', color: '#000' }} />
             <Chip size="small" label={t('carparkLegendOccupied')} sx={{ bgcolor: '#c62828', color: '#fff' }} />
             <Chip size="small" label={t('carparkLegendBlocked')} sx={{ bgcolor: '#9e9e9e', color: '#fff' }} />
           </Box>
@@ -529,7 +565,7 @@ const CarparkOverview = () => {
                     {t('carparkReserve')}
                   </Button>
                 )}
-                {isOccupied && spotForPanel.reservedByMe && spotForPanel.reservationId && (
+                {(isPending || isOccupied) && spotForPanel.reservedByMe && spotForPanel.reservationId && (
                   <Button sx={{ mt: 2 }} color="error" variant="outlined" onClick={cancelMyReservation}>
                     {t('delete')}
                   </Button>
@@ -542,6 +578,8 @@ const CarparkOverview = () => {
                 ? t('carparkContactStaff')
                 : isBlocked
                   ? t('carparkBlocked')
+                  : isPending
+                    ? t('carparkReviewPending')
                   : isOccupied
                     ? t('carparkOccupied')
                     : isAvailable

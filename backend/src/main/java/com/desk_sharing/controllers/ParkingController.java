@@ -3,6 +3,7 @@ package com.desk_sharing.controllers;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.desk_sharing.entities.ParkingReservation;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
+import com.desk_sharing.model.ParkingReviewItemDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.services.ParkingReservationService;
 import com.desk_sharing.services.UserService;
@@ -45,5 +47,29 @@ public class ParkingController {
         parkingReservationService.deleteReservation(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
-}
 
+    @GetMapping("/review/pending")
+    public ResponseEntity<List<ParkingReviewItemDTO>> pending() {
+        userService.logging("parkingReviewPending()");
+        return new ResponseEntity<>(parkingReservationService.getPendingReservationsForReview(), HttpStatus.OK);
+    }
+
+    @GetMapping("/review/pending/count")
+    public ResponseEntity<Long> pendingCount() {
+        userService.logging("parkingReviewPendingCount()");
+        return new ResponseEntity<>(parkingReservationService.getPendingReservationsCount(), HttpStatus.OK);
+    }
+
+    @PostMapping("/review/{id}/approve")
+    public ResponseEntity<ParkingReservation> approve(@PathVariable("id") long id) {
+        userService.logging("parkingReviewApprove( " + id + " )");
+        return new ResponseEntity<>(parkingReservationService.approveReservation(id), HttpStatus.OK);
+    }
+
+    @PostMapping("/review/{id}/reject")
+    public ResponseEntity<Void> reject(@PathVariable("id") long id) {
+        userService.logging("parkingReviewReject( " + id + " )");
+        parkingReservationService.rejectReservation(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+}

@@ -3,6 +3,7 @@ package com.desk_sharing.controllers;
 import com.desk_sharing.entities.ParkingReservation;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
+import com.desk_sharing.model.ParkingReviewItemDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.services.ParkingReservationService;
 import com.desk_sharing.services.UserService;
@@ -13,6 +14,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
+import java.sql.Date;
+import java.sql.Time;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,5 +78,54 @@ class ParkingControllerTest {
         verify(parkingReservationService).deleteReservation(77L);
         assertThat(resp.getStatusCode().value()).isEqualTo(204);
     }
-}
 
+    @Test
+    void pending_returnsOkAndDelegates() {
+        List<ParkingReviewItemDTO> body = List.of(
+            new ParkingReviewItemDTO(1L, "1", Date.valueOf("2099-01-01"), Time.valueOf("10:00:00"), Time.valueOf("10:30:00"), 7, "user@example.com", LocalDateTime.now())
+        );
+        when(parkingReservationService.getPendingReservationsForReview()).thenReturn(body);
+
+        ResponseEntity<List<ParkingReviewItemDTO>> resp = controller.pending();
+
+        verify(userService).logging("parkingReviewPending()");
+        verify(parkingReservationService).getPendingReservationsForReview();
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isSameAs(body);
+    }
+
+    @Test
+    void pendingCount_returnsOkAndDelegates() {
+        when(parkingReservationService.getPendingReservationsCount()).thenReturn(3L);
+
+        ResponseEntity<Long> resp = controller.pendingCount();
+
+        verify(userService).logging("parkingReviewPendingCount()");
+        verify(parkingReservationService).getPendingReservationsCount();
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isEqualTo(3L);
+    }
+
+    @Test
+    void approve_returnsOkAndDelegates() {
+        ParkingReservation approved = new ParkingReservation();
+        approved.setId(55L);
+        when(parkingReservationService.approveReservation(55L)).thenReturn(approved);
+
+        ResponseEntity<ParkingReservation> resp = controller.approve(55L);
+
+        verify(userService).logging("parkingReviewApprove( " + 55L + " )");
+        verify(parkingReservationService).approveReservation(55L);
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isSameAs(approved);
+    }
+
+    @Test
+    void reject_returnsNoContentAndDelegates() {
+        ResponseEntity<Void> resp = controller.reject(19L);
+
+        verify(userService).logging("parkingReviewReject( " + 19L + " )");
+        verify(parkingReservationService).rejectReservation(19L);
+        assertThat(resp.getStatusCode().value()).isEqualTo(204);
+    }
+}

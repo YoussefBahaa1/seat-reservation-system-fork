@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ParkingAvailabilityResponseDTO {
     private String spotLabel;
-    private String status; // AVAILABLE | OCCUPIED | BLOCKED
+    private String status; // AVAILABLE | PENDING | OCCUPIED | BLOCKED
     private boolean reservedByMe;
     private Long reservationId; // only set if reservedByMe=true
 }
