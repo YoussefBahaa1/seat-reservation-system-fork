@@ -27,6 +27,10 @@ import './i18n';
 
 function AppRoutes() {
   const location = useLocation();
+  const isAuthenticated = Boolean(
+    sessionStorage.getItem('accessToken') && localStorage.getItem('userId')
+  );
+
   const isLoginPage = location.pathname === "/";
   let hasSessionToken = Boolean(sessionStorage.getItem('accessToken'));
   if (!hasSessionToken) {
@@ -46,9 +50,19 @@ function AppRoutes() {
     localStorage.getItem('admin') === 'true' ||
     localStorage.getItem('servicePersonnel') === 'true';
 
+  // Require authentication for protected screens
+  const RequireAuth = ({ children }) => (
+    isAuthenticated ? children : <Navigate to="/" replace />
+  );
+
+  // Keep users out of login when already authenticated
+  const RedirectIfAuth = ({ children }) => (
+    isAuthenticated ? <Navigate to="/home" replace /> : children
+  );
+
   return (
     <>
-      {!isLoginPage && <JwtHeartbeat />}
+      {isAuthenticated && !isLoginPage && <JwtHeartbeat />}
       <Routes>
         <Route exact path="/" element={<LoginPage />} />
         <Route path="/home" element={isAuthenticated ? <Home /> : <Navigate to="/" replace />} />
@@ -97,8 +111,13 @@ function AppRoutes() {
 }
 
 function App() {
+  const basename = React.useMemo(() => {
+    if (process.env.REACT_APP_BASENAME) return process.env.REACT_APP_BASENAME;
+    return window.location.pathname.startsWith('/frontend-main') ? '/frontend-main' : '/';
+  }, []);
+
   return (
-    <Router>
+    <Router basename={basename}>
       <AppRoutes />
     </Router>
   );
