@@ -60,6 +60,8 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(auth -> auth
                 // Allow CORS preflight requests without authentication.
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Let Spring's internal error dispatch return the real backend status code.
+                .requestMatchers("/error").permitAll()
                 // Allow unauthenticated users to contact /users/login endpoint.
                 .requestMatchers("/users/login").permitAll()
                 // Allow MFA verification endpoint (second step of login)

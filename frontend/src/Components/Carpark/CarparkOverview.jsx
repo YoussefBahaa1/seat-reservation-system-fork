@@ -83,6 +83,18 @@ const getSpotMetaFromDataset = (rect) => ({
   reservationId: rect.dataset.spotReservationId ? Number(rect.dataset.spotReservationId) : null,
 });
 
+const isSpotSelectableForCurrentUser = (rect) => {
+  const isSelectable = rect?.dataset?.spotSelectable !== 'false';
+  if (!isSelectable) return false;
+
+  const status = rect?.dataset?.spotStatus ?? 'UNKNOWN';
+  const reservedByMe = rect?.dataset?.spotReservedByMe === 'true';
+
+  if (status === 'AVAILABLE') return true;
+  if ((status === 'PENDING' || status === 'OCCUPIED') && reservedByMe) return true;
+  return false;
+};
+
 const CarparkOverview = () => {
   const { t, i18n } = useTranslation();
   const location = useLocation();
@@ -235,8 +247,7 @@ const CarparkOverview = () => {
         );
 
         const setSelectedRect = () => {
-          if (!isSelectable) return;
-          if (rect.dataset.spotStatus && rect.dataset.spotStatus !== 'AVAILABLE') return;
+          if (!isSpotSelectableForCurrentUser(rect)) return;
           if (selectedRectRef.current && selectedRectRef.current !== rect) {
             selectedRectRef.current.classList.remove('carpark-selected');
           }
@@ -255,15 +266,13 @@ const CarparkOverview = () => {
         };
         const onClick = (e) => {
           e.stopPropagation();
-          if (!isSelectable) return;
-          if (rect.dataset.spotStatus && rect.dataset.spotStatus !== 'AVAILABLE') return;
+          if (!isSpotSelectableForCurrentUser(rect)) return;
           setSelectedRect();
         };
         const onKeyDown = (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            if (!isSelectable) return;
-            if (rect.dataset.spotStatus && rect.dataset.spotStatus !== 'AVAILABLE') return;
+            if (!isSpotSelectableForCurrentUser(rect)) return;
             setSelectedRect();
           }
         };
