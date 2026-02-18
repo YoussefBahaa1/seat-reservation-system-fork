@@ -90,7 +90,6 @@ const CarparkOverview = () => {
   const cleanupRef = useRef([]);
   const selectedRectRef = useRef(null);
   const svgRef = useRef(null);
-  const headersRef = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const spotRectsByLabelRef = useRef(new Map());
   const initialTimeRangeRef = useRef(getDefaultTimeRange());
 
@@ -375,7 +374,7 @@ const CarparkOverview = () => {
 
     postRequest(
       `${process.env.REACT_APP_BACKEND_URL}/parking/availability`,
-      headersRef.current,
+      null,
       (data) => {
         const statusByLabel = new Map();
         for (const row of data ?? []) {
@@ -428,7 +427,7 @@ const CarparkOverview = () => {
 
     postRequest(
       `${process.env.REACT_APP_BACKEND_URL}/parking/reservations`,
-      headersRef.current,
+      null,
       (data) => {
         if (String(data?.status || '') === 'PENDING') toast.success(t('carparkReviewSubmitted'));
         else toast.success(t('booked'));
@@ -452,7 +451,7 @@ const CarparkOverview = () => {
     if (!reservationId) return;
     deleteRequest(
       `${process.env.REACT_APP_BACKEND_URL}/parking/reservations/${reservationId}`,
-      headersRef.current,
+      null,
       () => {
         toast.success(t('bookingDeleted'));
         refreshAvailability();

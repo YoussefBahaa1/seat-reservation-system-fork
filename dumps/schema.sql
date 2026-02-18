@@ -284,6 +284,7 @@ CREATE TABLE `parking_reservations` (
   `begin` time(6) NOT NULL,
   `end` time(6) NOT NULL,
   `created_at` datetime(6) NOT NULL,
+  `reservation_status` varchar(20) DEFAULT 'APPROVED',
   PRIMARY KEY (`parking_reservation_id`),
   KEY `IDX_parking_reservations_day` (`day`),
   KEY `IDX_parking_reservations_spot_label` (`spot_label`),
