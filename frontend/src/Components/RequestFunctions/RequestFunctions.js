@@ -5,7 +5,8 @@ function resolveHeaders(headers) {
   const resolved = (headers && typeof headers === 'object') ? { ...headers } : {};
 
   try {
-    const storedHeadersRaw = sessionStorage.getItem('headers');
+    const storedHeadersRaw =
+      sessionStorage.getItem('headers') || localStorage.getItem('headers');
     const storedHeadersParsed = storedHeadersRaw ? JSON.parse(storedHeadersRaw) : null;
     const storedAuth =
       storedHeadersParsed &&
@@ -14,7 +15,8 @@ function resolveHeaders(headers) {
     if (storedAuth && String(storedAuth).trim()) {
       resolved.Authorization = String(storedAuth).trim();
     } else {
-      const storedToken = sessionStorage.getItem('accessToken');
+      const storedToken =
+        sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken');
       if (storedToken && String(storedToken).trim()) {
         resolved.Authorization = `Bearer ${String(storedToken).trim()}`;
       }

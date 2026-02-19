@@ -25,11 +25,20 @@ import './i18n';
 
 function AppRoutes() {
   const location = useLocation();
-  const isAuthenticated = Boolean(
-    sessionStorage.getItem('accessToken') && localStorage.getItem('userId')
-  );
+  const token = sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken');
+  const isAuthenticated = Boolean(token && localStorage.getItem('userId'));
 
-  const isLoginPage = location.pathname === "/";
+  const isLoginPage = location.pathname === "/" || location.pathname === "/frontend-main";
+
+  // If someone opens a double-prefixed URL (/frontend-main/frontend-main/...), normalize it.
+  const normalizeDoublePrefix = () => {
+    const doublePrefix = "/frontend-main/frontend-main";
+    if (location.pathname.startsWith(doublePrefix)) {
+      const fixed = location.pathname.replace("/frontend-main/frontend-main", "/frontend-main");
+      return <Navigate to={fixed + location.search + location.hash} replace />;
+    }
+    return null;
+  };
 
   // Require authentication for protected screens
   const RequireAuth = ({ children }) => (
@@ -43,6 +52,7 @@ function AppRoutes() {
 
   return (
     <>
+      {normalizeDoublePrefix()}
       {isAuthenticated && !isLoginPage && <JwtHeartbeat />}
       <Routes>
         <Route
@@ -76,9 +86,18 @@ function AppRoutes() {
 }
 
 function App() {
+  // Normalize URLs that accidentally contain the basename twice.
+  React.useEffect(() => {
+    const doublePrefix = '/frontend-main/frontend-main';
+    if (window.location.pathname.startsWith(doublePrefix)) {
+      const fixedPath = window.location.pathname.replace(doublePrefix, '/frontend-main');
+      window.location.replace(fixedPath + window.location.search + window.location.hash);
+    }
+  }, []);
+
   const basename = React.useMemo(() => {
     if (process.env.REACT_APP_BASENAME) return process.env.REACT_APP_BASENAME;
-    return window.location.pathname.startsWith('/frontend-main') ? '/frontend-main' : '/';
+    return '/frontend-main';
   }, []);
 
   return (
