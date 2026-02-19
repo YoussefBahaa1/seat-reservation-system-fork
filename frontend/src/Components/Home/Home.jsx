@@ -134,7 +134,10 @@ const Home = () => {
 
       postRequest(
         endpoint,
-        headers.current,
+        {
+          ...headers.current,
+          'Content-Type': 'application/json'
+        },
         (data) => {
           for (const day in data) {
             const newEvent = {
