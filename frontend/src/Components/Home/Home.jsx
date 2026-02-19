@@ -74,7 +74,10 @@ const Home = () => {
       // Load bookings for the month
       postRequest(
         `${process.env.REACT_APP_BACKEND_URL}/bookings/getAllBookingsForDate`,
-        headers.current,
+        {
+          ...headers.current,
+          'Content-Type': 'application/json'
+        },
         (data) => {
           for (const day in data) {
             const newEvent = {
