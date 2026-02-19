@@ -43,6 +43,21 @@ const Home = () => {
     setSelectedDate(moment(start).startOf('day').toDate());
   };
 
+  const handle401 = () => {
+    sessionStorage.removeItem('headers');
+    sessionStorage.removeItem('accessToken');
+    localStorage.removeItem('headers');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('email');
+    localStorage.removeItem('name');
+    localStorage.removeItem('surname');
+    localStorage.removeItem('admin');
+    localStorage.removeItem('visibility');
+    navigate('/', { replace: true });
+    toast.error(t('tokenInvalid'));
+  };
+
   // Generate days of the month and fetch bookings
   const generateMonthDays = useCallback(
     async (date) => {
@@ -75,7 +90,11 @@ const Home = () => {
         },
         (errorCode) => { 
           console.log('Fehler beim Abrufen der Buchungen:', errorCode);
-          toast.error(t(errorCode+''));          
+          if (errorCode === 401) {
+            handle401();
+          } else {
+            toast.error(t(errorCode+''));          
+          }
         },
         JSON.stringify(daysInMonth)  // Tage des Monats an den Server senden
       );
@@ -110,7 +129,9 @@ const Home = () => {
       (data) => setDayEvents(Array.isArray(data) ? data : []),
       (errorCode) => {
         console.log('Error fetching day bookings:', errorCode);
-        if (errorCode !== 400) {
+        if (errorCode === 401) {
+          handle401();
+        } else if (errorCode !== 400) {
           toast.error(t(errorCode + ''));
         }
         setDayEvents([]);
