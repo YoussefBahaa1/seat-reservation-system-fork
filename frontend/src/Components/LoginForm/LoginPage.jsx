@@ -111,12 +111,13 @@ const LoginPage = () => {
   }
 
   // Complete login - store credentials and navigate
-  async function completeLogin(data) {
-    const accessToken = String(data['accessToken']);
-    sessionStorage.setItem('headers', JSON.stringify({
-      'Authorization': 'Bearer ' + accessToken,
+  function completeLogin(data) {
+    const authHeaders = {
+      'Authorization': 'Bearer ' + String(data['accessToken']),
       'Content-Type': 'application/json',
-    }));
+    };
+    sessionStorage.setItem('headers', JSON.stringify(authHeaders));
+    localStorage.setItem('headers', JSON.stringify(authHeaders));
     localStorage.setItem('email', String(data.email));
     localStorage.setItem('userId', String(data.id));
     localStorage.setItem('name', String(data.name));
@@ -124,8 +125,10 @@ const LoginPage = () => {
     localStorage.setItem('admin', String(data.admin));
     localStorage.setItem('servicePersonnel', String(data.servicePersonnel));
     localStorage.setItem('visibility', String(data.visibility));
-    sessionStorage.setItem('accessToken', accessToken);
-    await applyLanguagePreference(accessToken, data.id);
+    const userLang = localStorage.getItem(`language_${data.id}`) || 'en';
+    i18n.changeLanguage(userLang);
+    sessionStorage.setItem('accessToken', String(data['accessToken']));
+    localStorage.setItem('accessToken', String(data['accessToken']));
     navigate('/home', { replace: true });
   }
 

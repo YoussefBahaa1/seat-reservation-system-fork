@@ -237,6 +237,8 @@ const SidebarComponent = () => {
     sessionStorage.removeItem('createSeriesEndTime');
     sessionStorage.removeItem('headers');
     sessionStorage.removeItem('accessToken');
+    localStorage.removeItem('headers');
+    localStorage.removeItem('accessToken');
     localStorage.removeItem('userId');
     localStorage.removeItem('email');
     localStorage.removeItem('name');
