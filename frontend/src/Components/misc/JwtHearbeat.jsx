@@ -7,7 +7,7 @@ const HEARTBEAT_INTERVAL_MINUTES = 10;
 
 const JwtHeartbeat = () => {
     const navigate = useNavigate();
-    const headers = useRef(() => {
+    const headers = useRef((() => {
         try {
             const rawSession = sessionStorage.getItem('headers');
             if (rawSession) return JSON.parse(rawSession);
@@ -17,7 +17,7 @@ const JwtHeartbeat = () => {
             // ignore parse errors
         }
         return null;
-    })();
+    })());
     const { t } = useTranslation();
     useEffect(() => {
         const clearAuth = () => {
