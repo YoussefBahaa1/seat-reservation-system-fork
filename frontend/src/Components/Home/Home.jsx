@@ -98,6 +98,21 @@ const Home = () => {
     setSelectedDate(moment(start).startOf('day').toDate());
   };
 
+  const handle401 = () => {
+    sessionStorage.removeItem('headers');
+    sessionStorage.removeItem('accessToken');
+    localStorage.removeItem('headers');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('email');
+    localStorage.removeItem('name');
+    localStorage.removeItem('surname');
+    localStorage.removeItem('admin');
+    localStorage.removeItem('visibility');
+    navigate('/', { replace: true });
+    toast.error(t('tokenInvalid'));
+  };
+
   // Generate days of the month and fetch bookings
   const generateMonthDays = useCallback(
     async (date) => {
@@ -135,7 +150,11 @@ const Home = () => {
         },
         (errorCode) => {
           console.log('Fehler beim Abrufen der Buchungen:', errorCode);
-          toast.error(t(httpErrorKey(errorCode)));
+          if (errorCode === 401) {
+            handle401();
+          } else {
+            toast.error(t(httpErrorKey(errorCode)));
+          }
         },
         JSON.stringify(daysInMonth)  // Tage des Monats an den Server senden
       );
