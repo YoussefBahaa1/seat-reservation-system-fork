@@ -580,19 +580,6 @@ const CarparkOverview = () => {
                   {t(`carparkStatus_${spotForPanel.status}`)}
                   {spotForPanel.reservedByMe ? ` (${t('carparkReservedByMe')})` : ''}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t(spotForPanel.type === 'stall' ? 'carparkTypeStall' : 'carparkTypeEmpty')}
-                </Typography>
-                <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  {isSpecialSpot ? (
-                    <Typography variant="body2">{t('carparkSpecialCase')}</Typography>
-                  ) : spotForPanel.accessible ? (
-                    <Typography variant="body2">♿</Typography>
-                  ) : (
-                    <Typography variant="body2">{t('carparkStandard')}</Typography>
-                  )}
-                  {spotForPanel.lit && <Typography variant="body2">LIT</Typography>}
-                </Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   Type: {formatSpotCategory(spotForPanel.spotCategory)}
                 </Typography>
@@ -639,3 +626,4 @@ const CarparkOverview = () => {
 };
 
 export default CarparkOverview;
+
