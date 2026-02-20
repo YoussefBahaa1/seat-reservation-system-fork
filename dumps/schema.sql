@@ -302,6 +302,21 @@ CREATE TABLE `parking_reservations` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `parking_spots`
+--
+DROP TABLE IF EXISTS `parking_spots`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `parking_spots` (
+  `spot_label` varchar(255) NOT NULL,
+  `spot_type` varchar(40) NOT NULL DEFAULT 'STANDARD',
+  `covered` tinyint(1) NOT NULL DEFAULT 0,
+  `charging_kw` int(11) DEFAULT NULL,
+  PRIMARY KEY (`spot_label`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `favourites`
 --
 DROP TABLE IF EXISTS `favourites`;

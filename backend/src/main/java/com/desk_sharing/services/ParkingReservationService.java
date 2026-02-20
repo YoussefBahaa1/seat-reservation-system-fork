@@ -6,8 +6,10 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.http.HttpStatus;
@@ -18,12 +20,15 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.desk_sharing.entities.ParkingReservation;
 import com.desk_sharing.entities.ParkingReservationStatus;
+import com.desk_sharing.entities.ParkingSpot;
+import com.desk_sharing.entities.ParkingSpotType;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
 import com.desk_sharing.model.ParkingReviewItemDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
+import com.desk_sharing.repositories.ParkingSpotRepository;
 import com.desk_sharing.repositories.UserRepository;
 
 import lombok.AllArgsConstructor;
@@ -33,8 +38,10 @@ import lombok.AllArgsConstructor;
 public class ParkingReservationService {
 
     public static final String BLOCKED_SPOT_LABEL = "23";
+    public static final String ACCESSIBLE_SPOT_LABEL = "30";
 
     private final ParkingReservationRepository parkingReservationRepository;
+    private final ParkingSpotRepository parkingSpotRepository;
     private final UserRepository userRepository;
 
     private void validateTimes(final Date day, final Time begin, final Time end) {
@@ -101,6 +108,34 @@ public class ParkingReservationService {
         return reservation.getStatus() == null ? ParkingReservationStatus.APPROVED : reservation.getStatus();
     }
 
+    private static ParkingSpotType defaultSpotTypeForLabel(final String label) {
+        if (BLOCKED_SPOT_LABEL.equals(label)) {
+            return ParkingSpotType.SPECIAL_CASE;
+        }
+        if (ACCESSIBLE_SPOT_LABEL.equals(label)) {
+            return ParkingSpotType.ACCESSIBLE;
+        }
+        return ParkingSpotType.STANDARD;
+    }
+
+    private static ParkingSpotType effectiveSpotType(final ParkingSpot spot, final String label) {
+        if (spot == null || spot.getSpotType() == null) {
+            return defaultSpotTypeForLabel(label);
+        }
+        return spot.getSpotType();
+    }
+
+    private static boolean effectiveCovered(final ParkingSpot spot) {
+        return spot != null && spot.isCovered();
+    }
+
+    private static Integer effectiveChargingKw(final ParkingSpot spot, final ParkingSpotType spotType) {
+        if (spotType != ParkingSpotType.E_CHARGING_STATION) {
+            return null;
+        }
+        return spot == null ? null : spot.getChargingKw();
+    }
+
     public List<ParkingAvailabilityResponseDTO> getAvailability(final ParkingAvailabilityRequestDTO request) {
         if (request == null || request.getSpotLabels() == null || request.getSpotLabels().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "spotLabels must not be empty");
@@ -122,9 +157,11 @@ public class ParkingReservationService {
         final Set<String> occupiedLabels = new HashSet<>(
             parkingReservationRepository.findOccupiedSpotLabels(day, requestedLabels, begin, end)
         );
+        final Map<String, ParkingSpot> spotByLabel = new HashMap<>();
+        parkingSpotRepository.findBySpotLabelIn(requestedLabels).forEach(spot -> spotByLabel.put(spot.getSpotLabel(), spot));
 
         final Set<String> myOccupiedLabels = new HashSet<>();
-        final java.util.Map<String, Long> myReservationIdByLabel = new java.util.HashMap<>();
+        final Map<String, Long> myReservationIdByLabel = new HashMap<>();
         final Set<String> pendingLabels = new HashSet<>();
         final Set<String> approvedLabels = new HashSet<>();
         for (final String label : occupiedLabels) {
@@ -143,18 +180,39 @@ public class ParkingReservationService {
         }
 
         return requestedLabels.stream().map(label -> {
-            if (BLOCKED_SPOT_LABEL.equals(label)) {
-                return new ParkingAvailabilityResponseDTO(label, "BLOCKED", false, null);
+            final ParkingSpot spot = spotByLabel.get(label);
+            final ParkingSpotType spotType = effectiveSpotType(spot, label);
+            final boolean covered = effectiveCovered(spot);
+            final Integer chargingKw = effectiveChargingKw(spot, spotType);
+
+            if (spotType == ParkingSpotType.SPECIAL_CASE) {
+                return new ParkingAvailabilityResponseDTO(label, "BLOCKED", false, null, spotType.name(), covered, chargingKw);
             }
             if (approvedLabels.contains(label)) {
                 final boolean mine = myOccupiedLabels.contains(label);
-                return new ParkingAvailabilityResponseDTO(label, "OCCUPIED", mine, mine ? myReservationIdByLabel.get(label) : null);
+                return new ParkingAvailabilityResponseDTO(
+                    label,
+                    "OCCUPIED",
+                    mine,
+                    mine ? myReservationIdByLabel.get(label) : null,
+                    spotType.name(),
+                    covered,
+                    chargingKw
+                );
             }
             if (pendingLabels.contains(label)) {
                 final boolean mine = myOccupiedLabels.contains(label);
-                return new ParkingAvailabilityResponseDTO(label, "PENDING", mine, mine ? myReservationIdByLabel.get(label) : null);
+                return new ParkingAvailabilityResponseDTO(
+                    label,
+                    "PENDING",
+                    mine,
+                    mine ? myReservationIdByLabel.get(label) : null,
+                    spotType.name(),
+                    covered,
+                    chargingKw
+                );
             }
-            return new ParkingAvailabilityResponseDTO(label, "AVAILABLE", false, null);
+            return new ParkingAvailabilityResponseDTO(label, "AVAILABLE", false, null, spotType.name(), covered, chargingKw);
         }).toList();
     }
 
@@ -164,7 +222,8 @@ public class ParkingReservationService {
         }
 
         final String spotLabel = request.getSpotLabel().trim();
-        if (BLOCKED_SPOT_LABEL.equals(spotLabel)) {
+        final ParkingSpotType spotType = effectiveSpotType(parkingSpotRepository.findById(spotLabel).orElse(null), spotLabel);
+        if (spotType == ParkingSpotType.SPECIAL_CASE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This spot is blocked");
         }
 

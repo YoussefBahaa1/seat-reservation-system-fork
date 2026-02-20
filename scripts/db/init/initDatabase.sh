@@ -18,6 +18,7 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
     for migration in \
         scripts/db/migration/visibility_mode.sql \
         scripts/db/migration/parking_reservation_status.sql \
+        scripts/db/migration/parking_spot_features.sql \
         scripts/db/migration/workstation_equipment_fields.sql; do
         if [ -f "$migration" ]; then
             rel_path="${migration#scripts/db/}"

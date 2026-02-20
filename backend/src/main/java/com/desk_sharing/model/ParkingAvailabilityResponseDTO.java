@@ -12,4 +12,7 @@ public class ParkingAvailabilityResponseDTO {
     private String status; // AVAILABLE | PENDING | OCCUPIED | BLOCKED
     private boolean reservedByMe;
     private Long reservationId; // only set if reservedByMe=true
+    private String spotType; // STANDARD | ACCESSIBLE | E_CHARGING_STATION | SPECIAL_CASE
+    private boolean covered;
+    private Integer chargingKw; // only relevant for E_CHARGING_STATION
 }

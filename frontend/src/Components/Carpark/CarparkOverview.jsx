@@ -74,9 +74,12 @@ const getClosestNumericLabel = (labels, x, y) => {
 const getSpotMetaFromDataset = (rect) => ({
   label: rect.dataset.spotLabel ?? '?',
   type: rect.dataset.spotType ?? 'unknown',
+  spotCategory: rect.dataset.spotCategory ?? 'STANDARD',
   lit: rect.dataset.spotLit === 'true',
   accessible: rect.dataset.spotAccessible === 'true',
   special: rect.dataset.spotSpecial === 'true',
+  covered: rect.dataset.spotCovered === 'true',
+  chargingKw: rect.dataset.spotChargingKw ? Number(rect.dataset.spotChargingKw) : null,
   selectable: rect.dataset.spotSelectable !== 'false',
   status: rect.dataset.spotStatus ?? 'UNKNOWN',
   reservedByMe: rect.dataset.spotReservedByMe === 'true',
@@ -93,6 +96,20 @@ const isSpotSelectableForCurrentUser = (rect) => {
   if (status === 'AVAILABLE') return true;
   if ((status === 'PENDING' || status === 'OCCUPIED') && reservedByMe) return true;
   return false;
+};
+
+const defaultSpotCategory = (spotLabel, isSpecial, isAccessible) => {
+  if (isSpecial || spotLabel === '23') return 'SPECIAL_CASE';
+  if (isAccessible || spotLabel === '30') return 'ACCESSIBLE';
+  return 'STANDARD';
+};
+
+const formatSpotCategory = (spotCategory) => {
+  const value = String(spotCategory || 'STANDARD').toUpperCase();
+  if (value === 'SPECIAL_CASE') return 'special case';
+  if (value === 'ACCESSIBLE') return 'accessible';
+  if (value === 'E_CHARGING_STATION') return 'e-charging station';
+  return 'standard';
 };
 
 const CarparkOverview = () => {
@@ -228,6 +245,9 @@ const CarparkOverview = () => {
         rect.dataset.spotLit = isLit ? 'true' : 'false';
         rect.dataset.spotAccessible = isAccessible ? 'true' : 'false';
         rect.dataset.spotSpecial = isSpecial ? 'true' : 'false';
+        rect.dataset.spotCategory = defaultSpotCategory(spotLabel, isSpecial, isAccessible);
+        rect.dataset.spotCovered = 'false';
+        rect.dataset.spotChargingKw = '';
         rect.dataset.spotSelectable = isSelectable ? 'true' : 'false';
         // Default to AVAILABLE so the UI is usable even before the first availability refresh completes.
         rect.dataset.spotStatus = isSpecial ? 'BLOCKED' : 'AVAILABLE';
@@ -395,7 +415,15 @@ const CarparkOverview = () => {
 
           const row = statusByLabel.get(label);
           const status = row?.status ?? (label === '23' ? 'BLOCKED' : 'AVAILABLE');
+          const spotCategory = String(
+            row?.spotType ?? rect.dataset.spotCategory ?? defaultSpotCategory(label, label === '23', label === '30')
+          ).toUpperCase();
           rect.dataset.spotStatus = status;
+          rect.dataset.spotCategory = spotCategory;
+          rect.dataset.spotSpecial = spotCategory === 'SPECIAL_CASE' ? 'true' : 'false';
+          rect.dataset.spotAccessible = spotCategory === 'ACCESSIBLE' ? 'true' : 'false';
+          rect.dataset.spotCovered = row?.covered === true ? 'true' : 'false';
+          rect.dataset.spotChargingKw = row?.chargingKw == null ? '' : String(row.chargingKw);
           rect.dataset.spotReservedByMe = row?.reservedByMe ? 'true' : 'false';
           rect.dataset.spotReservationId = row?.reservationId ? String(row.reservationId) : '';
 
@@ -565,6 +593,15 @@ const CarparkOverview = () => {
                   )}
                   {spotForPanel.lit && <Typography variant="body2">LIT</Typography>}
                 </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  Type: {formatSpotCategory(spotForPanel.spotCategory)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Covered: {spotForPanel.covered ? 'yes' : 'no'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  kW: {spotForPanel.chargingKw == null ? '—' : spotForPanel.chargingKw}
+                </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   {selectedSpot ? t('carparkSelected') : t('carparkHover')}
                 </Typography>
