@@ -19,7 +19,7 @@ import { MdVisibility } from 'react-icons/md';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { AiOutlineTeam } from "react-icons/ai";
-import { MdLocalParking } from 'react-icons/md';
+import { MdLocalParking, MdSupportAgent } from 'react-icons/md';
 import Defaults from "./Defaults";
 import VisibilityPreferences from "./VisibilityPreferences";
 import i18n from '../../i18n';
@@ -65,6 +65,9 @@ const SidebarComponent = () => {
     }
     if (location.pathname === '/carpark') {
       setActiveTab('carpark');
+    }
+    if (location.pathname === '/supportContacts') {
+      setActiveTab('supportContacts');
     }
 
   }, [location.pathname, activeTab]);
@@ -127,6 +130,9 @@ const SidebarComponent = () => {
 
       case 'carpark':
         navigate("/carpark", { replace: true });
+        break;
+      case 'supportContacts':
+        navigate("/supportContacts", { replace: true });
         break;
 
       case 'logout':
@@ -264,6 +270,14 @@ const SidebarComponent = () => {
             </MenuItem>
             <MenuItem id='sidebar_colleagues' icon={<AiOutlineTeam />} onClick={() => handleClick('colleagues')}>
               {t('colleagues')}
+            </MenuItem>
+            <MenuItem
+              id='sidebar_supportContacts'
+              active={activeTab === 'supportContacts'}
+              icon={<MdSupportAgent />}
+              onClick={() => handleClick('supportContacts')}
+            >
+              {t('supportContacts')}
             </MenuItem>
             <MenuItem
               id='sidebar_carpark'
