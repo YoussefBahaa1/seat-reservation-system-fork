@@ -9,10 +9,12 @@ import { FaLock, FaBookmark, FaStar } from "react-icons/fa";
 import ChangePassword from "./ChangePassword";
 import LogoutConfirmationModal from "./LogoutConfirmationModal";
 import MfaSettings from "./MfaSettings";
+import NotificationSettings from "./NotificationSettings";
 import { CiLogout } from 'react-icons/ci';
 import { MdGTranslate, MdSecurity } from 'react-icons/md';
 import { AiFillPlusCircle } from 'react-icons/ai';
-import { IoIosCheckbox, IoIosSettings, IoIosAlbums } from 'react-icons/io';
+import { IoMdNotifications } from 'react-icons/io';
+import { IoIosSettings, IoIosAlbums } from 'react-icons/io';
 import { IoSearchSharp } from 'react-icons/io5';
 import { HiOutlineSparkles } from 'react-icons/hi2';
 import { MdVisibility } from 'react-icons/md';
@@ -37,6 +39,7 @@ const SidebarComponent = () => {
   const [isDefaultsModalOpen, setIsDefaultsModalOpen] = useState(false);
   const [isMfaSettingsOpen, setIsMfaSettingsOpen] = useState(false);
   const [isVisibilityModalOpen, setIsVisibilityModalOpen] = useState(false);
+  const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
   
   useEffect(() => {
     if (location.pathname === '/admin') {
@@ -135,6 +138,10 @@ const SidebarComponent = () => {
 
       case 'mfaSettings':
         setIsMfaSettingsOpen(true);
+        break;
+
+      case 'notifications':
+        setIsNotificationSettingsOpen(true);
         break;
 
       default:
@@ -239,7 +246,7 @@ const SidebarComponent = () => {
 
           {/*Series*/}
           <SubMenu active={activeTab === 'series'} icon={<IoIosAlbums />} label={t('series')}>
-            <MenuItem id='sidebar_manageseries' icon={<IoIosCheckbox />} onClick={() => {navigate('/manageseries', { replace: true });}}>
+            <MenuItem id='sidebar_manageseries' icon={<IoIosAlbums />} onClick={() => {navigate('/manageseries', { replace: true });}}>
               {t('manage')}
             </MenuItem>
             <MenuItem id='sidebar_createseries' icon={<AiFillPlusCircle />} onClick={() => {navigate('/createseries', { replace: true });}}>
@@ -297,6 +304,14 @@ const SidebarComponent = () => {
                 () => handleClick('visibilityPrefs')}>
                   {t('visibility')}
               </MenuItem>
+            <MenuItem
+              id='sidebar_notifications'
+              icon={<IoMdNotifications />}
+              style={{ fontSize: '16px', fontWeight: 500 }}
+              onClick={() => handleClick('notifications')}
+            >
+              {t('notifications')}
+            </MenuItem>
             <MenuItem id='sidebar_changePassword' icon={<FaLock/>} onClick={() => handleClick('changePassword')}>
               {t('password')}
             </MenuItem>
@@ -334,6 +349,10 @@ const SidebarComponent = () => {
       <MfaSettings
         isOpen={isMfaSettingsOpen}
         onClose={() => setIsMfaSettingsOpen(false)}
+      />
+      <NotificationSettings
+        isOpen={isNotificationSettingsOpen}
+        onClose={() => setIsNotificationSettingsOpen(false)}
       />
     </div>
   );

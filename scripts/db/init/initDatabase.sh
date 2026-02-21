@@ -15,7 +15,9 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
     # Load schema definitions.
     scripts/db/import_db.sh schema.sql
     # Apply compatible migrations (curated list)
-    for migration in scripts/db/migration/visibility_mode.sql; do
+    for migration in \
+        scripts/db/migration/visibility_mode.sql \
+        scripts/db/migration/calendar_notifications.sql; do
         if [ -f "$migration" ]; then
             rel_path="${migration#scripts/db/}"
             scripts/db/exec_db.sh "$rel_path"

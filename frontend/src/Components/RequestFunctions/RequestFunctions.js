@@ -1,5 +1,6 @@
 // request.js oder request.ts
 import axios from 'axios';
+import i18n from '../../i18n';
 
 function resolveHeaders(headers) {
   const resolved = (headers && typeof headers === 'object') ? { ...headers } : {};
@@ -21,6 +22,13 @@ function resolveHeaders(headers) {
     }
   } catch {
     // ignore storage parse issues
+  }
+
+  // Always send current UI language so backend can localize responses/emails
+  try {
+    resolved['Accept-Language'] = i18n?.language || 'en';
+  } catch {
+    resolved['Accept-Language'] = 'en';
   }
 
   return resolved;
