@@ -56,6 +56,30 @@ public class UserService  {
     private final AuthenticationManager authenticationManager;
     private final LdapService ldapService;
 
+    private UserEntity getCurrentUserOrThrow() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null) {
+            throw new UsernameNotFoundException("No authenticated user found.");
+        }
+        UserEntity user = userRepository.findByEmail(authentication.getName());
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found: " + authentication.getName());
+        }
+        return user;
+    }
+
+    public UserEntity getCurrentUser() {
+        return getCurrentUserOrThrow();
+    }
+
+    public void updateNotificationPreferences(boolean bookingCreate, boolean bookingUpdate, boolean bookingCancel) {
+        UserEntity user = getCurrentUserOrThrow();
+        user.setNotifyBookingCreate(bookingCreate);
+        user.setNotifyBookingUpdate(bookingUpdate);
+        user.setNotifyBookingCancel(bookingCancel);
+        userRepository.save(user);
+    }
+
     public AuthResponseDTO login(final String email, final String password) throws LdapUserNotFoundException, DaoUserNotFoundException, BadCredentialsException {
         // True if a user with the provided email is known to ldap.
         // But if LDAP_DIR_CONTEXT_URL is empty we dont even try.

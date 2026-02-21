@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class BookingRulesTest {
 
     private final BookingService bookingService =
-            new BookingService(null, null, null, null, null, null);
+            new BookingService(null, null, null, null, null, null, null, null);
 
     @Test
     void rejectsBookingInThePast() throws Exception {

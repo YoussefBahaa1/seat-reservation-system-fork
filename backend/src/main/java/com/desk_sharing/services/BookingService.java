@@ -10,8 +10,12 @@ import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
 import com.desk_sharing.repositories.RoomRepository;
+import com.desk_sharing.services.calendar.CalendarNotificationService;
+import com.desk_sharing.services.calendar.BookingNotificationEvent;
+import com.desk_sharing.services.calendar.NotificationAction;
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -45,6 +49,9 @@ public class BookingService {
     private final RoomService roomService;
 
     private final DeskService deskService;
+
+    private final ApplicationEventPublisher eventPublisher;
+    private final CalendarNotificationService calendarNotificationService;
 
     /**
      * Find and return an key-value-list of with every booking at date for each email.
@@ -199,6 +206,7 @@ public class BookingService {
     }
 
     public void deleteBooking(@NonNull final Long id) {
+        bookingRepository.findById(id).ifPresent(calendarNotificationService::sendBookingCancelled);
         bookingRepository.deleteById(id);
     }
 
@@ -234,6 +242,7 @@ public class BookingService {
         return bookings.stream().map(BookingDayEventDTO::new).toList();
     }
 
+	@Transactional
 	public Booking editBookingTimings(final BookingEditDTO booking) {
         final Long bookingId = booking.getId();
         if (bookingId == null) {
@@ -256,18 +265,30 @@ public class BookingService {
             Booking booking2 = bookingById.get();
             booking2.setBegin(booking.getBegin());
             booking2.setEnd(booking.getEnd());
+            booking2.setCalendarSequence(
+                booking2.getCalendarSequence() == null ? 1 : booking2.getCalendarSequence() + 1
+            );
             bookingRepository.save(booking2);
+            eventPublisher.publishEvent(new BookingNotificationEvent(booking2.getId(), NotificationAction.UPDATE));
+            return booking2;
         }
         return null;
     }    
 	
+	@Transactional
 	public Booking confirmBooking(long bookingId) {
 		Optional<Booking> bookingById = getBookingById(bookingId);
 		if(bookingById.isPresent()) {
 			Booking booking = bookingById.get();
 			booking.setBookingInProgress(false);
 			booking.setLockExpiryTime(null);
-			return bookingRepository.save(booking);
+            if (booking.getCalendarUid() == null) {
+                booking.setCalendarUid(java.util.UUID.randomUUID().toString());
+                booking.setCalendarSequence(0);
+            }
+			Booking saved = bookingRepository.save(booking);
+            eventPublisher.publishEvent(new BookingNotificationEvent(saved.getId(), NotificationAction.CREATE));
+			return saved;
 		}
 		return null;
 	}
