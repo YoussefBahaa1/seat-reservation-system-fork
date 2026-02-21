@@ -54,10 +54,6 @@ public class CalendarNotificationService {
         final UserEntity user = booking.getUser();
         if (user == null || isBlank(user.getEmail())) return;
         if (action == NotificationAction.CREATE && !user.isNotifyBookingCreate()) return;
-        if (action == NotificationAction.UPDATE) {
-            // Updates are not sent in current UX (users recreate bookings instead).
-            return;
-        }
 
         ensureUidAndSequence(booking);
         sendRequest(booking, false);

@@ -27,8 +27,6 @@ public class BookingNotificationListener {
             booking -> {
                 if (event.getAction() == NotificationAction.CREATE) {
                     calendarNotificationService.sendBookingCreatedOrUpdated(booking, NotificationAction.CREATE);
-                } else if (event.getAction() == NotificationAction.UPDATE) {
-                    calendarNotificationService.sendBookingCreatedOrUpdated(booking, NotificationAction.UPDATE);
                 }
             },
             () -> log.debug("Booking {} not found for notification", event.getBookingId())

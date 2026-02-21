@@ -269,7 +269,6 @@ public class BookingService {
                 booking2.getCalendarSequence() == null ? 1 : booking2.getCalendarSequence() + 1
             );
             bookingRepository.save(booking2);
-            eventPublisher.publishEvent(new BookingNotificationEvent(booking2.getId(), NotificationAction.UPDATE));
             return booking2;
         }
         return null;
