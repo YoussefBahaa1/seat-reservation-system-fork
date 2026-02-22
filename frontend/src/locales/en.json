@@ -338,6 +338,11 @@
     ,"carparkAvailable":"This spot is available in the selected time window."
     ,"carparkSelected":"Selected"
     ,"carparkHover":"Hover"
+    ,"carparkType":"Type"
+    ,"carparkCovered":"Covered"
+    ,"carparkChargingKw":"kW"
+    ,"carparkYes":"yes"
+    ,"carparkNo":"no"
 
     ,"parkingReview":"Parking Requests"
     ,"parkingReviewNone":"No pending parking requests."
