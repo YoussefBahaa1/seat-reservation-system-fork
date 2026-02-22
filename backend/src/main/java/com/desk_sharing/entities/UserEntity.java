@@ -47,6 +47,10 @@ public class UserEntity {
 
     @Column(name = "notify_booking_cancel", nullable = false, columnDefinition = "bit(1) default 1")
     private boolean notifyBookingCancel = true;
+
+    // Parking notifications
+    @Column(name = "notify_parking_decision", nullable = false, columnDefinition = "bit(1) default 1")
+    private boolean notifyParkingDecision = true;
     
     // Department field (free-text)
     @Column(name = "department", nullable = true)

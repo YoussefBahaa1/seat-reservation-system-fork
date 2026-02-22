@@ -11,11 +11,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Locale;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.desk_sharing.entities.ParkingReservation;
@@ -30,6 +32,7 @@ import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
 import com.desk_sharing.repositories.ParkingSpotRepository;
 import com.desk_sharing.repositories.UserRepository;
+import com.desk_sharing.services.parking.ParkingNotificationService;
 
 import lombok.AllArgsConstructor;
 
@@ -43,6 +46,7 @@ public class ParkingReservationService {
     private final ParkingReservationRepository parkingReservationRepository;
     private final ParkingSpotRepository parkingSpotRepository;
     private final UserRepository userRepository;
+    private final ParkingNotificationService parkingNotificationService;
 
     private void validateTimes(final Date day, final Time begin, final Time end) {
         if (day == null || begin == null || end == null) {
@@ -249,6 +253,14 @@ public class ParkingReservationService {
         reservation.setCreatedAt(LocalDateTime.now());
         reservation.setStatus(currentUser.isAdmin() ? ParkingReservationStatus.APPROVED : ParkingReservationStatus.PENDING);
 
+        String requestLocale = request.getLocale();
+        if (requestLocale == null || requestLocale.isBlank()) {
+            requestLocale = LocaleContextHolder.getLocale() != null
+                ? LocaleContextHolder.getLocale().toLanguageTag()
+                : Locale.GERMAN.toLanguageTag();
+        }
+        reservation.setRequestLocale(requestLocale);
+
         return parkingReservationRepository.save(reservation);
     }
 
@@ -303,7 +315,9 @@ public class ParkingReservationService {
         }
 
         reservation.setStatus(ParkingReservationStatus.APPROVED);
-        return parkingReservationRepository.save(reservation);
+        final ParkingReservation saved = parkingReservationRepository.save(reservation);
+        parkingNotificationService.notifyDecision(saved, true);
+        return saved;
     }
 
     public void rejectReservation(final long id) {
@@ -313,6 +327,7 @@ public class ParkingReservationService {
         if (effectiveStatus(reservation) != ParkingReservationStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Reservation is not pending");
         }
+        parkingNotificationService.notifyDecision(reservation, false);
         parkingReservationRepository.deleteById(id);
     }
 }

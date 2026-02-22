@@ -28,6 +28,7 @@ import com.desk_sharing.misc.DaoUserNotFoundException;
 import com.desk_sharing.misc.LdapUserNotFoundException;
 import com.desk_sharing.model.AuthResponseDTO;
 import com.desk_sharing.model.FloorDTO;
+import com.desk_sharing.model.NotificationPreferencesDTO;
 import com.desk_sharing.model.UserDto;
 import com.desk_sharing.controllers.BookingController;
 import com.desk_sharing.entities.Booking;
@@ -77,6 +78,16 @@ public class UserService  {
         user.setNotifyBookingCreate(bookingCreate);
         user.setNotifyBookingUpdate(bookingUpdate);
         user.setNotifyBookingCancel(bookingCancel);
+        user.setNotifyParkingDecision(user.isNotifyParkingDecision()); // unchanged if not provided
+        userRepository.save(user);
+    }
+
+    public void updateNotificationPreferences(NotificationPreferencesDTO dto) {
+        UserEntity user = getCurrentUserOrThrow();
+        user.setNotifyBookingCreate(dto.isBookingCreate());
+        user.setNotifyBookingUpdate(dto.isBookingUpdate());
+        user.setNotifyBookingCancel(dto.isBookingCancel());
+        user.setNotifyParkingDecision(dto.isParkingDecision());
         userRepository.save(user);
     }
 

@@ -34,6 +34,7 @@
     "notificationsInfo": "Choose which events you want to receive an Outlook notification for.",
     "notifyBookingCreate": "Booking created",
     "notifyBookingCancel": "Booking cancelled",
+    "notifyParkingDecision": "Parking request",
     "notificationsSaved": "Notification settings saved",
     "notificationsSaveFailed": "Saving notification settings failed",
     "carpark": "Car park",
