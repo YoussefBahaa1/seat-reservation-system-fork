@@ -22,8 +22,18 @@ const Home = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [now, setNow] = useState(moment());
-  const [selectedDate, setSelectedDate] = useState(moment().startOf('day').toDate());
-  const [dayEvents, setDayEvents] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const stored = sessionStorage.getItem('homeSelectedDate');
+    if (stored) {
+      const parsed = new Date(stored);
+      if (!Number.isNaN(parsed.valueOf())) {
+        return moment(parsed).startOf('day').toDate();
+      }
+    }
+    return moment().startOf('day').toDate();
+  });
+  const [dayDeskEvents, setDayDeskEvents] = useState([]);
+  const [dayParkingEvents, setDayParkingEvents] = useState([]);
   const [viewMode, setViewMode] = useState(() => sessionStorage.getItem('homeViewMode') || 'calendar');
   const [mode, setMode] = useState(() => sessionStorage.getItem('homeDayMode') || 'desk');
   const [selectedDeskFilters, setSelectedDeskFilters] = useState(() => {
@@ -63,8 +73,13 @@ const Home = () => {
       }
   
       // Load bookings for the month
+      const endpoint =
+        mode === 'parking'
+          ? `${process.env.REACT_APP_BACKEND_URL}/parking/getAllBookingsForDate`
+          : `${process.env.REACT_APP_BACKEND_URL}/bookings/getAllBookingsForDate`;
+
       postRequest(
-        `${process.env.REACT_APP_BACKEND_URL}/bookings/getAllBookingsForDate`,
+        endpoint,
         headers.current,
         (data) => {
           for (const day in data) {
@@ -86,7 +101,7 @@ const Home = () => {
         JSON.stringify(daysInMonth)  // Tage des Monats an den Server senden
       );
     },
-    [headers, t, setEvents, setNow]  // Abhängigkeiten, die sich ändern könnten
+    [headers, t, setEvents, setNow, mode]  // Abhängigkeiten, die sich ändern könnten
   );
 
   // Call generateMonthDays when changes occur
@@ -108,21 +123,37 @@ const Home = () => {
     moment.locale(i18n.language);
   }, [i18n.language]);
 
-  useEffect(() => {
+  const fetchDayEvents = useCallback(() => {
     const dayString = moment(selectedDate).format('DD.MM.YYYY');
     getRequest(
       `${process.env.REACT_APP_BACKEND_URL}/bookings/day/${dayString}`,
       headers.current,
-      (data) => setDayEvents(Array.isArray(data) ? data : []),
+      (data) => setDayDeskEvents(Array.isArray(data) ? data : []),
       (errorCode) => {
-        console.log('Error fetching day bookings:', errorCode);
+        console.log('Error fetching day desk bookings:', errorCode);
         if (errorCode !== 400) {
           toast.error(t(errorCode + ''));
         }
-        setDayEvents([]);
+        setDayDeskEvents([]);
+      }
+    );
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/parking/day/${dayString}`,
+      headers.current,
+      (data) => setDayParkingEvents(Array.isArray(data) ? data : []),
+      (errorCode) => {
+        console.log('Error fetching day parking bookings:', errorCode);
+        if (errorCode !== 400) {
+          toast.error(t(errorCode + ''));
+        }
+        setDayParkingEvents([]);
       }
     );
   }, [selectedDate, headers, t]);
+
+  useEffect(() => {
+    fetchDayEvents();
+  }, [fetchDayEvents]);
 
   useEffect(() => {
     getRequest(
@@ -153,9 +184,22 @@ const Home = () => {
     sessionStorage.setItem('homeViewMode', viewMode);
   }, [viewMode]);
 
+  useEffect(() => {
+    sessionStorage.setItem('homeSelectedDate', selectedDate.toISOString());
+  }, [selectedDate]);
+
   const handleViewToggle = () => {
     setViewMode((prev) => (prev === 'calendar' ? 'floor' : 'calendar'));
   };
+
+  const refreshCalendarCounts = useCallback(() => {
+    generateMonthDays(now);
+  }, [generateMonthDays, now]);
+
+  const handleParkingReservationChange = useCallback(() => {
+    fetchDayEvents();
+    refreshCalendarCounts();
+  }, [fetchDayEvents, refreshCalendarCounts]);
 
   const roomOptions = useMemo(() => {
     if (mode !== 'desk') return [];
@@ -218,6 +262,8 @@ const Home = () => {
     }
     return blocks;
   }, []);
+
+  const dayEvents = useMemo(() => [...dayDeskEvents, ...dayParkingEvents], [dayDeskEvents, dayParkingEvents]);
 
   const filteredDayEvents = useMemo(() => {
     const selectedRoomSet = new Set(
@@ -455,6 +501,7 @@ const Home = () => {
                 detailsVariant="modal"
                 showHoverDetails={false}
                 headerAction={renderModeToggle()}
+                onReservationsChanged={handleParkingReservationChange}
               />
             </div>
           )}

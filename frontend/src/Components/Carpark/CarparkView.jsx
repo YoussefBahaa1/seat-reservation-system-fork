@@ -59,6 +59,7 @@ const CarparkView = ({
   detailsVariant = 'panel',
   showHoverDetails,
   headerAction = null,
+  onReservationsChanged = null,
 }) => {
   const { t } = useTranslation();
   const location = useLocation();
@@ -417,6 +418,9 @@ const CarparkView = ({
       () => {
         toast.success(t('booked'));
         refreshAvailability();
+        if (onReservationsChanged) {
+          onReservationsChanged();
+        }
       },
       (errorCode) => {
         if (errorCode === 409) toast.warning(t('overlap'));
@@ -440,6 +444,9 @@ const CarparkView = ({
       () => {
         toast.success(t('bookingDeleted'));
         refreshAvailability();
+        if (onReservationsChanged) {
+          onReservationsChanged();
+        }
       },
       () => toast.error(t('httpOther'))
     );

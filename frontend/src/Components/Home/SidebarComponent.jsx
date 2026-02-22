@@ -216,7 +216,7 @@ const SidebarComponent = () => {
             icon={<IoCalendarNumberOutline />}
             onClick={() => handleClick("calendar")}
           >
-            {t("calendar")}
+            {t("home")}
           </MenuItem>
           <MenuItem
             id='sidebar_bookings'

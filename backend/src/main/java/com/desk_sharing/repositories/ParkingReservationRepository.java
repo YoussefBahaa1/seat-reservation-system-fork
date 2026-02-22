@@ -38,6 +38,9 @@ public interface ParkingReservationRepository extends JpaRepository<ParkingReser
         @Param("endTime") Time endTime
     );
 
-    List<ParkingReservation> findByUserId(int userId);
-}
+    List<ParkingReservation> findByDay(Date day);
 
+    List<ParkingReservation> findByUserId(int userId);
+
+    long countByDay(Date day);
+}

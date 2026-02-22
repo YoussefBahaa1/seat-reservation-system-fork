@@ -4,6 +4,7 @@ import java.sql.Date;
 import java.sql.Time;
 
 import com.desk_sharing.entities.Booking;
+import com.desk_sharing.entities.ParkingReservation;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -40,6 +41,34 @@ public class BookingDayEventDTO {
             null,
             null,
             "desk"
+        );
+    }
+
+    private static Long parseSpotLabel(final String spotLabel) {
+        if (spotLabel == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(spotLabel.trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    public BookingDayEventDTO(final ParkingReservation reservation) {
+        this(
+            reservation.getId(),
+            reservation.getDay(),
+            reservation.getBegin(),
+            reservation.getEnd(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            parseSpotLabel(reservation.getSpotLabel()),
+            null,
+            "parking"
         );
     }
 }
