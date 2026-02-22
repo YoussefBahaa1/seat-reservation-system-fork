@@ -20,6 +20,13 @@ const Booking = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const localizer = momentLocalizer(moment);
+  const calendarFormats = {
+    timeGutterFormat: (date, culture, loc) => loc.format(date, 'HH:mm', culture),
+    eventTimeRangeFormat: ({ start, end }, culture, loc) =>
+      `${loc.format(start, 'HH:mm', culture)} – ${loc.format(end, 'HH:mm', culture)}`,
+    agendaTimeRangeFormat: ({ start, end }, culture, loc) =>
+      `${loc.format(start, 'HH:mm', culture)} – ${loc.format(end, 'HH:mm', culture)}`,
+  };
   const { roomId, date } = location.state;
 
   //Safe selection of desks
@@ -251,7 +258,7 @@ const Booking = () => {
   useEffect(() => { if (clickedDeskId) loadBookings(); }, [clickedDeskId, loadBookings]);
 
   // Set locale for calendar
-  useEffect(() => { moment.locale(i18n.language); }, [i18n.language]);
+  useEffect(() => { moment.locale(i18n.language === 'en' ? 'en-gb' : i18n.language); }, [i18n.language]);
 
   const toggleFavourite = () => {
     const userId = localStorage.getItem('userId');
@@ -396,6 +403,7 @@ const Booking = () => {
             selectable
             min={new Date(0, 0, 0, minStartTime, 0, 0)}
             max={new Date(0, 0, 0, maxEndTime, 0, 0)}
+            formats={calendarFormats}
             eventPropGetter={(event) => ({
               style: {
                 backgroundColor: events.some((e) => e.id === event.id) ? 'grey' : '#008444',

@@ -9,7 +9,7 @@ function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBooki
         (data) => {
             confirmAlert({
                 title: t('desk') + " " + deskRemark,
-                message: t('date') + " " + formatDate_yyyymmdd_to_ddmmyyyy(bookingData.day) + " " + t("from") + " " + bookingData.begin + " " + t("to") + " " + bookingData.end,
+                message: t('date') + " " + formatDate_yyyymmdd_to_ddmmyyyy(bookingData.day) + " " + t("from") + " " + bookingData.begin.slice(0,5) + " " + t("to") + " " + bookingData.end.slice(0,5),
                 buttons: [
                     {
                         label: t('yes'),
