@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { FaAddressBook, FaPlusMinus } from 'react-icons/fa6';
-import { FaBook } from 'react-icons/fa';
+import { FaBook, FaCog } from 'react-icons/fa';
 import './AdminPage.css'; // Import the CSS file for AdminPage
 import AddRoom from './Room/AddRoom';
 import DeleteRoom from './Room/DeleteRoom';
@@ -13,6 +13,7 @@ import DeleteUser from './UserManagement/DeleteUser';
 import EditUser from './UserManagement/EditUser';
 import DeactivateUser from './UserManagement/DeactivateUser';
 import OverviewBookings from './Bookings/OverviewBookings';
+import BookingSettings from './Bookings/BookingSettings';
 import { useTranslation } from 'react-i18next';
 import {BootstrapEmployeeDialog, BootstrapWorkstationDialog, BootstrapDialog } from '../Bootstrap';
 import LayoutPageAdmin from '../Templates/LayoutPageAdmin';
@@ -41,6 +42,7 @@ const AdminPage = () => {
   const [isParkingReviewOpen, setIsParkingReviewOpen] = useState(false);
   const [pendingParkingCount, setPendingParkingCount] = useState(0);
   const pendingParkingCountRef = useRef(0);
+  const [isBookingSettingsOpen, setIsBookingSettingsOpen] = useState(false);
 
   const toggleUserButtons = () => {
     setShowUserButtons(!showUserButtons);
@@ -65,6 +67,7 @@ const AdminPage = () => {
       setShowWorkstationButtons(false);
     }
   };
+  const toggleBookingSettingsModal = () => setIsBookingSettingsOpen(!isBookingSettingsOpen);
   
   const toggleAddRoomModal = () => setIsAddRoomOpen(!isAddRoomOpen);
   const toggleDeleteRoomModal = () => setIsDeleteRoomOpen(!isDeleteRoomOpen);
@@ -158,6 +161,12 @@ const AdminPage = () => {
         </button>
         <FaBook className='logo' />
       </div>
+      <div className='manage-bookings-container'>
+        <button id='bookingSettings' className='manage-bookings-button' onClick={toggleBookingSettingsModal}>
+          {t("bookingSettings")}
+        </button>
+        <FaCog className='logo' />
+      </div>
     
     <div className={`button-wrapper ${showUserButtons ? 'visible' : ''}`}>
       <button id='addUser' className='my-button' onClick={toggleAddUserModal}>
@@ -247,6 +256,10 @@ const AdminPage = () => {
         onClose={toggleParkingReviewModal}
         onChanged={refreshPendingParkingCount}
       />
+
+      <BootstrapEmployeeDialog onClose={setIsBookingSettingsOpen.bind(null, !isBookingSettingsOpen)} aria-labelledby='customized-dialog-title' open={isBookingSettingsOpen}>
+        <BookingSettings isOpen={isBookingSettingsOpen} onClose={setIsBookingSettingsOpen.bind(null, !isBookingSettingsOpen)} />
+      </BootstrapEmployeeDialog>
       
       </LayoutPageAdmin>
   );

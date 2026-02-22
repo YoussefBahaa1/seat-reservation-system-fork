@@ -76,6 +76,13 @@ public class Booking {
     @Column(name = "end", nullable = false)
     private Time end;
 
+    // Outlook/ICS sync metadata
+    @Column(name = "calendar_uid", length = 255)
+    private String calendarUid;
+
+    @Column(name = "calendar_sequence", columnDefinition = "int default 0")
+    private Integer calendarSequence = 0;
+
     
     public Booking(UserEntity user, Room room, Desk desk, Date day, Time begin, Time end) {
         this.user = user;

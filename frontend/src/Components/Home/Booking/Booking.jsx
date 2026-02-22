@@ -20,6 +20,13 @@ const Booking = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const localizer = momentLocalizer(moment);
+  const calendarFormats = {
+    timeGutterFormat: (date, culture, loc) => loc.format(date, 'HH:mm', culture),
+    eventTimeRangeFormat: ({ start, end }, culture, loc) =>
+      `${loc.format(start, 'HH:mm', culture)} – ${loc.format(end, 'HH:mm', culture)}`,
+    agendaTimeRangeFormat: ({ start, end }, culture, loc) =>
+      `${loc.format(start, 'HH:mm', culture)} – ${loc.format(end, 'HH:mm', culture)}`,
+  };
   const { roomId, date } = location.state;
 
   //Safe selection of desks
@@ -33,6 +40,11 @@ const Booking = () => {
   const [clickedDeskId, setClickedDeskId] = useState(null);
   const [clickedDeskRemark, setClickedDeskRemark] = useState('');
   const [isFavourite, setIsFavourite] = useState(false);
+  const [bookingSettings, setBookingSettings] = useState({
+    leadTimeMinutes: 30,
+    maxDurationMinutes: 360,
+    maxAdvanceDays: 30,
+  });
 
   const eventRef = useRef(event);
   const eventsRef = useRef(events);
@@ -59,6 +71,15 @@ const Booking = () => {
       () => console.error('Failed to fetch desks')
     );
   }, [roomId]);
+
+  const fetchBookingSettings = useCallback(() => {
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/booking-settings`,
+      headers.current,
+      (data) => setBookingSettings(data),
+      () => console.error('Failed to fetch booking settings')
+    );
+  }, []);
 
   const loadBookings = useCallback(() => {
     if (!clickedDeskId) return;
@@ -94,29 +115,47 @@ const Booking = () => {
 
     // Block bookings in the past
     const now = new Date();
-    // Compare only by date
     const startDay = new Date(startTime);
     startDay.setHours(0, 0, 0, 0);
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
-    // Past day → hard block
     if (startDay < today) {
-      toast.warning(t('datePassed')); // "This date has already passed."
+      toast.warning(t('datePassed'));
       return;
     }
 
-// Today → start must be >= next 30-min slot boundary
-if (startDay.getTime() === today.getTime()) {
-  const earliestStart = roundUpToNextHalfHour(now);
-  if (startTime < earliestStart) {
-    toast.warning(t('timePassed')); // "This time has already passed."
-    return;
-  }
-}
+    // Lead time: earliest allowed start is rounded(now + leadTime)
+    const leadMinutes = bookingSettings?.leadTimeMinutes ?? 0;
+    const earliestAllowed = roundUpToNextHalfHour(new Date(now.getTime() + leadMinutes * 60000));
+    if (startTime < earliestAllowed) {
+      toast.warning(
+        t('leadTimeExceeded', {
+          value: leadMinutes,
+          next: moment(earliestAllowed).format('HH:mm'),
+        })
+      );
+      return;
+    }
 
     if (duration < 2 * 60 * 60 * 1000) {
       toast.warning(t('minimum'));
       return;
+    }
+
+    if (bookingSettings?.maxDurationMinutes !== null && bookingSettings?.maxDurationMinutes !== undefined) {
+      if (duration > bookingSettings.maxDurationMinutes * 60 * 1000) {
+        toast.warning(t('maxDurationExceeded', { value: bookingSettings.maxDurationMinutes / 60 }));
+        return;
+      }
+    }
+
+    if (bookingSettings?.maxAdvanceDays !== null && bookingSettings?.maxAdvanceDays !== undefined) {
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + bookingSettings.maxAdvanceDays);
+      if (startDay > maxDate) {
+        toast.warning(t('maxAdvanceExceeded', { value: bookingSettings.maxAdvanceDays }));
+        return;
+      }
     }
 
     const updatedEvents = eventsRef.current.filter((e) => e.id !== currentEventId);
@@ -139,7 +178,7 @@ if (startDay.getTime() === today.getTime()) {
 
     setEvent(newEvent);
 
-  }, [t]);
+  }, [t, bookingSettings]);
 
   /** ----- EVENT FUNCTIONS ----- */
   const booking = async () => {
@@ -173,6 +212,7 @@ if (startDay.getTime() === today.getTime()) {
   /** ----- EFFECTS ----- */
   // Fetch room once
   useEffect(() => { fetchRoom(); }, [fetchRoom]);
+  useEffect(() => { fetchBookingSettings(); }, [fetchBookingSettings]);
 
   useEffect(()=>{eventRef.current=event},[event])
 
@@ -218,7 +258,7 @@ if (startDay.getTime() === today.getTime()) {
   useEffect(() => { if (clickedDeskId) loadBookings(); }, [clickedDeskId, loadBookings]);
 
   // Set locale for calendar
-  useEffect(() => { moment.locale(i18n.language); }, [i18n.language]);
+  useEffect(() => { moment.locale(i18n.language === 'en' ? 'en-gb' : i18n.language); }, [i18n.language]);
 
   const toggleFavourite = () => {
     const userId = localStorage.getItem('userId');
@@ -411,6 +451,7 @@ if (startDay.getTime() === today.getTime()) {
             selectable
             min={new Date(0, 0, 0, minStartTime, 0, 0)}
             max={new Date(0, 0, 0, maxEndTime, 0, 0)}
+            formats={calendarFormats}
             eventPropGetter={(event) => ({
               style: {
                 backgroundColor: events.some((e) => e.id === event.id) ? 'grey' : '#008444',

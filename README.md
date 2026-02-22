@@ -57,7 +57,7 @@ We also create `${PATH_TO_TLS}/pws/pw_db.txt` and `${PATH_TO_TLS}/pws/`pw_ldap.t
 ### Configure .env
 `.env` is used to store parameters that are used to run the project. Some of them may be confidential or vary based on the environment. So some of them must be set by hand.
 
-There are some variables we must can change (but the default values from `.env_template` are fine):
+There are some variables can change (but the default values from `.env_template` are fine):
 * Network must be set either to mynetwork_dev or mynetwork. Both of them are defined in docker-compose.yml
 * BACKEND_LOGS must be set to an directory where we like to store the logging messages. Choose a folder you like. E.g.: `${PROJECT_PATH}/backend/logs_dev_backend/`.
 * VOLUME must set either to mariadb_data_dev or mariadb_data. Both are defined in docker-compose.yml.
@@ -109,15 +109,40 @@ A list of most of the params is in the following table:
 | CREATE_SERIES_DEFAULT_FREQUENCY=daily | Default frequency for series creation | daily | Needed |
 | FRONTEND_PORT | The exposed port where the frontend container accepts connections | 3000 | Needed |
 | FRONTEND_CONTAINER | Name of the frontend container | seat-reservation-system-frontend-1 | Needed. Depending on the project name. Since my project is called seat-reservation-system the container is named seat-reservation-system-frontend-1. | 
+| FRONTEND_BASE | Frontend base path (prod: /frontend-main, local dev: /) | /frontend-main | Needed |
+| BACKEND_PATH | Backend path prefix used by frontend | /backend-main | Needed |
+| REACT_APP_BASENAME | React Router basename (local dev) | / | Needed |
+| PUBLIC_URL | CRA public URL (local dev) | / | Needed |
+| REACT_APP_BACKEND_URL | Backend URL used by frontend (local dev) | http://localhost:8082 | Needed |
 | BACKEND_PORT | The exposed port where the backend container accepts connections | 8082 | Needed |
 | BACKEND_LOGS | Path to the backend log dir on the host machine | /home/usr/logs_dev_backend | Needed |
 | BACKEND_CONTAINER | Name of the backend container | seat-reservation-system-backend-1 | Needed. Depending on the project name. Since my project is called seat-reservation-system the container is named seat-reservation-system-backend-1 |
 | BACKEND_PFX_FILENAME | Name of pfx file for the backend crt. | backend.pfx | Needed. Must be in $PATH_TO_TLS/backend/. |
 | STRICT_CORS | If true only strictly defined urls are allowed to received data from etc.. | false | If all urls shall be allowed keep it false |
 | CORS_ALLOWED_ORIGINS | A list of allowed origins. Only evaluated if STRICT_CORS=true. | https://my-serv:3000,http://my-serv:3000 |
+| MAIL_HOST | SMTP host (MailHog default) | mailhog | Needed for notifications |
+| MAIL_PORT | SMTP port | 1025 | Needed for notifications |
+| MAIL_USERNAME | SMTP username |  | Set if SMTP requires auth |
+| MAIL_PASSWORD | SMTP password |  | Set if SMTP requires auth |
+| MAIL_PROTOCOL | SMTP protocol | smtp | Needed |
+| MAIL_TLS_ENABLED | Enable STARTTLS | false (for MailHog) | Set true for real SMTP |
+| MAIL_SMTP_AUTH | Enable SMTP auth | false | Set true for real SMTP |
+| MAIL_FROM | From address for invites | deskshare@test.local | Needed |
+| BOOKING_TIMEZONE_ID | Timezone for ICS | Europe/Berlin | Needed |
+| ICS_NOTIFICATIONS_ENABLED | Toggle calendar emails | true | Needed |
+| FRONTEND_BASE_URL | Frontend URL for links in emails | http://localhost:3001 | Needed |
 | DATABASE_PORT | The exposed port where the db container accepts connections | 3307 | Needed |
 | DATABASE_CONTAINER | Name of the db container | seat-reservation-system-database-1 | Needed. Depending on the project name. Since my project is called seat-reservation-system the container is named seat-reservation-system-database-1 |
 | VOLUME | Name of the volume of the db | mariadb_data |Needed. One of the two defined volumes in docker-compose.yml |
+
+### Outlook / ICS notifications
+- Features: sends Outlook-friendly ICS invites on booking creation/confirmation and cancel; per-user notification toggles; timezone Europe/Berlin; localized to current UI language (en/de).
+- Local testing with MailHog:
+  1) Start MailHog on the compose network  
+     `docker run -d --name mailhog --network seat-reservation-system-fork_mynetwork_dev -p 1025:1025 -p 8025:8025 mailhog/mailhog`
+  2) Ensure backend env matches the values above, then restart containers (`docker compose up -d backend`).
+  3) Perform an action that triggers a notification and you should see an email in http://localhost:8025 with `booking-<id>.ics` attachment if fit. 
+- Production: point the mail vars to your SMTP server and set `MAIL_TLS_ENABLED=true` and `MAIL_SMTP_AUTH=true` if required.
 
 
 If you freshly cloned this project it advisable to set STRICT_CORS=false and USE_TLS=false.

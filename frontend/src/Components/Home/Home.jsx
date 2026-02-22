@@ -99,7 +99,7 @@ const Home = () => {
 
   useEffect(() => {
     // Change moment locale whenever language changes
-    moment.locale(i18n.language);
+    moment.locale(i18n.language === 'en' ? 'en-gb' : i18n.language);
   }, [i18n.language]);
 
   useEffect(() => {
