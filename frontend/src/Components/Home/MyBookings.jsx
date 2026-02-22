@@ -131,6 +131,32 @@ const MyBookings = () => {
       () => {console.log('Error deleting booking:');}
     );
   };
+
+  const editBooking = () => {
+    if (!theBookingEvent) {
+      return;
+    }
+    const roomId = theBookingEvent.room?.id || theBookingEvent.desk?.room?.id;
+    const deskId = theBookingEvent.desk?.id;
+    if (!roomId || !deskId) {
+      console.log('Missing roomId or deskId for edit booking');
+      return;
+    }
+    const start = new Date(`${theBookingEvent.day}T${theBookingEvent.begin}`);
+    navigate('/desks', {
+      state: {
+        roomId,
+        date: start,
+        editBooking: {
+          bookingId: theBookingEvent.id,
+          deskId,
+          day: theBookingEvent.day,
+          begin: theBookingEvent.begin,
+          end: theBookingEvent.end,
+        },
+      },
+    });
+  };
   
   function create_helpText() {
     return i18n.language === 'de' ? 'Die Übersicht zu all Ihren getätigten Buchungen, inklusive der Möglichkeit diese zu löschen.' : 'An overview of all your bookings, including the option to delete them.';
@@ -163,6 +189,24 @@ const MyBookings = () => {
                 
                 {theBookingEvent && theBookingEvent.room && <p>{t('room')}: {theBookingEvent.room.remark}</p> }
                 {theBookingEvent && theBookingEvent.desk && <p>{t('desk')}: {/*theBookingEvent.desk.id + ' ' + */theBookingEvent.desk.remark}</p> }
+                <Button
+                  id="mybookings_edit_booking_btn"
+                  sx={{
+                    marginTop: '10px',
+                    padding: '8px 12px',
+                    backgroundColor: '#0b5f2a',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    textTransform: 'none',
+                    '&:hover': { backgroundColor: '#b7e0c8' }
+                  }}
+                  variant="contained"
+                  onClick={editBooking}
+                  disabled={!theBookingEvent}
+                >
+                  {t('editBooking')}
+                </Button>
               </div>
             } 
           </div>

@@ -7,10 +7,11 @@ import 'react-confirm-alert/src/react-confirm-alert.css';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { confirmAlert } from 'react-confirm-alert';
 import { FaStar, FaRegStar } from 'react-icons/fa';
 
 import LayoutPage from '../../Templates/LayoutPage.jsx';
-import { getRequest, postRequest, deleteRequest } from '../../RequestFunctions/RequestFunctions';
+import { getRequest, postRequest, putRequest, deleteRequest } from '../../RequestFunctions/RequestFunctions';
 import bookingPostRequest from '../../misc/bookingPostRequest.js';
 //import { buildFullDaySlots } from './buildFullDaySlots.js';
 
@@ -20,7 +21,9 @@ const Booking = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const localizer = momentLocalizer(moment);
-  const { roomId, date } = location.state;
+  const { roomId, date, editBooking } = location.state || {};
+  const isEditMode = Boolean(editBooking && editBooking.bookingId);
+  const initialDate = date ? new Date(date) : new Date();
 
   //Safe selection of desks
   const selectionKey = `bookingSelection:${roomId}:${date ? moment(date).format('YYYY-MM-DD') : ''}`;
@@ -67,7 +70,10 @@ const Booking = () => {
       `${process.env.REACT_APP_BACKEND_URL}/bookings/bookingsForDesk/${clickedDeskId}`,
       headers.current,
       (bookings) => {
-        const bookingEvents = bookings.map((b) => ({
+        const filteredBookings = isEditMode && editBooking?.bookingId
+          ? bookings.filter((b) => b.booking_id !== editBooking.bookingId)
+          : bookings;
+        const bookingEvents = filteredBookings.map((b) => ({
           start: new Date(`${b.day}T${b.begin}`),
           end: new Date(`${b.day}T${b.end}`),
           title:
@@ -79,11 +85,19 @@ const Booking = () => {
           id: b.booking_id,
         }));
         //setDeskEvents(bookingEvents);
-        setEvents(bookingEvents);
+        if (isEditMode && editBooking?.deskId === clickedDeskId) {
+          const editStart = new Date(`${editBooking.day}T${editBooking.begin}`);
+          const editEnd = new Date(`${editBooking.day}T${editBooking.end}`);
+          const editSelection = { start: editStart, end: editEnd, id: 1 };
+          setEvents([...bookingEvents, editSelection]);
+          setEvent(editSelection);
+        } else {
+          setEvents(bookingEvents);
+        }
       },
       () => console.error('Failed to fetch bookings')
     );
-  }, [clickedDeskId, t]);
+  }, [clickedDeskId, editBooking, isEditMode, t]);
 
   const selectSlot = useCallback((slotData, currentEventId) => {
     if (!slotData) return;
@@ -119,7 +133,11 @@ if (startDay.getTime() === today.getTime()) {
       return;
     }
 
-    const updatedEvents = eventsRef.current.filter((e) => e.id !== currentEventId);
+    const updatedEvents = eventsRef.current.filter((e) => {
+      if (e.id === currentEventId) return false;
+      if (isEditMode && editBooking?.bookingId && e.id === editBooking.bookingId) return false;
+      return true;
+    });
     const isOverlap = updatedEvents.some(
       (e) =>
         (e.start <= startTime && startTime < e.end) ||
@@ -139,7 +157,7 @@ if (startDay.getTime() === today.getTime()) {
 
     setEvent(newEvent);
 
-  }, [t]);
+  }, [editBooking, isEditMode, t]);
 
   /** ----- EVENT FUNCTIONS ----- */
   const booking = async () => {
@@ -160,14 +178,136 @@ if (startDay.getTime() === today.getTime()) {
       end: moment(event.end).format('HH:mm:ss'),
     };
 
-    bookingPostRequest(
-      'Booking.jsx',
-      bookingDTO,
-      clickedDeskRemark,
-      headers,
-      t,
-      (booking) => navigate('/home', { state: { booking }, replace: true })
-    );
+    if (!isEditMode) {
+      bookingPostRequest(
+        'Booking.jsx',
+        bookingDTO,
+        clickedDeskRemark,
+        headers,
+        t,
+        (booking) => navigate('/home', { state: { booking }, replace: true })
+      );
+      return;
+    }
+
+    const originalDay = editBooking.day;
+    const originalBegin = editBooking.begin;
+    const originalEnd = editBooking.end;
+    const originalDeskId = editBooking.deskId;
+    const newDay = bookingDTO.day;
+    const newBegin = bookingDTO.begin;
+    const newEnd = bookingDTO.end;
+
+    if (
+      originalDeskId === clickedDeskId &&
+      originalDay === newDay &&
+      originalBegin === newBegin &&
+      originalEnd === newEnd
+    ) {
+      navigate('/mybookings', { replace: true });
+      return;
+    }
+
+    const oldBookingDTO = {
+      userId: userId,
+      roomId: roomId,
+      deskId: originalDeskId,
+      day: originalDay,
+      begin: originalBegin,
+      end: originalEnd,
+    };
+
+    const createAndConfirm = (dto, onSuccess, onFail) => {
+      postRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/bookings`,
+        headers.current,
+        (data) => {
+          putRequest(
+            `${process.env.REACT_APP_BACKEND_URL}/bookings/confirm/${data.id}`,
+            headers.current,
+            (dat) => onSuccess(dat),
+            () => onFail()
+          );
+        },
+        () => onFail(),
+        JSON.stringify(dto)
+      );
+    };
+
+    const tryRestoreOld = () => {
+      createAndConfirm(
+        oldBookingDTO,
+        () => {},
+        () => {}
+      );
+    };
+
+    const handleCreateThenDelete = () => {
+      createAndConfirm(
+        bookingDTO,
+        () => {
+          deleteRequest(
+            `${process.env.REACT_APP_BACKEND_URL}/bookings/${editBooking.bookingId}`,
+            headers.current,
+            () => navigate('/mybookings', { replace: true }),
+            () => {
+              toast.error(t('httpOther'));
+              navigate('/mybookings', { replace: true });
+            }
+          );
+        },
+        () => {
+          toast.error(t('httpOther'));
+        }
+      );
+    };
+
+    const handleDeleteThenCreate = () => {
+      deleteRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/bookings/${editBooking.bookingId}`,
+        headers.current,
+        () => {
+          createAndConfirm(
+            bookingDTO,
+            () => navigate('/mybookings', { replace: true }),
+            () => {
+              tryRestoreOld();
+              toast.error(t('httpOther'));
+            }
+          );
+        },
+        () => {
+          toast.error(t('httpOther'));
+        }
+      );
+    };
+
+    const overlapsOld =
+      originalDeskId === clickedDeskId &&
+      originalDay === newDay &&
+      (moment(newBegin, 'HH:mm:ss').isSameOrBefore(moment(originalEnd, 'HH:mm:ss')) &&
+        moment(newEnd, 'HH:mm:ss').isSameOrAfter(moment(originalBegin, 'HH:mm:ss')));
+
+    confirmAlert({
+      title: t('editBooking'),
+      message: `${t('date')} ${newDay} ${t('from')} ${newBegin} ${t('to')} ${newEnd}`,
+      buttons: [
+        {
+          label: t('yes'),
+          onClick: () => {
+            if (overlapsOld) {
+              handleDeleteThenCreate();
+            } else {
+              handleCreateThenDelete();
+            }
+          },
+        },
+        {
+          label: t('no'),
+          onClick: () => {},
+        },
+      ],
+    });
   };
 
   /** ----- EFFECTS ----- */
@@ -185,6 +325,15 @@ if (startDay.getTime() === today.getTime()) {
   useEffect(() => {
     if (!desks.length) return;
     try {
+      if (isEditMode && editBooking?.deskId) {
+        const match = desks.find((desk) => desk.id === editBooking.deskId);
+        if (match) {
+          setClickedDeskId(match.id);
+          setClickedDeskRemark(match.remark || '');
+          sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: match.id }));
+          return;
+        }
+      }
       const saved = JSON.parse(sessionStorage.getItem(selectionKey));
       if (saved?.deskId) {
         const match = desks.find((desk) => desk.id === saved.deskId);
@@ -196,7 +345,7 @@ if (startDay.getTime() === today.getTime()) {
     } catch {
       // ignore invalid stored value
     }
-  }, [desks, selectionKey]);
+  }, [desks, editBooking, isEditMode, selectionKey]);
 
   const refreshFavouriteStatus = useCallback(() => {
     const userId = localStorage.getItem('userId');
@@ -358,7 +507,7 @@ if (startDay.getTime() === today.getTime()) {
             endAccessor="end"
             views={['day', 'week']}
             defaultView="day"
-            defaultDate={date}
+            defaultDate={initialDate}
             onSelectSlot={(data) => (clickedDeskId ? selectSlot(data, event.id) : toast.warning(t('selectDeskMessage')))}
             selectable
             min={new Date(0, 0, 0, minStartTime, 0, 0)}
