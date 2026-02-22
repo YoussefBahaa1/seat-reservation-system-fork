@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FaAddressBook, FaPlusMinus } from 'react-icons/fa6';
 import { FaBook, FaCog } from 'react-icons/fa';
 import './AdminPage.css'; // Import the CSS file for AdminPage
@@ -17,9 +17,13 @@ import BookingSettings from './Bookings/BookingSettings';
 import { useTranslation } from 'react-i18next';
 import {BootstrapEmployeeDialog, BootstrapWorkstationDialog, BootstrapDialog } from '../Bootstrap';
 import LayoutPageAdmin from '../Templates/LayoutPageAdmin';
+import { getRequest } from '../RequestFunctions/RequestFunctions';
+import { toast } from 'react-toastify';
+import ParkingReview from './Parking/ParkingReview';
 
 const AdminPage = () => {
   const { t } = useTranslation();
+  const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const [showUserButtons, setShowUserButtons] = useState(false);
   const [showWorkstationButtons, setShowWorkstationButtons] = useState(false);
   const [showBookingButtons, setShowBookingButtons] = useState(false);
@@ -35,6 +39,9 @@ const AdminPage = () => {
   const [isDeleteUserOpen, setIsDeleteUserOpen] = useState(false);
 
   const [isOverviewBookingsOpen, setIsOverviewBookingsOpen] = useState(false);
+  const [isParkingReviewOpen, setIsParkingReviewOpen] = useState(false);
+  const [pendingParkingCount, setPendingParkingCount] = useState(0);
+  const pendingParkingCountRef = useRef(0);
   const [isBookingSettingsOpen, setIsBookingSettingsOpen] = useState(false);
 
   const toggleUserButtons = () => {
@@ -55,7 +62,6 @@ const AdminPage = () => {
 
   const toggleBookingButtons = () => {
     setShowBookingButtons(!showBookingButtons);
-    setIsOverviewBookingsOpen(!isOverviewBookingsOpen);
     if (showBookingButtons === false) {
       setShowUserButtons(false);
       setShowWorkstationButtons(false);
@@ -73,6 +79,63 @@ const AdminPage = () => {
   const toggleEditUserModal = () => setIsEditUserOpen(!isEditUserOpen);
   const toggleDeactivateUserModal = () => setIsDeactivateUserOpen(!isDeactivateUserOpen);
   const toggleDeleteUserModal = () => setIsDeleteUserOpen(!isDeleteUserOpen);
+  const toggleParkingReviewModal = () => setIsParkingReviewOpen(!isParkingReviewOpen);
+
+  const refreshPendingParkingCount = () => {
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/parking/review/pending/count`,
+      headers.current,
+      (count) => {
+        const nextCount = Number.isFinite(Number(count)) ? Number(count) : 0;
+        if (nextCount > pendingParkingCountRef.current) {
+          toast.info(t('parkingReviewPendingCount', { count: nextCount }));
+        }
+        pendingParkingCountRef.current = nextCount;
+        setPendingParkingCount(nextCount);
+      },
+      () => {}
+    );
+  };
+
+  useEffect(() => {
+    let timer = null;
+
+    const stopPolling = () => {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+
+    const startPolling = () => {
+      // Ensure no duplicate intervals
+      stopPolling();
+      if (document.visibilityState === 'visible') {
+        // Refresh immediately when becoming visible
+        refreshPendingParkingCount();
+        // Use a less aggressive polling interval (30 seconds)
+        timer = setInterval(refreshPendingParkingCount, 30000);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    // Initial setup based on current visibility
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   return (
     <LayoutPageAdmin
@@ -139,6 +202,14 @@ const AdminPage = () => {
         {t('editWorkstation')}
       </button>
     </div>
+    <div className={`button-wrapper ${showBookingButtons ? 'visible' : ''}`}>
+      <button id='overviewBooking' className='my-button' onClick={setIsOverviewBookingsOpen.bind(null, true)}>
+        {t('overviewBooking')}
+      </button>
+      <button id='parkingReview' className='my-button' onClick={toggleParkingReviewModal}>
+        {t('parkingReview')}{pendingParkingCount > 0 ? ` (${pendingParkingCount})` : ''}
+      </button>
+    </div>
 
       <AddRoom isOpen={isAddRoomOpen} onClose={setIsAddRoomOpen.bind(null,false)}/>
 
@@ -179,6 +250,12 @@ const AdminPage = () => {
       <BootstrapEmployeeDialog onClose={setIsOverviewBookingsOpen.bind(null, !isOverviewBookingsOpen)} aria-labelledby='customized-dialog-title' open={isOverviewBookingsOpen}>
         <OverviewBookings isOpen={isOverviewBookingsOpen} onClose={setIsOverviewBookingsOpen.bind(null, !isOverviewBookingsOpen)}/>
       </BootstrapEmployeeDialog>
+
+      <ParkingReview
+        isOpen={isParkingReviewOpen}
+        onClose={toggleParkingReviewModal}
+        onChanged={refreshPendingParkingCount}
+      />
 
       <BootstrapEmployeeDialog onClose={setIsBookingSettingsOpen.bind(null, !isBookingSettingsOpen)} aria-labelledby='customized-dialog-title' open={isBookingSettingsOpen}>
         <BookingSettings isOpen={isBookingSettingsOpen} onClose={setIsBookingSettingsOpen.bind(null, !isBookingSettingsOpen)} />

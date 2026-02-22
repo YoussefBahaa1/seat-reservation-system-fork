@@ -60,12 +60,16 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(auth -> auth
                 // Allow CORS preflight requests without authentication.
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Let Spring's internal error dispatch return the real backend status code.
+                .requestMatchers("/error").permitAll()
                 // Allow unauthenticated users to contact /users/login endpoint.
                 .requestMatchers("/users/login").permitAll()
                 // Allow MFA verification endpoint (second step of login)
                 .requestMatchers("/users/mfa/verify").permitAll()
                 // Users must have role admin for everything under /admin/ 
                 .requestMatchers("/admin/**").hasRole("ADMIN")
+                // Parking review endpoints are admin-only.
+                .requestMatchers("/parking/review/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .authenticationManager(authManager)

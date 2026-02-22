@@ -292,6 +292,39 @@ const Booking = () => {
 
   /** ----- HELPER ----- */
   const getHeadline = () => t('availableDesks') + (room ? ` in ${room.remark}` : '');
+  const FALLBACK_PLACEHOLDER = '—';
+
+  const showOrPlaceholder = (value) => {
+    if (value === null || value === undefined) return FALLBACK_PLACEHOLDER;
+    const str = String(value).trim();
+    return str ? str : FALLBACK_PLACEHOLDER;
+  };
+
+  const monitorSummary = (desk) => {
+    const quantity = desk?.monitorsQuantity;
+    const size = desk?.monitorsSize;
+    if (quantity == null && (size == null || String(size).trim() === '')) {
+      return FALLBACK_PLACEHOLDER;
+    }
+    if (quantity != null && size != null && String(size).trim() !== '') {
+      return `${quantity} x ${String(size).trim()}`;
+    }
+    return showOrPlaceholder(quantity ?? size);
+  };
+
+  const deskTypeSummary = (desk) => {
+    if (desk?.deskHeightAdjustable === true) return 'yes';
+    if (desk?.deskHeightAdjustable === false) return 'no';
+    return FALLBACK_PLACEHOLDER;
+  };
+
+  const technologySummary = (desk) => {
+    const items = [];
+    if (desk?.technologyDockingStation === true) items.push('docking station');
+    if (desk?.technologyWebcam === true) items.push('webcam');
+    if (desk?.technologyHeadset === true) items.push('headset');
+    return items.length ? items.join(', ') : FALLBACK_PLACEHOLDER;
+  };
 
   function roundUpToNextHalfHour(d) {
     const rounded = new Date(d);
@@ -325,29 +358,44 @@ const Booking = () => {
             desks.map((desk) => (
               <Box key={desk.id} sx={{ display: 'flex', margin: '25px', justifyContent: 'space-between', width: '210px' }}>
                 <Box>{desk.deskNumberInRoom}.</Box>
-                <Box
-                  sx={{
-                    backgroundColor: desk.id === clickedDeskId ? '#ffdd00' : 'yellowgreen',
-                    height: '125px',
-                    width: '140px',
-                    borderRadius: '7px',
-                    padding: '5px',
-                    cursor: 'pointer',
-                    boxShadow: '0px 0px 5px rgba(0,0,0,0.2)',
-                    transition: desk.id === clickedDeskId ? '0.25s' : 'box-shadow 0.3s',
-                    '&:hover': { boxShadow: '0px 0px 10px rgba(0,0,0,0.4)' },
-                  }}
-                  onClick={() => {
-                    setClickedDeskId(desk.id);
-                    setClickedDeskRemark(desk.remark);
-
-                    // Save selection to sessionStorage 
-                    sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: desk.id }));
-                  }}
+                <Tooltip
+                  arrow
+                  placement="right"
+                  title={
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                      <Typography variant="caption">{t('booking.tooltip.identifier')}: {showOrPlaceholder(desk?.workstationIdentifier)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.type')}: {showOrPlaceholder(desk?.workstationType)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.monitors')}: {monitorSummary(desk)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.deskTypeHeightAdjustable')}: {deskTypeSummary(desk)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.technology')}: {technologySummary(desk)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.specialFeatures')}: {showOrPlaceholder(desk?.specialFeatures)}</Typography>
+                    </Box>
+                  }
                 >
-                  <Typography sx={typography_sx}>{desk.remark}</Typography>
-                  <Typography sx={typography_sx}>{t(desk.equipment.equipmentName)}</Typography>
-                </Box>
+                  <Box
+                    sx={{
+                      backgroundColor: desk.id === clickedDeskId ? '#ffdd00' : 'yellowgreen',
+                      height: '125px',
+                      width: '140px',
+                      borderRadius: '7px',
+                      padding: '5px',
+                      cursor: 'pointer',
+                      boxShadow: '0px 0px 5px rgba(0,0,0,0.2)',
+                      transition: desk.id === clickedDeskId ? '0.25s' : 'box-shadow 0.3s',
+                      '&:hover': { boxShadow: '0px 0px 10px rgba(0,0,0,0.4)' },
+                    }}
+                    onClick={() => {
+                      setClickedDeskId(desk.id);
+                      setClickedDeskRemark(desk.remark);
+
+                      // Save selection to sessionStorage 
+                      sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: desk.id }));
+                    }}
+                  >
+                    <Typography sx={typography_sx}>{desk.remark}</Typography>
+                    <Typography sx={typography_sx}>{t(desk.equipment.equipmentName)}</Typography>
+                  </Box>
+                </Tooltip>
               </Box>
             ))
           ) : (
