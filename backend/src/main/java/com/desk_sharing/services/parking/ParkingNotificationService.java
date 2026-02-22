@@ -29,13 +29,13 @@ public class ParkingNotificationService {
     private final UserRepository userRepository;
 
     @Value("${ICS_NOTIFICATIONS_ENABLED:true}")
-    private boolean notificationsEnabled;
+    private boolean notificationsEnabled = true;
 
     @Value("${MAIL_FROM:no-reply@example.com}")
-    private String mailFrom;
+    private String mailFrom = "no-reply@example.com";
 
     @Value("${FRONTEND_BASE_URL:}")
-    private String frontendBaseUrl;
+    private String frontendBaseUrl = "";
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT);
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ROOT);
