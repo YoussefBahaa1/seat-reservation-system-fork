@@ -32,6 +32,7 @@ const MyBookings = () => {
   const [theBookingEvent, setTheBookingEvent] = useState(null);
   //const userId = localStorage.getItem('userId');
   const localizer = momentLocalizer(moment);
+  const archiveLookbackDays = 90;
 
   const fetchBookings = useCallback(
     async () => {
@@ -44,7 +45,12 @@ const MyBookings = () => {
         `${process.env.REACT_APP_BACKEND_URL}/bookings/user/${userId}`, 
         headers.current,
         (bookings) => {
-          const calendarEvents = bookings.map((booking) => ({
+          const earliestVisibleDay = moment().startOf('day').subtract(archiveLookbackDays, 'days');
+          const filteredBookings = bookings.filter((booking) => {
+            const bookingDay = moment(booking.day, 'YYYY-MM-DD', true);
+            return bookingDay.isValid() && bookingDay.isSameOrAfter(earliestVisibleDay);
+          });
+          const calendarEvents = filteredBookings.map((booking) => ({
             id: booking.id,
             title: `${t('desk')} ${booking.desk.remark}`,
             room: booking.room?.remark || booking.desk?.room?.remark || '',
@@ -59,7 +65,7 @@ const MyBookings = () => {
         }
       );
     },
-    [setEvents, t]
+    [archiveLookbackDays, setEvents, t]
   );
 
   // Fetch defauflt viewmode
@@ -214,7 +220,7 @@ const MyBookings = () => {
                   time: t("time"),
                   event: t("event"),
                   noEventsInRange: t("noEventsInRange")
-              }}
+                }}
               />
             </>
           )}
