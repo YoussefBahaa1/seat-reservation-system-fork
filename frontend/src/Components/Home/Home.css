@@ -230,12 +230,16 @@
 }
 
 .home-day-event {
-  background-color: #3174ad;
+  background-color: #9e9e9e;
   color: #ffffff;
   border-radius: 8px;
   padding: 4px 6px;
   min-width: 90px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.home-day-event--mine {
+  background-color: #3174ad;
 }
 
 .home-day-event-title {

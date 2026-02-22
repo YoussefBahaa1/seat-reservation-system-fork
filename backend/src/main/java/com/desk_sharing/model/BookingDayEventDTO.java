@@ -13,6 +13,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class BookingDayEventDTO {
     private Long id;
+    private Integer userId;
     private Date day;
     private Time begin;
     private Time end;
@@ -28,6 +29,7 @@ public class BookingDayEventDTO {
     public BookingDayEventDTO(final Booking booking) {
         this(
             booking.getId(),
+            booking.getUser() != null ? booking.getUser().getId() : null,
             booking.getDay(),
             booking.getBegin(),
             booking.getEnd(),
@@ -58,6 +60,7 @@ public class BookingDayEventDTO {
     public BookingDayEventDTO(final ParkingReservation reservation) {
         this(
             reservation.getId(),
+            reservation.getUserId(),
             reservation.getDay(),
             reservation.getBegin(),
             reservation.getEnd(),

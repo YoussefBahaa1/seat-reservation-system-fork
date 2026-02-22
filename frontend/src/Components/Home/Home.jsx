@@ -54,6 +54,7 @@ const Home = () => {
   const [equipments, setEquipments] = useState([]);
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const lastRoomIdRef = useRef(null);
+  const currentUserId = localStorage.getItem('userId');
 
   const handleSelectSlot = ({ start }) => {
     setSelectedDate(moment(start).startOf('day').toDate());
@@ -568,7 +569,14 @@ const Home = () => {
             <div className="home-day-block-label">{block.label}</div>
             <div className="home-day-block-events">
               {block.events.map((event) => (
-                <div key={event.id} className="home-day-event">
+                <div
+                  key={event.id}
+                  className={
+                    event.userId && String(event.userId) === currentUserId
+                      ? 'home-day-event home-day-event--mine'
+                      : 'home-day-event'
+                  }
+                >
                   <div className="home-day-event-title">
                     {mode === 'desk'
                       ? `${t('desk')}: ${event.deskRemark || event.deskId}`
