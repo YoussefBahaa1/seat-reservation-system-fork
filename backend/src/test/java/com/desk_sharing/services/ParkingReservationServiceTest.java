@@ -6,6 +6,7 @@ import com.desk_sharing.entities.Role;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
+import com.desk_sharing.repositories.ParkingSpotRepository;
 import com.desk_sharing.repositories.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.when;
 class ParkingReservationServiceTest {
 
     @Mock ParkingReservationRepository parkingReservationRepository;
+    @Mock ParkingSpotRepository parkingSpotRepository;
     @Mock UserRepository userRepository;
 
     @AfterEach
@@ -45,7 +47,7 @@ class ParkingReservationServiceTest {
 
     @Test
     void createReservation_savesWithTrimmedLabelAndCurrentUser() {
-        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, userRepository);
+        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, parkingSpotRepository, userRepository);
         authenticateAs(42, "me@example.com", false);
 
         LocalDate day = LocalDate.now().plusDays(1);
@@ -81,7 +83,7 @@ class ParkingReservationServiceTest {
 
     @Test
     void createReservation_forAdminIsApprovedImmediately() {
-        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, userRepository);
+        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, parkingSpotRepository, userRepository);
         authenticateAs(7, "admin@example.com", true);
 
         LocalDate day = LocalDate.now().plusDays(1);
@@ -103,7 +105,7 @@ class ParkingReservationServiceTest {
 
     @Test
     void deleteReservation_forbidsDeletingAnotherUsersReservation() {
-        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, userRepository);
+        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, parkingSpotRepository, userRepository);
         authenticateAs(1, "me@example.com", false);
 
         ParkingReservation otherUsers = new ParkingReservation();
@@ -118,7 +120,7 @@ class ParkingReservationServiceTest {
 
     @Test
     void approveReservation_allowsAdminToApprovePending() {
-        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, userRepository);
+        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, parkingSpotRepository, userRepository);
         authenticateAs(9, "admin@example.com", true);
 
         ParkingReservation pending = new ParkingReservation();
@@ -141,7 +143,7 @@ class ParkingReservationServiceTest {
 
     @Test
     void rejectReservation_deletesPendingForAdmin() {
-        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, userRepository);
+        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, parkingSpotRepository, userRepository);
         authenticateAs(9, "admin@example.com", true);
 
         ParkingReservation pending = new ParkingReservation();

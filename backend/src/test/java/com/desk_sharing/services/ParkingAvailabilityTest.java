@@ -6,6 +6,7 @@ import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
+import com.desk_sharing.repositories.ParkingSpotRepository;
 import com.desk_sharing.repositories.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import static org.mockito.Mockito.when;
 class ParkingAvailabilityTest {
 
     @Mock ParkingReservationRepository parkingReservationRepository;
+    @Mock ParkingSpotRepository parkingSpotRepository;
     @Mock UserRepository userRepository;
 
     @AfterEach
@@ -42,7 +44,7 @@ class ParkingAvailabilityTest {
 
     @Test
     void getAvailability_marksBlockedAndMineCorrectly() {
-        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, userRepository);
+        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, parkingSpotRepository, userRepository);
         authenticateAs(42, "me@example.com");
 
         LocalDate day = LocalDate.now().plusDays(1);
@@ -54,6 +56,7 @@ class ParkingAvailabilityTest {
 
         when(parkingReservationRepository.findOccupiedSpotLabels(any(Date.class), any(List.class), any(Time.class), any(Time.class)))
                 .thenReturn(List.of("1", "2", "3"));
+        when(parkingSpotRepository.findBySpotLabelIn(any(List.class))).thenReturn(List.of());
 
         ParkingReservation mine = new ParkingReservation();
         mine.setId(555L);
