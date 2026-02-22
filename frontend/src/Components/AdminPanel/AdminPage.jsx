@@ -95,9 +95,42 @@ const AdminPage = () => {
   };
 
   useEffect(() => {
-    refreshPendingParkingCount();
-    const timer = setInterval(refreshPendingParkingCount, 15000);
-    return () => clearInterval(timer);
+    let timer = null;
+
+    const stopPolling = () => {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+
+    const startPolling = () => {
+      // Ensure no duplicate intervals
+      stopPolling();
+      if (document.visibilityState === 'visible') {
+        // Refresh immediately when becoming visible
+        refreshPendingParkingCount();
+        // Use a less aggressive polling interval (30 seconds)
+        timer = setInterval(refreshPendingParkingCount, 30000);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    // Initial setup based on current visibility
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
