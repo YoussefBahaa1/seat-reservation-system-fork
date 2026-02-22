@@ -323,12 +323,12 @@ if (startDay.getTime() === today.getTime()) {
                   placement="right"
                   title={
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-                      <Typography variant="caption">Identifier: {showOrPlaceholder(desk?.workstationIdentifier)}</Typography>
-                      <Typography variant="caption">Type: {showOrPlaceholder(desk?.workstationType)}</Typography>
-                      <Typography variant="caption">Monitors: {monitorSummary(desk)}</Typography>
-                      <Typography variant="caption">Desk type (height-adjustable): {deskTypeSummary(desk)}</Typography>
-                      <Typography variant="caption">Technology: {technologySummary(desk)}</Typography>
-                      <Typography variant="caption">Special features: {showOrPlaceholder(desk?.specialFeatures)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.identifier')}: {showOrPlaceholder(desk?.workstationIdentifier)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.type')}: {showOrPlaceholder(desk?.workstationType)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.monitors')}: {monitorSummary(desk)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.deskTypeHeightAdjustable')}: {deskTypeSummary(desk)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.technology')}: {technologySummary(desk)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.specialFeatures')}: {showOrPlaceholder(desk?.specialFeatures)}</Typography>
                     </Box>
                   }
                 >
