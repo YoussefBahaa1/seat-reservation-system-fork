@@ -581,13 +581,13 @@ const CarparkOverview = () => {
                   {spotForPanel.reservedByMe ? ` (${t('carparkReservedByMe')})` : ''}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  Type: {formatSpotCategory(spotForPanel.spotCategory)}
+                  {t('carparkType')}: {formatSpotCategory(spotForPanel.spotCategory)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Covered: {spotForPanel.covered ? 'yes' : 'no'}
+                  {t('carparkCovered')}: {spotForPanel.covered ? t('carparkYes') : t('carparkNo')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  kW: {spotForPanel.chargingKw == null ? '—' : spotForPanel.chargingKw}
+                  {t('carparkChargingKw')}: {spotForPanel.chargingKw == null ? '—' : spotForPanel.chargingKw}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   {selectedSpot ? t('carparkSelected') : t('carparkHover')}
