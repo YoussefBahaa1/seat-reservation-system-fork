@@ -255,6 +255,8 @@
     ,"parkingTypes":"Parkplatztypen"
     ,"switchToParking":"Zu Parkplatz wechseln"
     ,"switchToDesk":"Zu Arbeitsplatz wechseln"
+    ,"switchToFloor":"Zur Etage wechseln"
+    ,"switchToCalendar":"Zum Kalender wechseln"
     ,"selectedDateLabel":"Ausgewähltes Datum"
     ,"addBooking":"Buchung hinzufügen"
     ,"enableFilter":"Filter aktivieren"

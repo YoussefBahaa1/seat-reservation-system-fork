@@ -12,6 +12,10 @@ import { toast } from 'react-toastify';
 import { FormControl, InputLabel, Select, MenuItem, Tooltip, IconButton, ListSubheader, Checkbox, ListItemText } from '@mui/material';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import MapOutlinedIcon from '@mui/icons-material/MapOutlined';
+import FloorImage from '../FloorImage/FloorImage.jsx';
+import CarparkView from '../Carpark/CarparkView.jsx';
 
 const Home = () => {
   const { t, i18n } = useTranslation();
@@ -20,6 +24,7 @@ const Home = () => {
   const [now, setNow] = useState(moment());
   const [selectedDate, setSelectedDate] = useState(moment().startOf('day').toDate());
   const [dayEvents, setDayEvents] = useState([]);
+  const [viewMode, setViewMode] = useState(() => sessionStorage.getItem('homeViewMode') || 'calendar');
   const [mode, setMode] = useState(() => sessionStorage.getItem('homeDayMode') || 'desk');
   const [selectedDeskFilters, setSelectedDeskFilters] = useState(() => {
     try {
@@ -38,6 +43,7 @@ const Home = () => {
   const [rooms, setRooms] = useState([]);
   const [equipments, setEquipments] = useState([]);
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
+  const lastRoomIdRef = useRef(null);
 
   const handleSelectSlot = ({ start }) => {
     setSelectedDate(moment(start).startOf('day').toDate());
@@ -142,6 +148,14 @@ const Home = () => {
     sessionStorage.setItem('homeDayDeskFilters', JSON.stringify(selectedDeskFilters));
     sessionStorage.setItem('homeDayParkingFilters', JSON.stringify(selectedParkingFilters));
   }, [mode, selectedDeskFilters, selectedParkingFilters]);
+
+  useEffect(() => {
+    sessionStorage.setItem('homeViewMode', viewMode);
+  }, [viewMode]);
+
+  const handleViewToggle = () => {
+    setViewMode((prev) => (prev === 'calendar' ? 'floor' : 'calendar'));
+  };
 
   const roomOptions = useMemo(() => {
     if (mode !== 'desk') return [];
@@ -297,6 +311,40 @@ const Home = () => {
     );
   };
 
+  const handleFloorSelection = useCallback(
+    (data) => {
+      const nextRoomId = data?.room?.id;
+      if (!nextRoomId || nextRoomId === lastRoomIdRef.current) {
+        return;
+      }
+      lastRoomIdRef.current = nextRoomId;
+      navigate('/desks', { state: { roomId: nextRoomId, date: selectedDate } });
+    },
+    [navigate, selectedDate]
+  );
+
+  const viewToggleLabel = viewMode === 'calendar' ? t('switchToFloor') : t('switchToCalendar');
+  const viewToggleIcon = viewMode === 'calendar' ? <MapOutlinedIcon /> : <CalendarMonthIcon />;
+  const modeToggleLabel = mode === 'desk' ? t('switchToParking') : t('switchToDesk');
+
+  const renderModeToggle = () => (
+    <Tooltip title={modeToggleLabel}>
+      <IconButton
+        className="home-mode-toggle"
+        onClick={() => {
+          if (mode === 'desk') {
+            setMode('parking');
+          } else {
+            setMode('desk');
+          }
+        }}
+        aria-label={modeToggleLabel}
+      >
+        {mode === 'desk' ? <DirectionsCarIcon /> : <DesktopWindowsIcon />}
+      </IconButton>
+    </Tooltip>
+  );
+
   const CustomToolbar = (toolbar) => (
     <div className="home-rbc-toolbar rbc-toolbar">
       <span className="rbc-btn-group">
@@ -312,21 +360,7 @@ const Home = () => {
       </span>
       <span className="home-rbc-toolbar-label">{toolbar.label}</span>
       <span className="home-rbc-toolbar-right">
-        <Tooltip title={mode === 'desk' ? t('switchToParking') : t('switchToDesk')}>
-            <IconButton
-              className="home-mode-toggle"
-              onClick={() => {
-                if (mode === 'desk') {
-                  setMode('parking');
-                } else {
-                  setMode('desk');
-                }
-              }}
-              aria-label={mode === 'desk' ? t('switchToParking') : t('switchToDesk')}
-            >
-            {mode === 'desk' ? <DirectionsCarIcon /> : <DesktopWindowsIcon />}
-          </IconButton>
-        </Tooltip>
+        {renderModeToggle()}
       </span>
     </div>
   );
@@ -335,36 +369,97 @@ const Home = () => {
     <LayoutPage
       title={mode === 'desk' ? t('desksTitle') : t('parkingsTitle')}
       helpText={''}
+      actionElement={(
+        <Tooltip title={viewToggleLabel}>
+          <IconButton
+            className="home-view-toggle"
+            onClick={handleViewToggle}
+            aria-label={viewToggleLabel}
+          >
+            {viewToggleIcon}
+          </IconButton>
+        </Tooltip>
+      )}
     >
-      <Calendar
-        data-testid='abc'
-        localizer={localizer}
-        events={events}
-        startAccessor='start'
-        endAccessor='end'
-        views={['month']}
-        style={{ height: 720 }}
-        onSelectSlot={handleSelectSlot}
-        selectable={true}
-        dayPropGetter={(date) => ({
-          className: moment(date).isSame(selectedDate, 'day')
-            ? 'home-selected-day'
-            : ''
-        })}
-        onKeyPressEvent={(data) => console.log(data)}
-        messages={{
-          next: t('next'),
-          previous: t('back'),
-          today: t('today'),
-          month: t('month'),
-          week: t('week'),
-          day: t('day'),
-          agenda: t('agenda'),
-          noEventsInRange: t('noEventsInRange')
-        }}
-        onNavigate={handleNavigate}
-        components={{ event: BookingEvent, toolbar: CustomToolbar }}
-      />
+      {viewMode === 'calendar' ? (
+        <Calendar
+          data-testid='abc'
+          localizer={localizer}
+          events={events}
+          startAccessor='start'
+          endAccessor='end'
+          views={['month']}
+          style={{ height: 720 }}
+          onSelectSlot={handleSelectSlot}
+          selectable={true}
+          dayPropGetter={(date) => ({
+            className: moment(date).isSame(selectedDate, 'day')
+              ? 'home-selected-day'
+              : ''
+          })}
+          onKeyPressEvent={(data) => console.log(data)}
+          messages={{
+            next: t('next'),
+            previous: t('back'),
+            today: t('today'),
+            month: t('month'),
+            week: t('week'),
+            day: t('day'),
+            agenda: t('agenda'),
+            noEventsInRange: t('noEventsInRange')
+          }}
+          onNavigate={handleNavigate}
+          components={{ event: BookingEvent, toolbar: CustomToolbar }}
+        />
+      ) : (
+        <div className="home-floor-section">
+          {mode === 'desk' ? (
+            <>
+              <div className="home-rbc-toolbar rbc-toolbar home-floor-toolbar">
+                <span className="rbc-btn-group">
+                  <button type="button" onClick={() => setSelectedDate(moment().startOf('day').toDate())}>
+                    {t('today')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate(moment(selectedDate).subtract(1, 'day').startOf('day').toDate())}
+                  >
+                    {t('back')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate(moment(selectedDate).add(1, 'day').startOf('day').toDate())}
+                  >
+                    {t('next')}
+                  </button>
+                </span>
+                <span className="home-rbc-toolbar-label">
+                  {moment(selectedDate).format('LL')}
+                </span>
+                <span className="home-rbc-toolbar-right">
+                  {renderModeToggle()}
+                </span>
+              </div>
+              <div className="home-floor-view">
+                <FloorImage
+                  sendDataToParent={handleFloorSelection}
+                  click_freely={false}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="home-carpark-wrapper">
+              <CarparkView
+                selectedDate={selectedDate}
+                onSelectedDateChange={setSelectedDate}
+                detailsVariant="modal"
+                showHoverDetails={false}
+                headerAction={renderModeToggle()}
+              />
+            </div>
+          )}
+        </div>
+      )}
       <div className="home-calendar-footer">
         <div className="home-calendar-controls">
           <span className="home-filter-label">{t('filters')}</span>

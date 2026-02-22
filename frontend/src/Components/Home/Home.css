@@ -98,6 +98,19 @@
   background-color: #f3f3f3;
 }
 
+.home-floor-toolbar {
+  margin-bottom: 20px;
+  padding: 0 8px;
+}
+
+.home-floor-view {
+  padding: 0 16px;
+}
+
+.home-carpark-wrapper {
+  padding: 0 16px;
+}
+
 .home-calendar-footer {
   display: flex;
   justify-content: space-between;
@@ -141,6 +154,31 @@
 
 .home-mode-toggle:focus,
 .home-mode-toggle:focus-visible {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.home-view-toggle {
+  background-color: #008444 !important;
+  color: #ffffff !important;
+  width: 56px;
+  height: 44px;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-view-toggle:hover {
+  background-color: #006b36 !important;
+}
+
+.home-view-toggle:focus,
+.home-view-toggle:focus-visible {
   box-shadow: none !important;
   outline: none !important;
 }

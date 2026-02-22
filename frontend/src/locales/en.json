@@ -255,6 +255,8 @@
     ,"parkingTypes":"Parking types"
     ,"switchToParking":"Switch to parking"
     ,"switchToDesk":"Switch to desk"
+    ,"switchToFloor":"Switch to floor"
+    ,"switchToCalendar":"Switch to calendar"
     ,"selectedDateLabel":"Selected date"
     ,"addBooking":"Add booking"
     ,"enableFilter":"Enable Filter"
