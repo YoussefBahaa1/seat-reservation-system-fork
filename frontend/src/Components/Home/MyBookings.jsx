@@ -4,12 +4,20 @@ import moment from "moment";
 import { useTranslation } from 'react-i18next';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import './MyBookings.css';
 import {getRequest, deleteRequest} from '../RequestFunctions/RequestFunctions';
 import LayoutPage from '../Templates/LayoutPage';
 import LayoutModal from '../Templates/LayoutModal';
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
+
+const BookingEvent = ({ event }) => (
+  <div className="mybookings-event-content">
+    <div className="mybookings-event-title">{event.title}</div>
+    {event.room && <div className="mybookings-event-room">{event.room}</div>}
+  </div>
+);
 
 const MyBookings = () => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -39,6 +47,7 @@ const MyBookings = () => {
           const calendarEvents = bookings.map((booking) => ({
             id: booking.id,
             title: `${t('desk')} ${booking.desk.remark}`,
+            room: booking.room?.remark || booking.desk?.room?.remark || '',
             start: new Date(booking.day + 'T' + booking.begin),
             end: new Date(booking.day + 'T' + booking.end),
             desk: booking.desk
@@ -176,10 +185,12 @@ const MyBookings = () => {
                 localizer={localizer}
                 style={{ height: '100vh' }}
                 eventPropGetter={(event) => ({
+                  className: 'mybookings-event',
                   style: {
                     backgroundColor: "#3174ad",
                   },
                 })}
+                components={{ event: BookingEvent }}
                 events={events}
                 startAccessor='start'
                 endAccessor='end'
