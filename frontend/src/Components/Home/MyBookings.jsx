@@ -132,6 +132,57 @@ const MyBookings = () => {
     );
   };
 
+  const escapeIcsText = (text) => {
+    if (!text) return '';
+    return String(text)
+      .replace(/\\/g, '\\\\')
+      .replace(/\n/g, '\\n')
+      .replace(/;/g, '\\;')
+      .replace(/,/g, '\\,');
+  };
+
+  const exportIcs = () => {
+    if (!selectedBookingEvent) return;
+    const booking = theBookingEvent || selectedBookingEvent;
+    const start = moment(selectedBookingEvent.start);
+    const end = moment(selectedBookingEvent.end);
+    const deskRemark = booking?.desk?.remark || selectedBookingEvent?.desk?.remark || '';
+    const roomRemark = booking?.room?.remark || selectedBookingEvent?.room || selectedBookingEvent?.desk?.room?.remark || '';
+    const summary = `${t('desk')} ${deskRemark}`.trim();
+    const uid = `booking-${booking?.id || selectedBookingEvent?.id || 'unknown'}@desksharing`;
+    const dtstamp = moment().utc().format('YYYYMMDDTHHmmss[Z]');
+    const dtstart = start.format('YYYYMMDDTHHmmss');
+    const dtend = end.format('YYYYMMDDTHHmmss');
+
+    const lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Desk Sharing Tool//MyBookings//EN',
+      'CALSCALE:GREGORIAN',
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTAMP:${dtstamp}`,
+      `DTSTART:${dtstart}`,
+      `DTEND:${dtend}`,
+      `SUMMARY:${escapeIcsText(summary)}`,
+      roomRemark ? `LOCATION:${escapeIcsText(`${t('room')}: ${roomRemark}`)}` : null,
+      `DESCRIPTION:${escapeIcsText(`${t('desk')}: ${deskRemark}${roomRemark ? `, ${t('room')}: ${roomRemark}` : ''}`)}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].filter(Boolean);
+
+    const icsContent = lines.join('\r\n');
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const filename = `booking_${start.format('YYYYMMDD')}.ics`;
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  };
+
   const editBooking = () => {
     if (!theBookingEvent) {
       return;
@@ -206,6 +257,25 @@ const MyBookings = () => {
                   disabled={!theBookingEvent}
                 >
                   {t('editBooking')}
+                </Button>
+                <Button
+                  id="mybookings_export_ics_btn"
+                  sx={{
+                    marginTop: '10px',
+                    marginLeft: '10px',
+                    padding: '8px 12px',
+                    backgroundColor: '#0b5f2a',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    textTransform: 'none',
+                    '&:hover': { backgroundColor: '#b7e0c8' }
+                  }}
+                  variant="contained"
+                  onClick={exportIcs}
+                  disabled={!selectedBookingEvent}
+                >
+                  {t('exportIcs')}
                 </Button>
               </div>
             } 

@@ -198,6 +198,7 @@
     
     "deleteBooking": "Delete Booking",
     "editBooking": "Edit Booking",
+    "exportIcs": "Export ICS",
     "overviewBooking": "Overview of Bookings",
     "search": "Search",
     "roomID": "Room ID",

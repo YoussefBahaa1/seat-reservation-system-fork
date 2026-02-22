@@ -198,6 +198,7 @@
     
     "deleteBooking": "Buchung Entfernen",
     "editBooking": "Buchung Bearbeiten",
+    "exportIcs": "Als ICS exportieren",
     "overviewBooking": "Buchungsübersicht",
     "search": "Suchen",
     "roomID": "Tisch ID",
