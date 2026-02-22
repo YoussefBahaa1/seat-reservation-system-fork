@@ -10,6 +10,7 @@ import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
 import com.desk_sharing.repositories.RoomRepository;
+import com.desk_sharing.services.BookingSettingsService;
 import com.desk_sharing.services.calendar.CalendarNotificationService;
 import com.desk_sharing.services.calendar.BookingNotificationEvent;
 import com.desk_sharing.services.calendar.NotificationAction;
@@ -52,6 +53,7 @@ public class BookingService {
 
     private final ApplicationEventPublisher eventPublisher;
     private final CalendarNotificationService calendarNotificationService;
+    private final BookingSettingsService bookingSettingsService;
 
     /**
      * Find and return an key-value-list of with every booking at date for each email.
@@ -86,6 +88,23 @@ public class BookingService {
      * - minimum duration is 120 minutes (current UI behavior is a hard-block)
      */
     private void validateBookingTimes(final Date day, final java.sql.Time begin, final java.sql.Time end) {
+        validateBookingTimes(day, begin, end, bookingSettingsService.getCurrentSettings());
+    }
+
+    private LocalDateTime roundUpToNextHalfHour(LocalDateTime dt) {
+        int minute = dt.getMinute();
+        int addMinutes;
+        if (minute == 0 || minute == 30) {
+            addMinutes = 0;
+        } else if (minute < 30) {
+            addMinutes = 30 - minute;
+        } else {
+            addMinutes = 60 - minute;
+        }
+        return dt.plusMinutes(addMinutes).withSecond(0).withNano(0);
+    }
+
+    private void validateBookingTimes(final Date day, final java.sql.Time begin, final java.sql.Time end, final com.desk_sharing.entities.BookingSettings settings) {
         if (day == null || begin == null || end == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing booking time data");
         }
@@ -106,6 +125,16 @@ public class BookingService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
         }
 
+        // Lead time / earliest start with rounding to next 30-minute boundary
+        final int leadMinutes = settings.getLeadTimeMinutes() == null ? 0 : settings.getLeadTimeMinutes();
+        final LocalDateTime earliestStart = roundUpToNextHalfHour(LocalDateTime.now().plusMinutes(leadMinutes));
+        if (startDateTime.isBefore(earliestStart)) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Booking start time must respect lead time (" + leadMinutes + " minutes). Earliest allowed: " + earliestStart.toLocalTime()
+            );
+        }
+
         // 30-minute slot alignment (Outlook-style)
         if ((beginTime.getMinute() % 30) != 0 || beginTime.getSecond() != 0 || beginTime.getNano() != 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Start time must be aligned to 30-minute slots");
@@ -117,6 +146,18 @@ public class BookingService {
         final long minutes = Duration.between(beginTime, endTime).toMinutes();
         if (minutes < 120) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Minimum booking duration is 120 minutes");
+        }
+
+        Integer maxDurationMinutes = settings.getMaxDurationMinutes();
+        if (maxDurationMinutes != null && minutes > maxDurationMinutes) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum booking duration is " + maxDurationMinutes + " minutes");
+        }
+
+        Integer maxAdvanceDays = settings.getMaxAdvanceDays();
+        if (maxAdvanceDays != null) {
+            if (day.toLocalDate().isAfter(LocalDateTime.now().toLocalDate().plusDays(maxAdvanceDays))) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bookings allowed up to " + maxAdvanceDays + " days in advance");
+            }
         }
     }
 
@@ -149,7 +190,7 @@ public class BookingService {
             .orElseThrow(() -> new IllegalArgumentException("Desk not found with id: " + bookingData.getDeskId()));
         
         // Backend validation: do not trust frontend/UI for booking rules
-        validateBookingTimes(bookingData.getDay(), bookingData.getBegin(), bookingData.getEnd());
+        validateBookingTimes(bookingData.getDay(), bookingData.getBegin(), bookingData.getEnd(), bookingSettingsService.getCurrentSettings());
         
         final LocalDateTime now = LocalDateTime.now();
         final List<Booking> existingBookings = bookingRepository.getAllBookingsForPreventDuplicates(
@@ -260,7 +301,7 @@ public class BookingService {
             }
 
             // Backend validation: do not trust frontend/UI for booking rules
-            validateBookingTimes(bookingById.get().getDay(), booking.getBegin(), booking.getEnd());
+            validateBookingTimes(bookingById.get().getDay(), booking.getBegin(), booking.getEnd(), bookingSettingsService.getCurrentSettings());
 
             Booking booking2 = bookingById.get();
             booking2.setBegin(booking.getBegin());
