@@ -24,6 +24,13 @@ const MyBookings = () => {
   const [theBookingEvent, setTheBookingEvent] = useState(null);
   //const userId = localStorage.getItem('userId');
   const localizer = momentLocalizer(moment);
+  const calendarFormats = {
+    timeGutterFormat: (date, culture, loc) => loc.format(date, 'HH:mm', culture),
+    eventTimeRangeFormat: ({ start, end }, culture, loc) =>
+      `${loc.format(start, 'HH:mm', culture)} – ${loc.format(end, 'HH:mm', culture)}`,
+    agendaTimeRangeFormat: ({ start, end }, culture, loc) =>
+      `${loc.format(start, 'HH:mm', culture)} – ${loc.format(end, 'HH:mm', culture)}`,
+  };
 
   const fetchBookings = useCallback(
     async () => {
@@ -76,7 +83,7 @@ const MyBookings = () => {
   },[t]);
 
   useEffect(() => {
-    moment.locale(i18n.language);
+    moment.locale(i18n.language === 'en' ? 'en-gb' : i18n.language);
     fetchBookings();
   }, [i18n.language, fetchBookings]); // Hier keine Abhängigkeit auf selectedBookingEvent
   
@@ -174,6 +181,7 @@ const MyBookings = () => {
               </Button>
               <Calendar
                 localizer={localizer}
+                formats={calendarFormats}
                 style={{ height: '100vh' }}
                 eventPropGetter={(event) => ({
                   style: {

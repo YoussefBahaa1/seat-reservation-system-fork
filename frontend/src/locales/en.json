@@ -367,5 +367,23 @@
     
     ,"confirmDeleteUser":"This action will permanently delete the user and cannot be undone."
     ,"value":"Value"
+    ,"bookingSettings":"Booking Settings"
+    ,"bookingSettingsHelper":"Configure global rules for desk bookings."
+    ,"leadTime":"Lead time"
+    ,"maxDuration":"Maximum duration"
+    ,"maxAdvance":"Maximum advance"
+    ,"unrestricted":"Unrestricted"
+    ,"resetDefaults":"Reset to defaults"
+    ,"bookingSettingsSaved":"Booking settings saved"
+    ,"bookingSettingsSaveError":"Could not save booking settings"
+    ,"bookingSettingsLoadError":"Could not load booking settings"
+    ,"bookingSettingsLeadTimeInvalid":"Lead time must be in 30-minute steps up to 12 hours."
+    ,"bookingSettingsMaxDurationInvalid":"Max duration must be unrestricted or 2–12 hours in 30-minute steps."
+    ,"bookingSettingsMaxAdvanceInvalid":"Max advance must be unrestricted or one of 7, 14, 30, 60, 90, 180 days."
+    ,"leadTimeExceeded":"Earliest available start is after your selected time. Lead time is {{value}} minutes. Earliest slot: {{next}}."
+    ,"maxDurationExceeded":"Bookings can’t exceed {{value}} hours."
+    ,"maxAdvanceExceeded":"Bookings can only be made up to {{value}} days in advance."
+    ,"hoursValue":"{{value}} h"
+    ,"daysValue":"{{value}} days"
 }
 

@@ -17,7 +17,8 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
     # Apply compatible migrations (curated list)
     for migration in \
         scripts/db/migration/visibility_mode.sql \
-        scripts/db/migration/calendar_notifications.sql; do
+        scripts/db/migration/calendar_notifications.sql \
+        scripts/db/migration/booking_settings.sql; do
         if [ -f "$migration" ]; then
             rel_path="${migration#scripts/db/}"
             scripts/db/exec_db.sh "$rel_path"
