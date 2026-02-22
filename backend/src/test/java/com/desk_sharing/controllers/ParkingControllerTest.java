@@ -39,7 +39,7 @@ class ParkingControllerTest {
         request.setEnd("10:30");
 
         List<ParkingAvailabilityResponseDTO> body =
-                List.of(new ParkingAvailabilityResponseDTO("1", "AVAILABLE", false, null));
+                List.of(new ParkingAvailabilityResponseDTO("1", "AVAILABLE", false, null, "STANDARD", false, null));
         when(parkingReservationService.getAvailability(request)).thenReturn(body);
 
         ResponseEntity<List<ParkingAvailabilityResponseDTO>> resp = controller.availability(request);
