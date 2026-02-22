@@ -7,13 +7,13 @@ import LayoutPage from '../Templates/LayoutPage';
 const contacts = [
   {
     id: 'admin',
-    email: 'test.admin@mail.de',
-    phone: '000 000 000',
+    email: process.env.REACT_APP_SUPPORT_ADMIN_EMAIL || 'test.admin@mail.de',
+    phone: process.env.REACT_APP_SUPPORT_ADMIN_PHONE || '000 000 000',
   },
   {
     id: 'service',
-    email: 'test.servicepersonnel@mail.de',
-    phone: '111 111 111',
+    email: process.env.REACT_APP_SUPPORT_SERVICE_EMAIL || 'test.servicepersonnel@mail.de',
+    phone: process.env.REACT_APP_SUPPORT_SERVICE_PHONE || '111 111 111',
   },
 ];
 
