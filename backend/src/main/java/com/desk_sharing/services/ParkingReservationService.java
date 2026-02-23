@@ -130,6 +130,10 @@ public class ParkingReservationService {
         return spot != null && spot.isCovered();
     }
 
+    private static boolean effectiveManuallyBlocked(final ParkingSpot spot) {
+        return spot != null && spot.isManuallyBlocked();
+    }
+
     private static Integer effectiveChargingKw(final ParkingSpot spot, final ParkingSpotType spotType) {
         if (spotType != ParkingSpotType.E_CHARGING_STATION) {
             return null;
@@ -165,6 +169,7 @@ public class ParkingReservationService {
         final Long reservationId,
         final ParkingSpotType spotType,
         final boolean covered,
+        final boolean manuallyBlocked,
         final Integer chargingKw,
         final ParkingReservation overlapForDetails
     ) {
@@ -175,6 +180,7 @@ public class ParkingReservationService {
             reservationId,
             spotType.name(),
             covered,
+            manuallyBlocked,
             chargingKw,
             overlapForDetails == null ? null : formatTimeValue(overlapForDetails.getBegin()),
             overlapForDetails == null ? null : formatTimeValue(overlapForDetails.getEnd()),
@@ -241,12 +247,27 @@ public class ParkingReservationService {
             final ParkingSpot spot = spotByLabel.get(label);
             final ParkingSpotType spotType = effectiveSpotType(spot, label);
             final boolean covered = effectiveCovered(spot);
+            final boolean manuallyBlocked = effectiveManuallyBlocked(spot);
             final Integer chargingKw = effectiveChargingKw(spot, spotType);
             final ParkingReservation activeOverlap = activeOverlapForDetailsByLabel.get(label);
             final ParkingReservation rejectedMine = rejectedOverlapForMeByLabel.get(label);
 
             if (spotType == ParkingSpotType.SPECIAL_CASE) {
-                return availabilityRow(label, "BLOCKED", false, null, spotType, covered, chargingKw, null);
+                return availabilityRow(label, "BLOCKED", false, null, spotType, covered, manuallyBlocked, chargingKw, null);
+            }
+            if (manuallyBlocked) {
+                final boolean mine = myOccupiedLabels.contains(label);
+                return availabilityRow(
+                    label,
+                    "BLOCKED",
+                    mine,
+                    mine ? myReservationIdByLabel.get(label) : null,
+                    spotType,
+                    covered,
+                    true,
+                    chargingKw,
+                    activeOverlap
+                );
             }
             if (approvedLabels.contains(label)) {
                 final boolean mine = myOccupiedLabels.contains(label);
@@ -257,6 +278,7 @@ public class ParkingReservationService {
                     mine ? myReservationIdByLabel.get(label) : null,
                     spotType,
                     covered,
+                    manuallyBlocked,
                     chargingKw,
                     activeOverlap
                 );
@@ -270,14 +292,15 @@ public class ParkingReservationService {
                     mine ? myReservationIdByLabel.get(label) : null,
                     spotType,
                     covered,
+                    manuallyBlocked,
                     chargingKw,
                     activeOverlap
                 );
             }
             if (rejectedMine != null) {
-                return availabilityRow(label, "BLOCKED", true, null, spotType, covered, chargingKw, rejectedMine);
+                return availabilityRow(label, "BLOCKED", true, null, spotType, covered, manuallyBlocked, chargingKw, rejectedMine);
             }
-            return availabilityRow(label, "AVAILABLE", false, null, spotType, covered, chargingKw, null);
+            return availabilityRow(label, "AVAILABLE", false, null, spotType, covered, manuallyBlocked, chargingKw, null);
         }).toList();
     }
 
@@ -287,8 +310,12 @@ public class ParkingReservationService {
         }
 
         final String spotLabel = request.getSpotLabel().trim();
-        final ParkingSpotType spotType = effectiveSpotType(parkingSpotRepository.findById(spotLabel).orElse(null), spotLabel);
+        final ParkingSpot existingSpot = parkingSpotRepository.findById(spotLabel).orElse(null);
+        final ParkingSpotType spotType = effectiveSpotType(existingSpot, spotLabel);
         if (spotType == ParkingSpotType.SPECIAL_CASE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This spot is blocked");
+        }
+        if (effectiveManuallyBlocked(existingSpot)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This spot is blocked");
         }
 
@@ -369,6 +396,31 @@ public class ParkingReservationService {
                 effectiveStatus(reservation).name()
             ))
             .toList();
+    }
+
+    public ParkingSpot setSpotManualBlocked(final String spotLabelRaw, final boolean blocked) {
+        requireAdmin();
+        if (spotLabelRaw == null || spotLabelRaw.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "spotLabel must not be empty");
+        }
+        final String spotLabel = spotLabelRaw.trim();
+        ParkingSpot spot = parkingSpotRepository.findById(spotLabel).orElse(null);
+        if (spot == null) {
+            spot = new ParkingSpot();
+            spot.setSpotLabel(spotLabel);
+            spot.setSpotType(defaultSpotTypeForLabel(spotLabel));
+            spot.setCovered(false);
+            spot.setChargingKw(null);
+            spot.setManuallyBlocked(false);
+        }
+
+        final ParkingSpotType spotType = effectiveSpotType(spot, spotLabel);
+        if (spotType == ParkingSpotType.SPECIAL_CASE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Special-case spots cannot be manually blocked/unblocked");
+        }
+
+        spot.setManuallyBlocked(blocked);
+        return parkingSpotRepository.save(spot);
     }
 
     public ParkingReservation approveReservation(final long id) {

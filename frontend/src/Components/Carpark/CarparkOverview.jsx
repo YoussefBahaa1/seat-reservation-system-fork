@@ -110,6 +110,7 @@ const getSpotMetaFromDataset = (rect) => ({
   accessible: rect.dataset.spotAccessible === 'true',
   special: rect.dataset.spotSpecial === 'true',
   covered: rect.dataset.spotCovered === 'true',
+  manuallyBlocked: rect.dataset.spotManuallyBlocked === 'true',
   chargingKw: rect.dataset.spotChargingKw ? Number(rect.dataset.spotChargingKw) : null,
   selectable: rect.dataset.spotSelectable !== 'false',
   status: rect.dataset.spotStatus ?? 'UNKNOWN',
@@ -121,6 +122,10 @@ const getSpotMetaFromDataset = (rect) => ({
 });
 
 const isSpotSelectableForCurrentUser = (rect) => {
+  const adminEditModeActive =
+    rect?.dataset?.spotAdminEditMode === 'true' && localStorage.getItem('admin') === 'true';
+  if (adminEditModeActive) return true;
+
   const isSelectable = rect?.dataset?.spotSelectable !== 'false';
   if (!isSelectable) return false;
 
@@ -128,7 +133,7 @@ const isSpotSelectableForCurrentUser = (rect) => {
   const reservedByMe = rect?.dataset?.spotReservedByMe === 'true';
 
   if (status === 'AVAILABLE') return true;
-  if ((status === 'PENDING' || status === 'OCCUPIED') && reservedByMe) return true;
+  if ((status === 'PENDING' || status === 'OCCUPIED' || status === 'BLOCKED') && reservedByMe) return true;
   return false;
 };
 
@@ -162,6 +167,7 @@ const CarparkOverview = () => {
   const [loadError, setLoadError] = useState('');
   const [zoom, setZoom] = useState(1);
   const [pageNotifications, setPageNotifications] = useState([]);
+  const [adminEditMode, setAdminEditMode] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => {
     const fromState = location.state?.date ? new Date(location.state.date) : null;
     if (fromState && !Number.isNaN(fromState.valueOf())) {
@@ -179,6 +185,7 @@ const CarparkOverview = () => {
   const [startTime, setStartTime] = useState(initialTimeRangeRef.current.startTime);
   const [endTime, setEndTime] = useState(initialTimeRangeRef.current.endTime);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const isAdminUser = localStorage.getItem('admin') === 'true';
 
   useEffect(() => {
     let cancelled = false;
@@ -283,8 +290,10 @@ const CarparkOverview = () => {
         rect.dataset.spotSpecial = isSpecial ? 'true' : 'false';
         rect.dataset.spotCategory = defaultSpotCategory(spotLabel, isSpecial, isAccessible);
         rect.dataset.spotCovered = 'false';
+        rect.dataset.spotManuallyBlocked = 'false';
         rect.dataset.spotChargingKw = '';
         rect.dataset.spotSelectable = isSelectable ? 'true' : 'false';
+        rect.dataset.spotAdminEditMode = 'false';
         // Default to AVAILABLE so the UI is usable even before the first availability refresh completes.
         rect.dataset.spotStatus = isSpecial ? 'BLOCKED' : 'AVAILABLE';
         rect.dataset.spotReservedByMe = 'false';
@@ -405,6 +414,12 @@ const CarparkOverview = () => {
     sessionStorage.setItem(CARPARK_SELECTED_DATE_KEY, selectedDate.toISOString());
   }, [selectedDate]);
 
+  useEffect(() => {
+    for (const rect of spotRectsByLabelRef.current.values()) {
+      rect.dataset.spotAdminEditMode = adminEditMode && isAdminUser ? 'true' : 'false';
+    }
+  }, [adminEditMode, isAdminUser]);
+
   const addPageNotification = (severity, message, notificationKey) => {
     if (!message) return;
     setPageNotifications((prev) => {
@@ -512,6 +527,8 @@ const CarparkOverview = () => {
 
   const spotForPanel = selectedSpot ?? hoveredSpot;
   const isSpecialSpot = spotForPanel?.special === true;
+  const isManuallyBlockedSpot = spotForPanel?.manuallyBlocked === true;
+  const canAdminToggleBlock = Boolean(isAdminUser && adminEditMode && selectedSpot && !isSpecialSpot);
   const isBlocked = spotForPanel?.status === 'BLOCKED' || isSpecialSpot;
   const isPending = spotForPanel?.status === 'PENDING';
   const isOccupied = spotForPanel?.status === 'OCCUPIED';
@@ -567,6 +584,7 @@ const CarparkOverview = () => {
           rect.dataset.spotSpecial = spotCategory === 'SPECIAL_CASE' ? 'true' : 'false';
           rect.dataset.spotAccessible = spotCategory === 'ACCESSIBLE' ? 'true' : 'false';
           rect.dataset.spotCovered = row?.covered === true ? 'true' : 'false';
+          rect.dataset.spotManuallyBlocked = row?.manuallyBlocked === true ? 'true' : 'false';
           rect.dataset.spotChargingKw = row?.chargingKw == null ? '' : String(row.chargingKw);
           rect.dataset.spotReservedByMe = row?.reservedByMe ? 'true' : 'false';
           rect.dataset.spotReservationId = row?.reservationId ? String(row.reservationId) : '';
@@ -606,6 +624,7 @@ const CarparkOverview = () => {
   }, [selectedDate, startTime, endTime]);
 
   const reserveSelected = () => {
+    if (adminEditMode) return;
     if (!selectedSpot || selectedSpot.status !== 'AVAILABLE') return;
     const day = formatISODate(selectedDate);
 
@@ -631,6 +650,7 @@ const CarparkOverview = () => {
   };
 
   const cancelMyReservation = () => {
+    if (adminEditMode) return;
     const reservationId = spotForPanel?.reservationId;
     if (!reservationId) return;
     deleteRequest(
@@ -641,6 +661,29 @@ const CarparkOverview = () => {
         refreshAvailability();
       },
       () => toast.error(t('httpOther'))
+    );
+  };
+
+  const setSpotBlocked = (blocked) => {
+    if (!isAdminUser || !adminEditMode || !selectedSpot?.label) return;
+    if (selectedSpot?.spotCategory === 'SPECIAL_CASE') {
+      toast.warning(t('carparkEditModeSpecialCase'));
+      return;
+    }
+
+    const action = blocked ? 'block' : 'unblock';
+    postRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/parking/spots/${encodeURIComponent(selectedSpot.label)}/${action}`,
+      null,
+      () => {
+        toast.success(t(blocked ? 'carparkSpotBlockedSuccess' : 'carparkSpotUnblockedSuccess'));
+        refreshAvailability();
+      },
+      (errorCode) => {
+        if (errorCode === 403) toast.error(t('http403'));
+        else toast.error(t('httpOther'));
+      },
+      {}
     );
   };
 
@@ -665,6 +708,15 @@ const CarparkOverview = () => {
           <Button variant="contained" onClick={refreshAvailability} disabled={isRefreshing}>
             {t('carparkRefresh')}
           </Button>
+          {isAdminUser && (
+            <Button
+              variant={adminEditMode ? 'contained' : 'outlined'}
+              color={adminEditMode ? 'warning' : 'inherit'}
+              onClick={() => setAdminEditMode((prev) => !prev)}
+            >
+              {adminEditMode ? t('carparkExitEditMode') : t('carparkEnterEditMode')}
+            </Button>
+          )}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip size="small" label={t('carparkLegendAvailable')} sx={{ bgcolor: '#2e7d32', color: '#fff' }} />
             <Chip size="small" label={t('carparkLegendPending')} sx={{ bgcolor: '#f9a825', color: '#000' }} />
@@ -752,6 +804,11 @@ const CarparkOverview = () => {
                 <Typography variant="body2" color="text.secondary">
                   {t('carparkCovered')}: {spotForPanel.covered ? t('carparkYes') : t('carparkNo')}
                 </Typography>
+                {isAdminUser && (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('carparkAdminBlocked')}: {spotForPanel.manuallyBlocked ? t('carparkYes') : t('carparkNo')}
+                  </Typography>
+                )}
                 <Typography variant="body2" color="text.secondary">
                   {t('carparkChargingKw')}: {spotForPanel.chargingKw == null ? '—' : spotForPanel.chargingKw}
                 </Typography>
@@ -768,12 +825,22 @@ const CarparkOverview = () => {
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   {selectedSpot ? t('carparkSelected') : t('carparkHover')}
                 </Typography>
-                {selectedSpot && isAvailable && (
+                {canAdminToggleBlock && (
+                  <Button
+                    sx={{ mt: 2 }}
+                    variant="contained"
+                    color={isManuallyBlockedSpot ? 'success' : 'warning'}
+                    onClick={() => setSpotBlocked(!isManuallyBlockedSpot)}
+                  >
+                    {isManuallyBlockedSpot ? t('carparkUnblockSpot') : t('carparkBlockSpot')}
+                  </Button>
+                )}
+                {selectedSpot && isAvailable && !adminEditMode && (
                   <Button sx={{ mt: 2 }} variant="contained" onClick={reserveSelected}>
                     {t('carparkReserve')}
                   </Button>
                 )}
-                {(isPending || isOccupied) && spotForPanel.reservedByMe && spotForPanel.reservationId && (
+                {!adminEditMode && (isPending || isOccupied || isBlocked) && spotForPanel.reservedByMe && spotForPanel.reservationId && (
                   <Button sx={{ mt: 2 }} color="error" variant="outlined" onClick={cancelMyReservation}>
                     {t('delete')}
                   </Button>
@@ -782,7 +849,9 @@ const CarparkOverview = () => {
             )}
             <Divider sx={{ my: 2 }} />
             <Typography variant="body2" color="text.secondary">
-              {isSpecialSpot
+              {adminEditMode && isAdminUser
+                ? t('carparkEditModeHint')
+                : isSpecialSpot
                 ? t('carparkContactStaff')
                 : isBlocked
                   ? t('carparkBlocked')

@@ -28,6 +28,9 @@ public class ParkingSpot {
     @Column(name = "covered", nullable = false)
     private boolean covered = false;
 
+    @Column(name = "manually_blocked", nullable = false)
+    private boolean manuallyBlocked = false;
+
     @Column(name = "charging_kw", nullable = true)
     private Integer chargingKw;
 }
