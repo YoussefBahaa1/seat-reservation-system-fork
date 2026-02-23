@@ -12,12 +12,14 @@ public class NotificationPreferencesDTO {
     private boolean bookingCreate;
     private boolean bookingUpdate;
     private boolean bookingCancel;
+    private boolean parkingDecision;
 
     public static NotificationPreferencesDTO fromUser(UserEntity user) {
         return new NotificationPreferencesDTO(
             user.isNotifyBookingCreate(),
             user.isNotifyBookingUpdate(),
-            user.isNotifyBookingCancel()
+            user.isNotifyBookingCancel(),
+            user.isNotifyParkingDecision()
         );
     }
 }

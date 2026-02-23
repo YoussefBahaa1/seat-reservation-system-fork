@@ -479,6 +479,7 @@ const CarparkOverview = () => {
         day,
         begin: startTime,
         end: endTime,
+        locale: i18n.language,
       }
     );
   };
@@ -626,4 +627,3 @@ const CarparkOverview = () => {
 };
 
 export default CarparkOverview;
-

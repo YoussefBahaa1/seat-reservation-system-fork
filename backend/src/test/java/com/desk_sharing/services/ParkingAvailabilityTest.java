@@ -8,6 +8,7 @@ import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
 import com.desk_sharing.repositories.ParkingSpotRepository;
 import com.desk_sharing.repositories.UserRepository;
+import com.desk_sharing.services.parking.ParkingNotificationService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,7 @@ class ParkingAvailabilityTest {
     @Mock ParkingReservationRepository parkingReservationRepository;
     @Mock ParkingSpotRepository parkingSpotRepository;
     @Mock UserRepository userRepository;
+    @Mock ParkingNotificationService parkingNotificationService;
 
     @AfterEach
     void clearSecurityContext() {
@@ -44,7 +46,8 @@ class ParkingAvailabilityTest {
 
     @Test
     void getAvailability_marksBlockedAndMineCorrectly() {
-        ParkingReservationService service = new ParkingReservationService(parkingReservationRepository, parkingSpotRepository, userRepository);
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
         authenticateAs(42, "me@example.com");
 
         LocalDate day = LocalDate.now().plusDays(1);

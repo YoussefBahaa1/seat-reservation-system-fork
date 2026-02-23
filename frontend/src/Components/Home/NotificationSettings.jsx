@@ -8,11 +8,13 @@ import { toast } from 'react-toastify';
 const NotificationSettings = ({ isOpen, onClose }) => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const { t } = useTranslation();
+  const isAdmin = localStorage.getItem('admin') === 'true';
 
   const [loading, setLoading] = useState(false);
   const [prefs, setPrefs] = useState({
     bookingCreate: true,
     bookingCancel: true,
+    parkingDecision: true,
   });
 
   const fetchPrefs = () => {
@@ -80,6 +82,12 @@ const NotificationSettings = ({ isOpen, onClose }) => {
             control={<Switch checked={prefs.bookingCancel} onChange={() => handleToggle('bookingCancel')} />}
             label={t('notifyBookingCancel')}
           />
+          {!isAdmin && (
+            <FormControlLabel
+              control={<Switch checked={prefs.parkingDecision} onChange={() => handleToggle('parkingDecision')} />}
+              label={t('notifyParkingDecision')}
+            />
+          )}
         </Box>
       )}
     </LayoutModal>
