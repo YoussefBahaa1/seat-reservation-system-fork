@@ -12,6 +12,7 @@ const CARPARK_SVG_URL = '/Assets/carpark_overview_ready.svg';
 const CARPARK_SELECTED_DATE_KEY = 'carparkSelectedDate';
 const CARPARK_DEFAULT_DURATION_MINUTES = 120;
 const CARPARK_MIN_LEAD_MINUTES = 30;
+const CARPARK_OVERLAP_BUFFER_MINUTES = 30;
 const CARPARK_NOTIFICATION_STATE_VERSION = 'v2';
 const CARPARK_RES_STATUS_SNAPSHOT_KEY = `carparkReservationStatusSnapshot_${CARPARK_NOTIFICATION_STATE_VERSION}`;
 const CARPARK_NOTIFIED_STATUS_KEY = `carparkNotifiedReservationStatus_${CARPARK_NOTIFICATION_STATE_VERSION}`;
@@ -736,6 +737,9 @@ const CarparkOverview = () => {
             <Chip size="small" label={t('carparkLegendBlocked')} sx={{ bgcolor: '#9e9e9e', color: '#fff' }} />
           </Box>
         </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          {t('carparkBufferHint', { minutes: CARPARK_OVERLAP_BUFFER_MINUTES })}
+        </Typography>
       </Paper>
 
       {pageNotifications.length > 0 && (

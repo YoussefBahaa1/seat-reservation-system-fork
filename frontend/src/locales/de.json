@@ -332,6 +332,7 @@
     ,"carparkLegendPending":"In Prüfung"
     ,"carparkLegendOccupied":"Belegt"
     ,"carparkLegendBlocked":"Gesperrt"
+    ,"carparkBufferHint":"Enthaelt automatisch {{minutes}} Min. Puffer vor und nach jeder Buchung fuer die Ueberschneidungspruefung."
     ,"carparkEnterEditMode":"Bearbeitungsmodus starten"
     ,"carparkExitEditMode":"Bearbeitungsmodus beenden"
     ,"carparkNotifications":"Parkplatz-Benachrichtigungen"
