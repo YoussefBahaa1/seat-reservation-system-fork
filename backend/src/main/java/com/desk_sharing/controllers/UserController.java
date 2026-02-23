@@ -124,11 +124,7 @@ public class UserController {
         if (request == null) {
             return ResponseEntity.badRequest().build();
         }
-        userService.updateNotificationPreferences(
-            request.isBookingCreate(),
-            request.isBookingUpdate(),
-            request.isBookingCancel()
-        );
+        userService.updateNotificationPreferences(request);
         UserEntity user = userService.getCurrentUser();
         return ResponseEntity.ok(NotificationPreferencesDTO.fromUser(user));
     }

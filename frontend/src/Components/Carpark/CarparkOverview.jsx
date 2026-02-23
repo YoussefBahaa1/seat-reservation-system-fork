@@ -645,6 +645,7 @@ const CarparkOverview = () => {
         day,
         begin: startTime,
         end: endTime,
+        locale: i18n.language,
       }
     );
   };

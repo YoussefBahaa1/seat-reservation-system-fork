@@ -34,16 +34,16 @@ public class CalendarNotificationService {
     private final BookingRepository bookingRepository;
 
     @Value("${ICS_NOTIFICATIONS_ENABLED:true}")
-    private boolean notificationsEnabled;
+    private boolean notificationsEnabled = true;
 
     @Value("${BOOKING_TIMEZONE_ID:Europe/Berlin}")
-    private String bookingTimezoneId;
+    private String bookingTimezoneId = "Europe/Berlin";
 
     @Value("${MAIL_FROM:no-reply@example.com}")
-    private String mailFrom;
+    private String mailFrom = "no-reply@example.com";
 
     @Value("${FRONTEND_BASE_URL:}")
-    private String frontendBaseUrl;
+    private String frontendBaseUrl = "";
 
     private IcsEventBuilder builder() {
         return new IcsEventBuilder(bookingTimezoneId, mailFrom);

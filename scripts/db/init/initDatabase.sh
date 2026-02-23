@@ -16,9 +16,10 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
     scripts/db/import_db.sh schema.sql
     # Apply compatible migrations (curated list)
     for migration in \
-        \
         scripts/db/migration/visibility_mode.sql \
         scripts/db/migration/calendar_notifications.sql \
+        scripts/db/migration/parking_notifications.sql \
+        scripts/db/migration/parking_request_locale.sql \
         scripts/db/migration/booking_settings.sql \
         scripts/db/migration/parking_reservation_status.sql \
         scripts/db/migration/parking_spot_features.sql \

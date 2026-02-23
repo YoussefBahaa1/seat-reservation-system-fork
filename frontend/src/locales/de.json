@@ -34,6 +34,7 @@
     "notificationsInfo": "Wählen Sie, für welche Ereignisse Sie eine Outlook-Benachrichtigung erhalten möchten.",
     "notifyBookingCreate": "Buchung erstellt",
     "notifyBookingCancel": "Buchung storniert",
+    "notifyParkingDecision": "Parkplatz-Anfrage",
     "notificationsSaved": "Benachrichtigungseinstellungen gespeichert",
     "notificationsSaveFailed": "Benachrichtigungseinstellungen konnten nicht gespeichert werden",
     "carpark": "Parkplatz",

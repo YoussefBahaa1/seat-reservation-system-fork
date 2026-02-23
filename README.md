@@ -57,7 +57,7 @@ We also create `${PATH_TO_TLS}/pws/pw_db.txt` and `${PATH_TO_TLS}/pws/`pw_ldap.t
 ### Configure .env
 `.env` is used to store parameters that are used to run the project. Some of them may be confidential or vary based on the environment. So some of them must be set by hand.
 
-There are some variables can change (but the default values from `.env_template` are fine):
+There are some variables that can change (but the default values from `.env_template` are fine):
 * Network must be set either to mynetwork_dev or mynetwork. Both of them are defined in docker-compose.yml
 * BACKEND_LOGS must be set to an directory where we like to store the logging messages. Choose a folder you like. E.g.: `${PROJECT_PATH}/backend/logs_dev_backend/`.
 * VOLUME must set either to mariadb_data_dev or mariadb_data. Both are defined in docker-compose.yml.
@@ -136,16 +136,17 @@ A list of most of the params is in the following table:
 | VOLUME | Name of the volume of the db | mariadb_data |Needed. One of the two defined volumes in docker-compose.yml |
 
 ### Outlook / ICS notifications
-- Features: sends Outlook-friendly ICS invites on booking creation/confirmation and cancel; per-user notification toggles; timezone Europe/Berlin; localized to current UI language (en/de).
+- Features:
+  - Outlook-friendly ICS invites on booking creation/confirmation and cancel (desk bookings).
+  - Parking request decision emails (approve/reject) with per-user toggle.
+  - Timezone Europe/Berlin; localized to the requester’s UI language (en/de).
 - Local testing with MailHog:
-  1) Start MailHog on the compose network  
-     `docker run -d --name mailhog --network seat-reservation-system-fork_mynetwork_dev -p 1025:1025 -p 8025:8025 mailhog/mailhog`
-  2) Ensure backend env matches the values above, then restart containers (`docker compose up -d backend`).
-  3) Perform an action that triggers a notification and you should see an email in http://localhost:8025 with `booking-<id>.ics` attachment if fit. 
+  1) Start MailHog on the same Docker network as backend (default compose network works):  
+     `docker run -d --name mailhog --network seat-reservation-system-fork_mynetwork_dev -p 1025:1025 -p 8025:8025 mailhog/mailhog`  
+     (If backend already runs on that network, no extra `docker network connect` step is needed.)
+  2) Ensure backend env matches the values above, then restart backend (`docker compose up -d backend`).
+  3) Trigger a booking action and check http://localhost:8025 for an email with `booking-<id>.ics`.
 - Production: point the mail vars to your SMTP server and set `MAIL_TLS_ENABLED=true` and `MAIL_SMTP_AUTH=true` if required.
-
-
-If you freshly cloned this project it advisable to set STRICT_CORS=false and USE_TLS=false.
 
 ## Run the tests
 Use `./scripts/test/run_test.sh` after the containers are running.

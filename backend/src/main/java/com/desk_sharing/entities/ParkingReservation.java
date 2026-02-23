@@ -49,4 +49,7 @@ public class ParkingReservation {
     @Enumerated(EnumType.STRING)
     @Column(name = "reservation_status")
     private ParkingReservationStatus status;
+
+    @Column(name = "request_locale", length = 10)
+    private String requestLocale;
 }
