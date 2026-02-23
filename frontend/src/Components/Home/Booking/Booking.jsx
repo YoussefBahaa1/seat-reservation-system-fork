@@ -21,6 +21,13 @@ const Booking = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const localizer = momentLocalizer(moment);
+  const calendarFormats = {
+    timeGutterFormat: (date, culture, loc) => loc.format(date, 'HH:mm', culture),
+    eventTimeRangeFormat: ({ start, end }, culture, loc) =>
+      `${loc.format(start, 'HH:mm', culture)} – ${loc.format(end, 'HH:mm', culture)}`,
+    agendaTimeRangeFormat: ({ start, end }, culture, loc) =>
+      `${loc.format(start, 'HH:mm', culture)} – ${loc.format(end, 'HH:mm', culture)}`,
+  };
   const { roomId, date, editBooking } = location.state || {};
   const isEditMode = Boolean(editBooking && editBooking.bookingId);
   const initialDate = date ? new Date(date) : new Date();
@@ -33,12 +40,24 @@ const Booking = () => {
   const [desks, setDesks] = useState([]);
   const [events, setEvents] = useState([]);
   const [event, setEvent] = useState({});
+  const [isBookingPending, setIsBookingPending] = useState(false);
   const [clickedDeskId, setClickedDeskId] = useState(null);
   const [clickedDeskRemark, setClickedDeskRemark] = useState('');
   const [isFavourite, setIsFavourite] = useState(false);
+  const [bookingSettings, setBookingSettings] = useState({
+    leadTimeMinutes: 30,
+    maxDurationMinutes: 360,
+    maxAdvanceDays: 30,
+  });
 
   const eventRef = useRef(event);
   const eventsRef = useRef(events);
+  const bookingPendingRef = useRef(false);
+
+  const setBookingPending = useCallback((value) => {
+    bookingPendingRef.current = value;
+    setIsBookingPending(value);
+  }, []);
 
   const minStartTime = 6;
   const maxEndTime = 22;
@@ -62,6 +81,15 @@ const Booking = () => {
       () => console.error('Failed to fetch desks')
     );
   }, [roomId]);
+
+  const fetchBookingSettings = useCallback(() => {
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/booking-settings`,
+      headers.current,
+      (data) => setBookingSettings(data),
+      () => console.error('Failed to fetch booking settings')
+    );
+  }, []);
 
   const loadBookings = useCallback(() => {
     if (!clickedDeskId) return;
@@ -108,29 +136,47 @@ const Booking = () => {
 
     // Block bookings in the past
     const now = new Date();
-    // Compare only by date
     const startDay = new Date(startTime);
     startDay.setHours(0, 0, 0, 0);
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
-    // Past day → hard block
     if (startDay < today) {
-      toast.warning(t('datePassed')); // "This date has already passed."
+      toast.warning(t('datePassed'));
       return;
     }
 
-// Today → start must be >= next 30-min slot boundary
-if (startDay.getTime() === today.getTime()) {
-  const earliestStart = roundUpToNextHalfHour(now);
-  if (startTime < earliestStart) {
-    toast.warning(t('timePassed')); // "This time has already passed."
-    return;
-  }
-}
+    // Lead time: earliest allowed start is rounded(now + leadTime)
+    const leadMinutes = bookingSettings?.leadTimeMinutes ?? 0;
+    const earliestAllowed = roundUpToNextHalfHour(new Date(now.getTime() + leadMinutes * 60000));
+    if (startTime < earliestAllowed) {
+      toast.warning(
+        t('leadTimeExceeded', {
+          value: leadMinutes,
+          next: moment(earliestAllowed).format('HH:mm'),
+        })
+      );
+      return;
+    }
 
     if (duration < 2 * 60 * 60 * 1000) {
       toast.warning(t('minimum'));
       return;
+    }
+
+    if (bookingSettings?.maxDurationMinutes !== null && bookingSettings?.maxDurationMinutes !== undefined) {
+      if (duration > bookingSettings.maxDurationMinutes * 60 * 1000) {
+        toast.warning(t('maxDurationExceeded', { value: bookingSettings.maxDurationMinutes / 60 }));
+        return;
+      }
+    }
+
+    if (bookingSettings?.maxAdvanceDays !== null && bookingSettings?.maxAdvanceDays !== undefined) {
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + bookingSettings.maxAdvanceDays);
+      if (startDay > maxDate) {
+        toast.warning(t('maxAdvanceExceeded', { value: bookingSettings.maxAdvanceDays }));
+        return;
+      }
     }
 
     const updatedEvents = eventsRef.current.filter((e) => {
@@ -138,6 +184,7 @@ if (startDay.getTime() === today.getTime()) {
       if (isEditMode && editBooking?.bookingId && e.id === editBooking.bookingId) return false;
       return true;
     });
+
     const isOverlap = updatedEvents.some(
       (e) =>
         (e.start <= startTime && startTime < e.end) ||
@@ -157,10 +204,12 @@ if (startDay.getTime() === today.getTime()) {
 
     setEvent(newEvent);
 
-  }, [editBooking, isEditMode, t]);
+  }, [editBooking, isEditMode, t, bookingSettings]);
 
   /** ----- EVENT FUNCTIONS ----- */
   const booking = async () => {
+    if (bookingPendingRef.current) return;
+
     if (!clickedDeskId || !event.start || !event.end) {
       toast.error(t('blank'));
       return;
@@ -179,13 +228,19 @@ if (startDay.getTime() === today.getTime()) {
     };
 
     if (!isEditMode) {
+      setBookingPending(true);
       bookingPostRequest(
         'Booking.jsx',
         bookingDTO,
         clickedDeskRemark,
         headers,
         t,
-        (booking) => navigate('/home', { state: { booking }, replace: true })
+        (booking) => navigate('/home', { state: { booking }, replace: true }),
+        {
+          onFinish: () => {
+            setBookingPending(false);
+          },
+        }
       );
       return;
     }
@@ -249,15 +304,20 @@ if (startDay.getTime() === today.getTime()) {
           deleteRequest(
             `${process.env.REACT_APP_BACKEND_URL}/bookings/${editBooking.bookingId}`,
             headers.current,
-            () => navigate('/mybookings', { replace: true }),
+            () => {
+              setBookingPending(false);
+              navigate('/mybookings', { replace: true });
+            },
             () => {
               toast.error(t('httpOther'));
+              setBookingPending(false);
               navigate('/mybookings', { replace: true });
             }
           );
         },
         () => {
           toast.error(t('httpOther'));
+          setBookingPending(false);
         }
       );
     };
@@ -269,15 +329,20 @@ if (startDay.getTime() === today.getTime()) {
         () => {
           createAndConfirm(
             bookingDTO,
-            () => navigate('/mybookings', { replace: true }),
+            () => {
+              setBookingPending(false);
+              navigate('/mybookings', { replace: true });
+            },
             () => {
               tryRestoreOld();
               toast.error(t('httpOther'));
+              setBookingPending(false);
             }
           );
         },
         () => {
           toast.error(t('httpOther'));
+          setBookingPending(false);
         }
       );
     };
@@ -295,6 +360,8 @@ if (startDay.getTime() === today.getTime()) {
         {
           label: t('yes'),
           onClick: () => {
+            if (bookingPendingRef.current) return;
+            setBookingPending(true);
             if (overlapsOld) {
               handleDeleteThenCreate();
             } else {
@@ -313,6 +380,7 @@ if (startDay.getTime() === today.getTime()) {
   /** ----- EFFECTS ----- */
   // Fetch room once
   useEffect(() => { fetchRoom(); }, [fetchRoom]);
+  useEffect(() => { fetchBookingSettings(); }, [fetchBookingSettings]);
 
   useEffect(()=>{eventRef.current=event},[event])
 
@@ -367,7 +435,7 @@ if (startDay.getTime() === today.getTime()) {
   useEffect(() => { if (clickedDeskId) loadBookings(); }, [clickedDeskId, loadBookings]);
 
   // Set locale for calendar
-  useEffect(() => { moment.locale(i18n.language); }, [i18n.language]);
+  useEffect(() => { moment.locale(i18n.language === 'en' ? 'en-gb' : i18n.language); }, [i18n.language]);
 
   const toggleFavourite = () => {
     const userId = localStorage.getItem('userId');
@@ -401,6 +469,39 @@ if (startDay.getTime() === today.getTime()) {
 
   /** ----- HELPER ----- */
   const getHeadline = () => t('availableDesks') + (room ? ` in ${room.remark}` : '');
+  const FALLBACK_PLACEHOLDER = '—';
+
+  const showOrPlaceholder = (value) => {
+    if (value === null || value === undefined) return FALLBACK_PLACEHOLDER;
+    const str = String(value).trim();
+    return str ? str : FALLBACK_PLACEHOLDER;
+  };
+
+  const monitorSummary = (desk) => {
+    const quantity = desk?.monitorsQuantity;
+    const size = desk?.monitorsSize;
+    if (quantity == null && (size == null || String(size).trim() === '')) {
+      return FALLBACK_PLACEHOLDER;
+    }
+    if (quantity != null && size != null && String(size).trim() !== '') {
+      return `${quantity} x ${String(size).trim()}`;
+    }
+    return showOrPlaceholder(quantity ?? size);
+  };
+
+  const deskTypeSummary = (desk) => {
+    if (desk?.deskHeightAdjustable === true) return 'yes';
+    if (desk?.deskHeightAdjustable === false) return 'no';
+    return FALLBACK_PLACEHOLDER;
+  };
+
+  const technologySummary = (desk) => {
+    const items = [];
+    if (desk?.technologyDockingStation === true) items.push('docking station');
+    if (desk?.technologyWebcam === true) items.push('webcam');
+    if (desk?.technologyHeadset === true) items.push('headset');
+    return items.length ? items.join(', ') : FALLBACK_PLACEHOLDER;
+  };
 
   function roundUpToNextHalfHour(d) {
     const rounded = new Date(d);
@@ -434,29 +535,44 @@ if (startDay.getTime() === today.getTime()) {
             desks.map((desk) => (
               <Box key={desk.id} sx={{ display: 'flex', margin: '25px', justifyContent: 'space-between', width: '210px' }}>
                 <Box>{desk.deskNumberInRoom}.</Box>
-                <Box
-                  sx={{
-                    backgroundColor: desk.id === clickedDeskId ? '#ffdd00' : 'yellowgreen',
-                    height: '125px',
-                    width: '140px',
-                    borderRadius: '7px',
-                    padding: '5px',
-                    cursor: 'pointer',
-                    boxShadow: '0px 0px 5px rgba(0,0,0,0.2)',
-                    transition: desk.id === clickedDeskId ? '0.25s' : 'box-shadow 0.3s',
-                    '&:hover': { boxShadow: '0px 0px 10px rgba(0,0,0,0.4)' },
-                  }}
-                  onClick={() => {
-                    setClickedDeskId(desk.id);
-                    setClickedDeskRemark(desk.remark);
-
-                    // Save selection to sessionStorage 
-                    sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: desk.id }));
-                  }}
+                <Tooltip
+                  arrow
+                  placement="right"
+                  title={
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                      <Typography variant="caption">{t('booking.tooltip.identifier')}: {showOrPlaceholder(desk?.workstationIdentifier)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.type')}: {showOrPlaceholder(desk?.workstationType)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.monitors')}: {monitorSummary(desk)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.deskTypeHeightAdjustable')}: {deskTypeSummary(desk)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.technology')}: {technologySummary(desk)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.specialFeatures')}: {showOrPlaceholder(desk?.specialFeatures)}</Typography>
+                    </Box>
+                  }
                 >
-                  <Typography sx={typography_sx}>{desk.remark}</Typography>
-                  <Typography sx={typography_sx}>{t(desk.equipment.equipmentName)}</Typography>
-                </Box>
+                  <Box
+                    sx={{
+                      backgroundColor: desk.id === clickedDeskId ? '#ffdd00' : 'yellowgreen',
+                      height: '125px',
+                      width: '140px',
+                      borderRadius: '7px',
+                      padding: '5px',
+                      cursor: 'pointer',
+                      boxShadow: '0px 0px 5px rgba(0,0,0,0.2)',
+                      transition: desk.id === clickedDeskId ? '0.25s' : 'box-shadow 0.3s',
+                      '&:hover': { boxShadow: '0px 0px 10px rgba(0,0,0,0.4)' },
+                    }}
+                    onClick={() => {
+                      setClickedDeskId(desk.id);
+                      setClickedDeskRemark(desk.remark);
+
+                      // Save selection to sessionStorage 
+                      sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: desk.id }));
+                    }}
+                  >
+                    <Typography sx={typography_sx}>{desk.remark}</Typography>
+                    <Typography sx={typography_sx}>{t(desk.equipment.equipmentName)}</Typography>
+                  </Box>
+                </Tooltip>
               </Box>
             ))
           ) : (
@@ -512,6 +628,7 @@ if (startDay.getTime() === today.getTime()) {
             selectable
             min={new Date(0, 0, 0, minStartTime, 0, 0)}
             max={new Date(0, 0, 0, maxEndTime, 0, 0)}
+            formats={calendarFormats}
             eventPropGetter={(event) => ({
               style: {
                 backgroundColor: events.some((e) => e.id === event.id) ? 'grey' : '#008444',
@@ -540,8 +657,15 @@ if (startDay.getTime() === today.getTime()) {
               fontSize: '16px',
               textAlign: 'center',
               transition: 'all 0.5s',
+              '&.Mui-disabled': {
+                backgroundColor: '#7a7a7a',
+                color: '#fff',
+                opacity: 0.8,
+              },
             }}
             onClick={booking}
+            disabled={isBookingPending}
+            aria-busy={isBookingPending ? 'true' : 'false'}
           >
             {t('book')}
           </Button>

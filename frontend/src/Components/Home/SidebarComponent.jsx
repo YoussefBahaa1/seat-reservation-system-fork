@@ -9,6 +9,7 @@ import { FaLock, FaBookmark, FaStar } from "react-icons/fa";
 import ChangePassword from "./ChangePassword";
 import LogoutConfirmationModal from "./LogoutConfirmationModal";
 import MfaSettings from "./MfaSettings";
+import NotificationSettings from "./NotificationSettings";
 import { CiLogout } from 'react-icons/ci';
 import { MdGTranslate, MdSecurity } from 'react-icons/md';
 import { AiFillPlusCircle } from 'react-icons/ai';
@@ -19,7 +20,8 @@ import { MdVisibility } from 'react-icons/md';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { AiOutlineTeam } from "react-icons/ai";
-import { MdLocalParking } from 'react-icons/md';
+import { MdLocalParking, MdSupportAgent } from 'react-icons/md';
+import { IoMdNotifications } from 'react-icons/io';
 import Defaults from "./Defaults";
 import VisibilityPreferences from "./VisibilityPreferences";
 import i18n from '../../i18n';
@@ -37,6 +39,7 @@ const SidebarComponent = () => {
   const [isDefaultsModalOpen, setIsDefaultsModalOpen] = useState(false);
   const [isMfaSettingsOpen, setIsMfaSettingsOpen] = useState(false);
   const [isVisibilityModalOpen, setIsVisibilityModalOpen] = useState(false);
+  const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
   
   useEffect(() => {
     if (location.pathname === '/admin') {
@@ -59,12 +62,15 @@ const SidebarComponent = () => {
       setActiveTab('series');
       //setSeriesSubMenuOpen(true);
     }
-    if (location.pathname === '/freeDesks') {
+    if (location.pathname === '/freedesks' || location.pathname === '/freeDesks') {
       setActiveTab('freeDesks');
       //setSeriesSubMenuOpen(false);
     }
     if (location.pathname === '/carpark') {
       setActiveTab('carpark');
+    }
+    if (location.pathname === '/supportContacts') {
+      setActiveTab('supportContacts');
     }
 
   }, [location.pathname, activeTab]);
@@ -89,7 +95,7 @@ const SidebarComponent = () => {
         break;
 
       case 'freeDesks':
-        navigate("/freeDesks", { replace: true });
+        navigate("/freedesks", { replace: true });
         break;
 
       case 'favourites':
@@ -128,6 +134,9 @@ const SidebarComponent = () => {
       case 'carpark':
         navigate("/carpark", { replace: true });
         break;
+      case 'supportContacts':
+        navigate("/supportContacts", { replace: true });
+        break;
 
       case 'logout':
         setIsLogoutConfirmationOpen(true);
@@ -135,6 +144,10 @@ const SidebarComponent = () => {
 
       case 'mfaSettings':
         setIsMfaSettingsOpen(true);
+        break;
+
+      case 'notifications':
+        setIsNotificationSettingsOpen(true);
         break;
 
       default:
@@ -239,7 +252,7 @@ const SidebarComponent = () => {
 
           {/*Series*/}
           <SubMenu active={activeTab === 'series'} icon={<IoIosAlbums />} label={t('series')}>
-            <MenuItem id='sidebar_manageseries' icon={<IoIosCheckbox />} onClick={() => {navigate('/manageseries', { replace: true });}}>
+            <MenuItem id='sidebar_manageseries' icon={<IoIosAlbums />} onClick={() => {navigate('/manageseries', { replace: true });}}>
               {t('manage')}
             </MenuItem>
             <MenuItem id='sidebar_createseries' icon={<AiFillPlusCircle />} onClick={() => {navigate('/createseries', { replace: true });}}>
@@ -264,6 +277,14 @@ const SidebarComponent = () => {
             </MenuItem>
             <MenuItem id='sidebar_colleagues' icon={<AiOutlineTeam />} onClick={() => handleClick('colleagues')}>
               {t('colleagues')}
+            </MenuItem>
+            <MenuItem
+              id='sidebar_supportContacts'
+              active={activeTab === 'supportContacts'}
+              icon={<MdSupportAgent />}
+              onClick={() => handleClick('supportContacts')}
+            >
+              {t('supportContacts')}
             </MenuItem>
             <MenuItem
               id='sidebar_carpark'
@@ -297,6 +318,14 @@ const SidebarComponent = () => {
                 () => handleClick('visibilityPrefs')}>
                   {t('visibility')}
               </MenuItem>
+            <MenuItem
+              id='sidebar_notifications'
+              icon={<IoMdNotifications />}
+              style={{ fontSize: '16px', fontWeight: 500 }}
+              onClick={() => handleClick('notifications')}
+            >
+              {t('notifications')}
+            </MenuItem>
             <MenuItem id='sidebar_changePassword' icon={<FaLock/>} onClick={() => handleClick('changePassword')}>
               {t('password')}
             </MenuItem>
@@ -334,6 +363,10 @@ const SidebarComponent = () => {
       <MfaSettings
         isOpen={isMfaSettingsOpen}
         onClose={() => setIsMfaSettingsOpen(false)}
+      />
+      <NotificationSettings
+        isOpen={isNotificationSettingsOpen}
+        onClose={() => setIsNotificationSettingsOpen(false)}
       />
     </div>
   );

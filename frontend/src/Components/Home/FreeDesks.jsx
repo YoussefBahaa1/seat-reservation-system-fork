@@ -19,13 +19,15 @@ const FreeDesks = () => {
     const [selectedBuilding, setSelectedBuilding] = useState(valueForAllBuildings.current);
     const [possibleDesks, setPossibleDesks] = useState([]);
     const [bookingDate, setBookingDate] = useState(new Date()); 
-    const defaultStartTime = bookingDate.toLocaleTimeString();
+    const formatTime24 = (d) =>
+        d.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const defaultStartTime = formatTime24(bookingDate);
     const [repaint, setRepaint] = useState(false)
     const [buildings, setBuildings] = useState([]);
     // Default endTime is 2 hours ahead.
     const bookingEndDate = new Date(bookingDate);
     bookingEndDate.setHours(bookingEndDate.getHours() + 2);
-    const defaultEndTime = bookingEndDate.toLocaleTimeString();
+    const defaultEndTime = formatTime24(bookingEndDate);
 
     const [startTime, setStartTime] = useState(defaultStartTime);
     const [endTime, setEndTime] = useState(defaultEndTime);

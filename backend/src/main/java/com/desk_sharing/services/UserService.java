@@ -28,6 +28,7 @@ import com.desk_sharing.misc.DaoUserNotFoundException;
 import com.desk_sharing.misc.LdapUserNotFoundException;
 import com.desk_sharing.model.AuthResponseDTO;
 import com.desk_sharing.model.FloorDTO;
+import com.desk_sharing.model.NotificationPreferencesDTO;
 import com.desk_sharing.model.UserDto;
 import com.desk_sharing.controllers.BookingController;
 import com.desk_sharing.entities.Booking;
@@ -55,6 +56,40 @@ public class UserService  {
     private final JWTGenerator jwtGenerator;
     private final AuthenticationManager authenticationManager;
     private final LdapService ldapService;
+
+    private UserEntity getCurrentUserOrThrow() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null) {
+            throw new UsernameNotFoundException("No authenticated user found.");
+        }
+        UserEntity user = userRepository.findByEmail(authentication.getName());
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found: " + authentication.getName());
+        }
+        return user;
+    }
+
+    public UserEntity getCurrentUser() {
+        return getCurrentUserOrThrow();
+    }
+
+    public void updateNotificationPreferences(boolean bookingCreate, boolean bookingUpdate, boolean bookingCancel) {
+        UserEntity user = getCurrentUserOrThrow();
+        user.setNotifyBookingCreate(bookingCreate);
+        user.setNotifyBookingUpdate(bookingUpdate);
+        user.setNotifyBookingCancel(bookingCancel);
+        user.setNotifyParkingDecision(user.isNotifyParkingDecision()); // unchanged if not provided
+        userRepository.save(user);
+    }
+
+    public void updateNotificationPreferences(NotificationPreferencesDTO dto) {
+        UserEntity user = getCurrentUserOrThrow();
+        user.setNotifyBookingCreate(dto.isBookingCreate());
+        user.setNotifyBookingUpdate(dto.isBookingUpdate());
+        user.setNotifyBookingCancel(dto.isBookingCancel());
+        user.setNotifyParkingDecision(dto.isParkingDecision());
+        userRepository.save(user);
+    }
 
     public AuthResponseDTO login(final String email, final String password) throws LdapUserNotFoundException, DaoUserNotFoundException, BadCredentialsException {
         // True if a user with the provided email is known to ldap.

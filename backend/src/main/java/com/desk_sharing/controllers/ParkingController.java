@@ -12,8 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.desk_sharing.entities.ParkingReservation;
 import com.desk_sharing.model.BookingDayEventDTO;
+import com.desk_sharing.entities.ParkingSpot;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
+import com.desk_sharing.model.ParkingMyReservationDTO;
+import com.desk_sharing.model.ParkingReviewItemDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.services.ParkingReservationService;
 import com.desk_sharing.services.UserService;
@@ -53,6 +56,55 @@ public class ParkingController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
+    @GetMapping("/reservations/mine")
+    public ResponseEntity<List<ParkingMyReservationDTO>> myReservations() {
+        userService.logging("parkingMyReservations()");
+        return new ResponseEntity<>(parkingReservationService.getMyReservations(), HttpStatus.OK);
+    }
+
+    @PostMapping("/spots/{spotLabel}/block")
+    public ResponseEntity<ParkingSpot> blockSpot(@PathVariable("spotLabel") String spotLabel) {
+        userService.logging("parkingBlockSpot( " + spotLabel + " )");
+        return new ResponseEntity<>(parkingReservationService.setSpotManualBlocked(spotLabel, true), HttpStatus.OK);
+    }
+
+    @PostMapping("/spots/{spotLabel}/unblock")
+    public ResponseEntity<ParkingSpot> unblockSpot(@PathVariable("spotLabel") String spotLabel) {
+        userService.logging("parkingUnblockSpot( " + spotLabel + " )");
+        return new ResponseEntity<>(parkingReservationService.setSpotManualBlocked(spotLabel, false), HttpStatus.OK);
+    }
+
+    @GetMapping("/review/pending")
+    public ResponseEntity<List<ParkingReviewItemDTO>> pending() {
+        userService.logging("parkingReviewPending()");
+        return new ResponseEntity<>(parkingReservationService.getPendingReservationsForReview(), HttpStatus.OK);
+    }
+
+    @GetMapping("/review/pending/count")
+    public ResponseEntity<Long> pendingCount() {
+        userService.logging("parkingReviewPendingCount()");
+        return new ResponseEntity<>(parkingReservationService.getPendingReservationsCount(), HttpStatus.OK);
+    }
+
+    @PostMapping("/review/{id}/approve")
+    public ResponseEntity<ParkingReservation> approve(@PathVariable("id") long id) {
+        userService.logging("parkingReviewApprove( " + id + " )");
+        return new ResponseEntity<>(parkingReservationService.approveReservation(id), HttpStatus.OK);
+    }
+
+    @PostMapping("/review/{id}/reject")
+    public ResponseEntity<Void> reject(@PathVariable("id") long id) {
+        userService.logging("parkingReviewReject( " + id + " )");
+        parkingReservationService.rejectReservation(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @PostMapping("/getAllBookingsForDate")
+    public Dictionary<Date, Integer> getAllBookingsForDate(@RequestBody List<Date> days) {
+        userService.logging("parkingGetAllBookingsForDate( " + days + " )");
+        return parkingReservationService.getAllReservationsForDates(days);
+    }
+
     @GetMapping("/day/{date}")
     public ResponseEntity<List<BookingDayEventDTO>> getReservationsForDay(@PathVariable("date") String date) {
         userService.logging("parkingDay( " + date + " )");
@@ -69,11 +121,5 @@ public class ParkingController {
         } catch (IllegalArgumentException | DateTimeParseException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-    }
-
-    @PostMapping("/getAllBookingsForDate")
-    public Dictionary<Date, Integer> getAllBookingsForDate(@RequestBody List<Date> days) {
-        userService.logging("parkingGetAllBookingsForDate( " + days + " )");
-        return parkingReservationService.getAllReservationsForDates(days);
     }
 }

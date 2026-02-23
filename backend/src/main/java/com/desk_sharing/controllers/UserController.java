@@ -18,6 +18,7 @@ import com.desk_sharing.misc.DaoUserNotFoundException;
 import com.desk_sharing.misc.LdapUserNotFoundException;
 import com.desk_sharing.services.UserService;
 import com.desk_sharing.entities.VisibilityMode;
+import com.desk_sharing.model.NotificationPreferencesDTO;
 
 import lombok.AllArgsConstructor;
 
@@ -108,5 +109,23 @@ public class UserController {
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(false);
         }
+    }
+
+    @GetMapping("/me/notification-preferences")
+    public ResponseEntity<NotificationPreferencesDTO> getNotificationPreferences() {
+        UserEntity user = userService.getCurrentUser();
+        return ResponseEntity.ok(NotificationPreferencesDTO.fromUser(user));
+    }
+
+    @PutMapping("/me/notification-preferences")
+    public ResponseEntity<NotificationPreferencesDTO> updateNotificationPreferences(
+        @RequestBody NotificationPreferencesDTO request
+    ) {
+        if (request == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        userService.updateNotificationPreferences(request);
+        UserEntity user = userService.getCurrentUser();
+        return ResponseEntity.ok(NotificationPreferencesDTO.fromUser(user));
     }
 }

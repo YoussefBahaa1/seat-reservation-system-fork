@@ -1,10 +1,30 @@
 // request.js oder request.ts
 import axios from 'axios';
+import i18n from '../../i18n';
 
 function resolveHeaders(headers) {
   const resolved = (headers && typeof headers === 'object') ? { ...headers } : {};
 
   try {
+    const storedToken = sessionStorage.getItem('accessToken');
+    if (storedToken && String(storedToken).trim()) {
+      const bearer = `Bearer ${String(storedToken).trim()}`;
+      resolved.Authorization = bearer;
+
+      // Keep the legacy `headers` session key in sync to avoid stale tokens in old code paths.
+      const existingHeadersRaw = sessionStorage.getItem('headers');
+      const existingHeaders = existingHeadersRaw ? JSON.parse(existingHeadersRaw) : {};
+      const current = existingHeaders && (existingHeaders.Authorization || existingHeaders.authorization);
+      if (current !== bearer) {
+        sessionStorage.setItem('headers', JSON.stringify({
+          ...(existingHeaders || {}),
+          Authorization: bearer,
+          'Content-Type': (existingHeaders && existingHeaders['Content-Type']) || 'application/json',
+        }));
+      }
+      return resolved;
+    }
+
     const storedHeadersRaw = sessionStorage.getItem('headers');
     const storedHeadersParsed = storedHeadersRaw ? JSON.parse(storedHeadersRaw) : null;
     const storedAuth =
@@ -13,14 +33,16 @@ function resolveHeaders(headers) {
 
     if (storedAuth && String(storedAuth).trim()) {
       resolved.Authorization = String(storedAuth).trim();
-    } else {
-      const storedToken = sessionStorage.getItem('accessToken');
-      if (storedToken && String(storedToken).trim()) {
-        resolved.Authorization = `Bearer ${String(storedToken).trim()}`;
-      }
     }
   } catch {
     // ignore storage parse issues
+  }
+
+  // Always send current UI language so backend can localize responses/emails
+  try {
+    resolved['Accept-Language'] = i18n?.language || 'en';
+  } catch {
+    resolved['Accept-Language'] = 'en';
   }
 
   return resolved;

@@ -25,7 +25,7 @@ const LayoutModal = ({isOpen, onClose, title, submit, submitTxt='', widthInPx=''
             },
             }}
         >
-            {title !== '' && <DialogTitle>{title}</DialogTitle>}
+            {title !== '' && <DialogTitle sx={{fontSize: '32px', fontWeight: 700, lineHeight: 1.2}}>{title}</DialogTitle>}
             <DialogContent>
                 {children}
             </DialogContent>

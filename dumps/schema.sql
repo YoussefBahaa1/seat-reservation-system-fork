@@ -38,6 +38,8 @@ CREATE TABLE `bookings` (
   `day` date NOT NULL,
   `end` time NOT NULL,
   `lock_expiry_time` datetime DEFAULT NULL,
+  `calendar_uid` varchar(255) DEFAULT NULL,
+  `calendar_sequence` int(11) DEFAULT 0,
   `desk_id` bigint(20) NOT NULL,
   `room_id` bigint(20) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -85,6 +87,15 @@ CREATE TABLE `desks` (
   `room_id` bigint(20) NOT NULL,
   `remark` varchar(255) DEFAULT NULL,
   `desk_number_in_room` bigint(20) DEFAULT NULL,
+  `workstation_identifier` varchar(50) DEFAULT NULL,
+  `workstation_type` varchar(50) DEFAULT NULL,
+  `monitors_quantity` int(11) DEFAULT NULL,
+  `monitors_size` varchar(50) DEFAULT NULL,
+  `desk_height_adjustable` tinyint(1) DEFAULT NULL,
+  `technology_docking_station` tinyint(1) DEFAULT NULL,
+  `technology_webcam` tinyint(1) DEFAULT NULL,
+  `technology_headset` tinyint(1) DEFAULT NULL,
+  `special_features` text DEFAULT NULL,
   `equipment_id` bigint(20) NOT NULL,
   PRIMARY KEY (`desk_id`),
   KEY `FK1glnwylpo1qx4k8ckyg6sd65y` (`room_id`),
@@ -261,6 +272,9 @@ CREATE TABLE `users` (
   `mfa_secret` varchar(255) DEFAULT NULL,
   `department` varchar(255) DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT 1,
+  `notify_booking_create` bit(1) NOT NULL DEFAULT b'1',
+  `notify_booking_update` bit(1) NOT NULL DEFAULT b'1',
+  `notify_booking_cancel` bit(1) NOT NULL DEFAULT b'1',
   PRIMARY KEY (`id`),
   KEY `FKgmmnwlyr2ngp088pn8f4cuvc1` (`default_floor_id`),
   KEY `FKjp6pfcd725oud9va9dp4vh4s3` (`default_view_mode_id`),
@@ -284,10 +298,27 @@ CREATE TABLE `parking_reservations` (
   `begin` time(6) NOT NULL,
   `end` time(6) NOT NULL,
   `created_at` datetime(6) NOT NULL,
+  `reservation_status` varchar(20) DEFAULT 'APPROVED',
   PRIMARY KEY (`parking_reservation_id`),
   KEY `IDX_parking_reservations_day` (`day`),
   KEY `IDX_parking_reservations_spot_label` (`spot_label`),
   KEY `IDX_parking_reservations_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `parking_spots`
+--
+DROP TABLE IF EXISTS `parking_spots`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `parking_spots` (
+  `spot_label` varchar(255) NOT NULL,
+  `spot_type` varchar(40) NOT NULL DEFAULT 'STANDARD',
+  `covered` tinyint(1) NOT NULL DEFAULT 0,
+  `manually_blocked` tinyint(1) NOT NULL DEFAULT 0,
+  `charging_kw` int(11) DEFAULT NULL,
+  PRIMARY KEY (`spot_label`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -418,6 +449,15 @@ CREATE TABLE `desks` (
   `room_id` bigint(20) NOT NULL,
   `remark` varchar(255) DEFAULT NULL,
   `desk_number_in_room` bigint(20) DEFAULT NULL,
+  `workstation_identifier` varchar(50) DEFAULT NULL,
+  `workstation_type` varchar(50) DEFAULT NULL,
+  `monitors_quantity` int(11) DEFAULT NULL,
+  `monitors_size` varchar(50) DEFAULT NULL,
+  `desk_height_adjustable` tinyint(1) DEFAULT NULL,
+  `technology_docking_station` tinyint(1) DEFAULT NULL,
+  `technology_webcam` tinyint(1) DEFAULT NULL,
+  `technology_headset` tinyint(1) DEFAULT NULL,
+  `special_features` text DEFAULT NULL,
   `equipment_id` bigint(20) NOT NULL,
   PRIMARY KEY (`desk_id`),
   KEY `FK1glnwylpo1qx4k8ckyg6sd65y` (`room_id`),

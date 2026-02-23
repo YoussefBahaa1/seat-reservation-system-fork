@@ -2,7 +2,30 @@ import { formatDate_yyyymmdd_to_ddmmyyyy } from './formatDate';
 import { postRequest, putRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
 import { toast } from 'react-toastify';
 import { confirmAlert } from 'react-confirm-alert';
-function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBookingFunction) {
+
+function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBookingFunction, options = {}) {
+    const { onStart, onFinish } = options || {};
+    let finished = false;
+    let actionInFlight = false;
+
+    const finishOnce = () => {
+        if (finished) return;
+        finished = true;
+        if (typeof onFinish === 'function') {
+            onFinish();
+        }
+    };
+
+    const startAction = () => {
+        if (actionInFlight) return false;
+        actionInFlight = true;
+        return true;
+    };
+
+    if (typeof onStart === 'function') {
+        onStart();
+    }
+
     const escapeIcsText = (text) => {
         if (!text) return '';
         return String(text)
@@ -75,6 +98,7 @@ function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBooki
                             <button
                                 type='button'
                                 onClick={() => {
+                                    if (!startAction()) return;
                                     putRequest(
                                         `${process.env.REACT_APP_BACKEND_URL}/bookings/confirm/${data.id}`,
                                         headers.current,
@@ -86,9 +110,18 @@ function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBooki
                                                 start: new Date(`${dat.day}T${dat.begin}`),
                                                 end: new Date(`${dat.day}T${dat.end}`)
                                             }
-                                            postBookingFunction(booking);
+                                            try {
+                                                if (typeof postBookingFunction === 'function') {
+                                                    postBookingFunction(booking);
+                                                }
+                                            } finally {
+                                                finishOnce();
+                                            }
                                         },
-                                        () => {console.log(`Failed to confirm booking in ${name}`);}
+                                        () => {
+                                            console.log(`Failed to confirm booking in ${name}`);
+                                            finishOnce();
+                                        }
                                     );
                                     onClose();
                                 }}
@@ -98,11 +131,17 @@ function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBooki
                             <button
                                 type='button'
                                 onClick={() => {
+                                    if (!startAction()) return;
                                     deleteRequest(
                                         `${process.env.REACT_APP_BACKEND_URL}/bookings/${data.id}`,
-                                        headers,
-                                        (_) => {},
-                                        () => {console.log('Failed to delete bookings in FreeDesks.jsx.');}
+                                        headers.current,
+                                        (_) => {
+                                            finishOnce();
+                                        },
+                                        () => {
+                                            console.log('Failed to delete bookings in FreeDesks.jsx.');
+                                            finishOnce();
+                                        }
                                     );
                                     onClose();
                                 }}
@@ -121,7 +160,10 @@ function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBooki
             })
 
         },
-        () => {console.log('Failed to post booking in Booking.jsx.');},
+        () => {
+            console.log('Failed to post booking in Booking.jsx.');
+            finishOnce();
+        },
         JSON.stringify(bookingData)
     );
 };

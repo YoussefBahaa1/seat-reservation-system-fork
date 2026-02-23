@@ -18,6 +18,8 @@ import com.desk_sharing.services.BookingService;
 import com.desk_sharing.services.DeskService;
 import com.desk_sharing.services.RoomService;
 import com.desk_sharing.services.UserService;
+import com.desk_sharing.services.BookingSettingsService;
+import com.desk_sharing.model.BookingSettingsDTO;
 
 import lombok.AllArgsConstructor;
 
@@ -51,6 +53,7 @@ public class AdminController {
     private final BookingService bookingService;
     private final BookingRepository bookingRepository;
     private final UserService userService;    
+    private final BookingSettingsService bookingSettingsService;
     
     ////////////////
 
@@ -384,6 +387,36 @@ public class AdminController {
             return new ResponseEntity<>(new UserEntity(user), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>("Failed to update user status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Update global booking settings (lead time, max duration, max advance).
+     */
+    @PutMapping("booking-settings")
+    public ResponseEntity<BookingSettingsDTO> updateBookingSettings(@RequestBody BookingSettingsDTO dto) {
+        userService.logging("updateBookingSettings( " + dto + " )");
+        validateSettingsDto(dto);
+        BookingSettingsDTO saved = new BookingSettingsDTO(bookingSettingsService.updateSettings(dto));
+        return new ResponseEntity<>(saved, HttpStatus.OK);
+    }
+
+    private void validateSettingsDto(BookingSettingsDTO dto) {
+        if (dto.getLeadTimeMinutes() == null || dto.getLeadTimeMinutes() < 0 || dto.getLeadTimeMinutes() > 720 || dto.getLeadTimeMinutes() % 30 != 0) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "leadTimeMinutes must be 0..720 in 30-minute steps");
+        }
+        Integer maxDuration = dto.getMaxDurationMinutes();
+        if (maxDuration != null) {
+            if (maxDuration < 120 || maxDuration > 720 || maxDuration % 30 != 0) {
+                throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "maxDurationMinutes must be null or between 120..720 in 30-minute steps");
+            }
+        }
+        Integer maxAdvance = dto.getMaxAdvanceDays();
+        if (maxAdvance != null) {
+            boolean allowed = maxAdvance == 7 || maxAdvance == 14 || maxAdvance == 30 || maxAdvance == 60 || maxAdvance == 90 || maxAdvance == 180;
+            if (!allowed) {
+                throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "maxAdvanceDays must be null or one of 7,14,30,60,90,180");
+            }
         }
     }
    
