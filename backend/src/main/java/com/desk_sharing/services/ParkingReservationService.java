@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +28,7 @@ import com.desk_sharing.entities.ParkingSpotType;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
+import com.desk_sharing.model.ParkingMyReservationDTO;
 import com.desk_sharing.model.ParkingReviewItemDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
@@ -133,11 +135,61 @@ public class ParkingReservationService {
         return spot != null && spot.isCovered();
     }
 
+    private static boolean effectiveManuallyBlocked(final ParkingSpot spot) {
+        return spot != null && spot.isManuallyBlocked();
+    }
+
     private static Integer effectiveChargingKw(final ParkingSpot spot, final ParkingSpotType spotType) {
         if (spotType != ParkingSpotType.E_CHARGING_STATION) {
             return null;
         }
         return spot == null ? null : spot.getChargingKw();
+    }
+
+    private static String formatTimeValue(final Time time) {
+        if (time == null) return null;
+        return time.toLocalTime().truncatedTo(ChronoUnit.MINUTES).toString();
+    }
+
+    private String displayUserFromCache(final ParkingReservation reservation, final Map<Integer, UserEntity> userCache) {
+        if (reservation == null) return null;
+        final UserEntity user = userCache.get(reservation.getUserId());
+        if (user == null) return "unknown";
+        final String fullName = ((user.getName() == null ? "" : user.getName().trim()) + " "
+            + (user.getSurname() == null ? "" : user.getSurname().trim())).trim();
+        if (!fullName.isBlank()) {
+            return user.getEmail() == null || user.getEmail().isBlank()
+                ? fullName
+                : fullName + " (" + user.getEmail() + ")";
+        }
+        return user.getEmail();
+    }
+
+    private ParkingAvailabilityResponseDTO availabilityRow(
+        final String label,
+        final String status,
+        final boolean reservedByMe,
+        final Long reservationId,
+        final ParkingSpotType spotType,
+        final boolean covered,
+        final boolean manuallyBlocked,
+        final Integer chargingKw,
+        final ParkingReservation overlapForDetails,
+        final Map<Integer, UserEntity> userCache
+    ) {
+        return new ParkingAvailabilityResponseDTO(
+            label,
+            status,
+            reservedByMe,
+            reservationId,
+            spotType.name(),
+            covered,
+            manuallyBlocked,
+            chargingKw,
+            overlapForDetails == null ? null : formatTimeValue(overlapForDetails.getBegin()),
+            overlapForDetails == null ? null : formatTimeValue(overlapForDetails.getEnd()),
+            overlapForDetails == null ? null : displayUserFromCache(overlapForDetails, userCache)
+        );
     }
 
     public List<ParkingAvailabilityResponseDTO> getAvailability(final ParkingAvailabilityRequestDTO request) {
@@ -168,8 +220,16 @@ public class ParkingReservationService {
         final Map<String, Long> myReservationIdByLabel = new HashMap<>();
         final Set<String> pendingLabels = new HashSet<>();
         final Set<String> approvedLabels = new HashSet<>();
+        final Map<String, ParkingReservation> activeOverlapForDetailsByLabel = new HashMap<>();
         for (final String label : occupiedLabels) {
             final List<ParkingReservation> overlaps = parkingReservationRepository.findOverlapsForSpot(day, label, begin, end);
+            final ParkingReservation activeOverlapForDetails = overlaps.stream()
+                .sorted((a, b) -> a.getBegin().compareTo(b.getBegin()))
+                .findFirst()
+                .orElse(null);
+            if (activeOverlapForDetails != null) {
+                activeOverlapForDetailsByLabel.put(label, activeOverlapForDetails);
+            }
             if (overlaps.stream().map(ParkingReservationService::effectiveStatus).anyMatch(status -> status == ParkingReservationStatus.PENDING)) {
                 pendingLabels.add(label);
             }
@@ -182,41 +242,78 @@ public class ParkingReservationService {
                 myReservationIdByLabel.put(label, myOverlap.getId());
             }
         }
+        final Map<String, ParkingReservation> rejectedOverlapForMeByLabel = new HashMap<>();
+        parkingReservationRepository.findRejectedOverlapsForUser(day, requestedLabels, begin, end, myUserId).stream()
+            .sorted((a, b) -> a.getBegin().compareTo(b.getBegin()))
+            .forEach(res -> rejectedOverlapForMeByLabel.putIfAbsent(res.getSpotLabel(), res));
+
+        final Set<Integer> userIdsForDisplay = new HashSet<>();
+        activeOverlapForDetailsByLabel.values().forEach(r -> userIdsForDisplay.add(r.getUserId()));
+        rejectedOverlapForMeByLabel.values().forEach(r -> userIdsForDisplay.add(r.getUserId()));
+        final Map<Integer, UserEntity> userCache = new HashMap<>();
+        userRepository.findAllById(userIdsForDisplay).forEach(u -> userCache.put(u.getId(), u));
 
         return requestedLabels.stream().map(label -> {
             final ParkingSpot spot = spotByLabel.get(label);
             final ParkingSpotType spotType = effectiveSpotType(spot, label);
             final boolean covered = effectiveCovered(spot);
+            final boolean manuallyBlocked = effectiveManuallyBlocked(spot);
             final Integer chargingKw = effectiveChargingKw(spot, spotType);
+            final ParkingReservation activeOverlap = activeOverlapForDetailsByLabel.get(label);
+            final ParkingReservation rejectedMine = rejectedOverlapForMeByLabel.get(label);
 
             if (spotType == ParkingSpotType.SPECIAL_CASE) {
-                return new ParkingAvailabilityResponseDTO(label, "BLOCKED", false, null, spotType.name(), covered, chargingKw);
+                return availabilityRow(label, "BLOCKED", false, null, spotType, covered, manuallyBlocked, chargingKw, null, userCache);
+            }
+            if (manuallyBlocked) {
+                final boolean mine = myOccupiedLabels.contains(label);
+                return availabilityRow(
+                    label,
+                    "BLOCKED",
+                    mine,
+                    mine ? myReservationIdByLabel.get(label) : null,
+                    spotType,
+                    covered,
+                    true,
+                    chargingKw,
+                    activeOverlap,
+                    userCache
+                );
             }
             if (approvedLabels.contains(label)) {
                 final boolean mine = myOccupiedLabels.contains(label);
-                return new ParkingAvailabilityResponseDTO(
+                return availabilityRow(
                     label,
                     "OCCUPIED",
                     mine,
                     mine ? myReservationIdByLabel.get(label) : null,
-                    spotType.name(),
+                    spotType,
                     covered,
-                    chargingKw
+                    manuallyBlocked,
+                    chargingKw,
+                    activeOverlap,
+                    userCache
                 );
             }
             if (pendingLabels.contains(label)) {
                 final boolean mine = myOccupiedLabels.contains(label);
-                return new ParkingAvailabilityResponseDTO(
+                return availabilityRow(
                     label,
                     "PENDING",
                     mine,
                     mine ? myReservationIdByLabel.get(label) : null,
-                    spotType.name(),
+                    spotType,
                     covered,
-                    chargingKw
+                    manuallyBlocked,
+                    chargingKw,
+                    activeOverlap,
+                    userCache
                 );
             }
-            return new ParkingAvailabilityResponseDTO(label, "AVAILABLE", false, null, spotType.name(), covered, chargingKw);
+            if (rejectedMine != null) {
+                return availabilityRow(label, "BLOCKED", true, null, spotType, covered, manuallyBlocked, chargingKw, rejectedMine, userCache);
+            }
+            return availabilityRow(label, "AVAILABLE", false, null, spotType, covered, manuallyBlocked, chargingKw, null, userCache);
         }).toList();
     }
 
@@ -226,8 +323,12 @@ public class ParkingReservationService {
         }
 
         final String spotLabel = request.getSpotLabel().trim();
-        final ParkingSpotType spotType = effectiveSpotType(parkingSpotRepository.findById(spotLabel).orElse(null), spotLabel);
+        final ParkingSpot existingSpot = parkingSpotRepository.findById(spotLabel).orElse(null);
+        final ParkingSpotType spotType = effectiveSpotType(existingSpot, spotLabel);
         if (spotType == ParkingSpotType.SPECIAL_CASE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This spot is blocked");
+        }
+        if (effectiveManuallyBlocked(existingSpot)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This spot is blocked");
         }
 
@@ -242,6 +343,12 @@ public class ParkingReservationService {
         final List<ParkingReservation> overlaps = parkingReservationRepository.findOverlapsForSpot(day, spotLabel, begin, end);
         if (overlaps != null && !overlaps.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Spot is already reserved for this time range");
+        }
+        final List<ParkingReservation> rejectedForMe = parkingReservationRepository.findRejectedOverlapsForUser(
+            day, List.of(spotLabel), begin, end, myUserId
+        );
+        if (rejectedForMe != null && !rejectedForMe.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Your request for this time range was already rejected");
         }
 
         final ParkingReservation reservation = new ParkingReservation();
@@ -298,6 +405,45 @@ public class ParkingReservationService {
         return parkingReservationRepository.countByStatus(ParkingReservationStatus.PENDING);
     }
 
+    public List<ParkingMyReservationDTO> getMyReservations() {
+        final int myUserId = getCurrentUser().getId();
+        return parkingReservationRepository.findByUserIdOrderByDayAscBeginAsc(myUserId).stream()
+            .map(reservation -> new ParkingMyReservationDTO(
+                reservation.getId(),
+                reservation.getSpotLabel(),
+                reservation.getDay(),
+                reservation.getBegin(),
+                reservation.getEnd(),
+                effectiveStatus(reservation).name()
+            ))
+            .toList();
+    }
+
+    public ParkingSpot setSpotManualBlocked(final String spotLabelRaw, final boolean blocked) {
+        requireAdmin();
+        if (spotLabelRaw == null || spotLabelRaw.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "spotLabel must not be empty");
+        }
+        final String spotLabel = spotLabelRaw.trim();
+        ParkingSpot spot = parkingSpotRepository.findById(spotLabel).orElse(null);
+        if (spot == null) {
+            spot = new ParkingSpot();
+            spot.setSpotLabel(spotLabel);
+            spot.setSpotType(defaultSpotTypeForLabel(spotLabel));
+            spot.setCovered(false);
+            spot.setChargingKw(null);
+            spot.setManuallyBlocked(false);
+        }
+
+        final ParkingSpotType spotType = effectiveSpotType(spot, spotLabel);
+        if (spotType == ParkingSpotType.SPECIAL_CASE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Special-case spots cannot be manually blocked/unblocked");
+        }
+
+        spot.setManuallyBlocked(blocked);
+        return parkingSpotRepository.save(spot);
+    }
+
     public ParkingReservation approveReservation(final long id) {
         requireAdmin();
         final ParkingReservation reservation = parkingReservationRepository.findById(id)
@@ -327,7 +473,7 @@ public class ParkingReservationService {
         if (effectiveStatus(reservation) != ParkingReservationStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Reservation is not pending");
         }
-        parkingNotificationService.notifyDecision(reservation, false);
-        parkingReservationRepository.deleteById(id);
+        reservation.setStatus(ParkingReservationStatus.REJECTED);
+        parkingReservationRepository.save(reservation);
     }
 }

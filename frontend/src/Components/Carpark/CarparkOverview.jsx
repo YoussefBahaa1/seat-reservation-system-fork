@@ -1,9 +1,9 @@
-import { Box, Button, Chip, Divider, Paper, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Divider, Paper, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
-import { postRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
+import { getRequest, postRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
 import CreateDatePicker from '../misc/CreateDatePicker';
 import CreateTimePicker from '../misc/CreateTimePicker';
 import LayoutPage from '../Templates/LayoutPage';
@@ -12,6 +12,37 @@ const CARPARK_SVG_URL = '/Assets/carpark_overview_ready.svg';
 const CARPARK_SELECTED_DATE_KEY = 'carparkSelectedDate';
 const CARPARK_DEFAULT_DURATION_MINUTES = 120;
 const CARPARK_MIN_LEAD_MINUTES = 30;
+const CARPARK_RES_STATUS_SNAPSHOT_KEY = 'carparkReservationStatusSnapshot';
+const CARPARK_NOTIFIED_STATUS_KEY = 'carparkNotifiedReservationStatus';
+const CARPARK_NOTIFIED_REMINDERS_KEY = 'carparkNotifiedReservationReminders';
+
+const readSessionJson = (key, fallback) => {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const writeSessionJson = (key, value) => {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore storage issues
+  }
+};
+
+const trimTimeForDisplay = (t) => (typeof t === 'string' ? t.slice(0, 5) : '');
+
+const parseReservationStart = (day, begin) => {
+  if (!day || !begin) return null;
+  const normalizedTime = String(begin).length >= 8 ? String(begin) : `${String(begin)}:00`;
+  const parsed = new Date(`${day}T${normalizedTime}`);
+  return Number.isNaN(parsed.valueOf()) ? null : parsed;
+};
 
 const formatTimeHHMM = (d) =>
   `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -79,14 +110,22 @@ const getSpotMetaFromDataset = (rect) => ({
   accessible: rect.dataset.spotAccessible === 'true',
   special: rect.dataset.spotSpecial === 'true',
   covered: rect.dataset.spotCovered === 'true',
+  manuallyBlocked: rect.dataset.spotManuallyBlocked === 'true',
   chargingKw: rect.dataset.spotChargingKw ? Number(rect.dataset.spotChargingKw) : null,
   selectable: rect.dataset.spotSelectable !== 'false',
   status: rect.dataset.spotStatus ?? 'UNKNOWN',
   reservedByMe: rect.dataset.spotReservedByMe === 'true',
   reservationId: rect.dataset.spotReservationId ? Number(rect.dataset.spotReservationId) : null,
+  reservedBegin: rect.dataset.spotReservedBegin || null,
+  reservedEnd: rect.dataset.spotReservedEnd || null,
+  reservedByUser: rect.dataset.spotReservedByUser || null,
 });
 
 const isSpotSelectableForCurrentUser = (rect) => {
+  const adminEditModeActive =
+    rect?.dataset?.spotAdminEditMode === 'true' && localStorage.getItem('admin') === 'true';
+  if (adminEditModeActive) return true;
+
   const isSelectable = rect?.dataset?.spotSelectable !== 'false';
   if (!isSelectable) return false;
 
@@ -94,7 +133,7 @@ const isSpotSelectableForCurrentUser = (rect) => {
   const reservedByMe = rect?.dataset?.spotReservedByMe === 'true';
 
   if (status === 'AVAILABLE') return true;
-  if ((status === 'PENDING' || status === 'OCCUPIED') && reservedByMe) return true;
+  if ((status === 'PENDING' || status === 'OCCUPIED' || status === 'BLOCKED') && reservedByMe) return true;
   return false;
 };
 
@@ -121,11 +160,14 @@ const CarparkOverview = () => {
   const svgRef = useRef(null);
   const spotRectsByLabelRef = useRef(new Map());
   const initialTimeRangeRef = useRef(getDefaultTimeRange());
+  const reservationStatusSnapshotRef = useRef(new Map());
 
   const [selectedSpot, setSelectedSpot] = useState(null);
   const [hoveredSpot, setHoveredSpot] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [zoom, setZoom] = useState(1);
+  const [pageNotifications, setPageNotifications] = useState([]);
+  const [adminEditMode, setAdminEditMode] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => {
     const fromState = location.state?.date ? new Date(location.state.date) : null;
     if (fromState && !Number.isNaN(fromState.valueOf())) {
@@ -143,6 +185,7 @@ const CarparkOverview = () => {
   const [startTime, setStartTime] = useState(initialTimeRangeRef.current.startTime);
   const [endTime, setEndTime] = useState(initialTimeRangeRef.current.endTime);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const isAdminUser = localStorage.getItem('admin') === 'true';
 
   useEffect(() => {
     let cancelled = false;
@@ -247,12 +290,17 @@ const CarparkOverview = () => {
         rect.dataset.spotSpecial = isSpecial ? 'true' : 'false';
         rect.dataset.spotCategory = defaultSpotCategory(spotLabel, isSpecial, isAccessible);
         rect.dataset.spotCovered = 'false';
+        rect.dataset.spotManuallyBlocked = 'false';
         rect.dataset.spotChargingKw = '';
         rect.dataset.spotSelectable = isSelectable ? 'true' : 'false';
+        rect.dataset.spotAdminEditMode = 'false';
         // Default to AVAILABLE so the UI is usable even before the first availability refresh completes.
         rect.dataset.spotStatus = isSpecial ? 'BLOCKED' : 'AVAILABLE';
         rect.dataset.spotReservedByMe = 'false';
         rect.dataset.spotReservationId = '';
+        rect.dataset.spotReservedBegin = '';
+        rect.dataset.spotReservedEnd = '';
+        rect.dataset.spotReservedByUser = '';
         spotRectsByLabelRef.current.set(spotLabel, rect);
         rect.classList.add(isSpecial ? 'carpark-status-blocked' : 'carpark-status-available');
 
@@ -366,8 +414,121 @@ const CarparkOverview = () => {
     sessionStorage.setItem(CARPARK_SELECTED_DATE_KEY, selectedDate.toISOString());
   }, [selectedDate]);
 
+  useEffect(() => {
+    for (const rect of spotRectsByLabelRef.current.values()) {
+      rect.dataset.spotAdminEditMode = adminEditMode && isAdminUser ? 'true' : 'false';
+    }
+  }, [adminEditMode, isAdminUser]);
+
+  const addPageNotification = (severity, message, notificationKey) => {
+    if (!message) return;
+    setPageNotifications((prev) => {
+      if (notificationKey && prev.some((item) => item.notificationKey === notificationKey)) return prev;
+      const next = [
+        {
+          id: `${Date.now()}-${Math.random()}`,
+          severity,
+          message,
+          notificationKey: notificationKey || null,
+        },
+        ...prev,
+      ];
+      return next.slice(0, 8);
+    });
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const pollMyReservations = () => {
+      getRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/parking/reservations/mine`,
+        null,
+        (data) => {
+          if (cancelled) return;
+
+          const reservations = Array.isArray(data) ? data : [];
+          const previousSnapshotObj =
+            reservationStatusSnapshotRef.current.size > 0
+              ? Object.fromEntries(reservationStatusSnapshotRef.current)
+              : readSessionJson(CARPARK_RES_STATUS_SNAPSHOT_KEY, {});
+          const notifiedStatus = readSessionJson(CARPARK_NOTIFIED_STATUS_KEY, {});
+          const notifiedReminders = readSessionJson(CARPARK_NOTIFIED_REMINDERS_KEY, {});
+          const nextSnapshot = new Map();
+          const now = new Date();
+
+          for (const reservation of reservations) {
+            const id = String(reservation?.id ?? '');
+            const status = String(reservation?.status ?? 'APPROVED').toUpperCase();
+            if (!id) continue;
+            nextSnapshot.set(id, status);
+
+            const prevStatus = String(previousSnapshotObj[id] || '').toUpperCase();
+            const spot = reservation?.spotLabel ?? '?';
+            const day = reservation?.day ?? '';
+            const begin = trimTimeForDisplay(reservation?.begin);
+            const end = trimTimeForDisplay(reservation?.end);
+
+            if (prevStatus === 'PENDING' && (status === 'APPROVED' || status === 'REJECTED')) {
+              const statusNotifyKey = `${id}:${status}`;
+              if (!notifiedStatus[statusNotifyKey]) {
+                addPageNotification(
+                  status === 'APPROVED' ? 'success' : 'warning',
+                  t(
+                    status === 'APPROVED'
+                      ? 'carparkNotificationApproved'
+                      : 'carparkNotificationRejected',
+                    { spot, day, begin, end }
+                  ),
+                  statusNotifyKey
+                );
+                notifiedStatus[statusNotifyKey] = true;
+              }
+            }
+
+            if (status === 'APPROVED') {
+              const start = parseReservationStart(day, reservation?.begin);
+              if (start) {
+                const diffMs = start.getTime() - now.getTime();
+                const diffMin = diffMs / 60000;
+                if (diffMin > 0 && diffMin <= 30) {
+                  const reminderKey = `${id}:${day}:${reservation?.begin}`;
+                  if (!notifiedReminders[reminderKey]) {
+                    addPageNotification(
+                      'info',
+                      t('carparkNotificationReminder', { spot, day, begin, end }),
+                      reminderKey
+                    );
+                    notifiedReminders[reminderKey] = true;
+                  }
+                }
+              }
+            }
+          }
+
+          reservationStatusSnapshotRef.current = nextSnapshot;
+          writeSessionJson(CARPARK_RES_STATUS_SNAPSHOT_KEY, Object.fromEntries(nextSnapshot));
+          writeSessionJson(CARPARK_NOTIFIED_STATUS_KEY, notifiedStatus);
+          writeSessionJson(CARPARK_NOTIFIED_REMINDERS_KEY, notifiedReminders);
+        },
+        () => {
+          // keep page usable even if notification polling fails
+        }
+      );
+    };
+
+    pollMyReservations();
+    const interval = setInterval(pollMyReservations, 10000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [t]);
+
   const spotForPanel = selectedSpot ?? hoveredSpot;
   const isSpecialSpot = spotForPanel?.special === true;
+  const isManuallyBlockedSpot = spotForPanel?.manuallyBlocked === true;
+  const canAdminToggleBlock = Boolean(isAdminUser && adminEditMode && selectedSpot && !isSpecialSpot);
   const isBlocked = spotForPanel?.status === 'BLOCKED' || isSpecialSpot;
   const isPending = spotForPanel?.status === 'PENDING';
   const isOccupied = spotForPanel?.status === 'OCCUPIED';
@@ -423,9 +584,13 @@ const CarparkOverview = () => {
           rect.dataset.spotSpecial = spotCategory === 'SPECIAL_CASE' ? 'true' : 'false';
           rect.dataset.spotAccessible = spotCategory === 'ACCESSIBLE' ? 'true' : 'false';
           rect.dataset.spotCovered = row?.covered === true ? 'true' : 'false';
+          rect.dataset.spotManuallyBlocked = row?.manuallyBlocked === true ? 'true' : 'false';
           rect.dataset.spotChargingKw = row?.chargingKw == null ? '' : String(row.chargingKw);
           rect.dataset.spotReservedByMe = row?.reservedByMe ? 'true' : 'false';
           rect.dataset.spotReservationId = row?.reservationId ? String(row.reservationId) : '';
+          rect.dataset.spotReservedBegin = row?.reservedBegin || '';
+          rect.dataset.spotReservedEnd = row?.reservedEnd || '';
+          rect.dataset.spotReservedByUser = row?.reservedByUser || '';
 
           if (status === 'AVAILABLE') rect.classList.add('carpark-status-available');
           if (status === 'PENDING') rect.classList.add('carpark-status-pending');
@@ -459,6 +624,7 @@ const CarparkOverview = () => {
   }, [selectedDate, startTime, endTime]);
 
   const reserveSelected = () => {
+    if (adminEditMode) return;
     if (!selectedSpot || selectedSpot.status !== 'AVAILABLE') return;
     const day = formatISODate(selectedDate);
 
@@ -485,6 +651,7 @@ const CarparkOverview = () => {
   };
 
   const cancelMyReservation = () => {
+    if (adminEditMode) return;
     const reservationId = spotForPanel?.reservationId;
     if (!reservationId) return;
     deleteRequest(
@@ -495,6 +662,29 @@ const CarparkOverview = () => {
         refreshAvailability();
       },
       () => toast.error(t('httpOther'))
+    );
+  };
+
+  const setSpotBlocked = (blocked) => {
+    if (!isAdminUser || !adminEditMode || !selectedSpot?.label) return;
+    if (selectedSpot?.special) {
+      toast.warning(t('carparkEditModeSpecialCase'));
+      return;
+    }
+
+    const action = blocked ? 'block' : 'unblock';
+    postRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/parking/spots/${encodeURIComponent(selectedSpot.label)}/${action}`,
+      null,
+      () => {
+        toast.success(t(blocked ? 'carparkSpotBlockedSuccess' : 'carparkSpotUnblockedSuccess'));
+        refreshAvailability();
+      },
+      (errorCode) => {
+        if (errorCode === 403) toast.error(t('http403'));
+        else toast.error(t('httpOther'));
+      },
+      {}
     );
   };
 
@@ -519,6 +709,15 @@ const CarparkOverview = () => {
           <Button variant="contained" onClick={refreshAvailability} disabled={isRefreshing}>
             {t('carparkRefresh')}
           </Button>
+          {isAdminUser && (
+            <Button
+              variant={adminEditMode ? 'contained' : 'outlined'}
+              color={adminEditMode ? 'warning' : 'inherit'}
+              onClick={() => setAdminEditMode((prev) => !prev)}
+            >
+              {adminEditMode ? t('carparkExitEditMode') : t('carparkEnterEditMode')}
+            </Button>
+          )}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip size="small" label={t('carparkLegendAvailable')} sx={{ bgcolor: '#2e7d32', color: '#fff' }} />
             <Chip size="small" label={t('carparkLegendPending')} sx={{ bgcolor: '#f9a825', color: '#000' }} />
@@ -527,6 +726,25 @@ const CarparkOverview = () => {
           </Box>
         </Box>
       </Paper>
+
+      {pageNotifications.length > 0 && (
+        <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+            {t('carparkNotifications')}
+          </Typography>
+          <Box sx={{ display: 'grid', gap: 1 }}>
+            {pageNotifications.map((item) => (
+              <Alert
+                key={item.id}
+                severity={item.severity}
+                onClose={() => setPageNotifications((prev) => prev.filter((n) => n.id !== item.id))}
+              >
+                {item.message}
+              </Alert>
+            ))}
+          </Box>
+        </Paper>
+      )}
 
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
         <Box sx={{ flex: '1 1 720px', minWidth: 320 }}>
@@ -587,18 +805,43 @@ const CarparkOverview = () => {
                 <Typography variant="body2" color="text.secondary">
                   {t('carparkCovered')}: {spotForPanel.covered ? t('carparkYes') : t('carparkNo')}
                 </Typography>
+                {isAdminUser && (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('carparkAdminBlocked')}: {spotForPanel.manuallyBlocked ? t('carparkYes') : t('carparkNo')}
+                  </Typography>
+                )}
                 <Typography variant="body2" color="text.secondary">
                   {t('carparkChargingKw')}: {spotForPanel.chargingKw == null ? '—' : spotForPanel.chargingKw}
                 </Typography>
+                {(spotForPanel.reservedBegin || spotForPanel.reservedEnd) && (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('carparkReservedTime')}: {spotForPanel.reservedBegin || '-'} - {spotForPanel.reservedEnd || '-'}
+                  </Typography>
+                )}
+                {spotForPanel.reservedByUser && (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('carparkReservedByUser')}: {spotForPanel.reservedByUser}
+                  </Typography>
+                )}
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   {selectedSpot ? t('carparkSelected') : t('carparkHover')}
                 </Typography>
-                {selectedSpot && isAvailable && (
+                {canAdminToggleBlock && (
+                  <Button
+                    sx={{ mt: 2 }}
+                    variant="contained"
+                    color={isManuallyBlockedSpot ? 'success' : 'warning'}
+                    onClick={() => setSpotBlocked(!isManuallyBlockedSpot)}
+                  >
+                    {isManuallyBlockedSpot ? t('carparkUnblockSpot') : t('carparkBlockSpot')}
+                  </Button>
+                )}
+                {selectedSpot && isAvailable && !adminEditMode && (
                   <Button sx={{ mt: 2 }} variant="contained" onClick={reserveSelected}>
                     {t('carparkReserve')}
                   </Button>
                 )}
-                {(isPending || isOccupied) && spotForPanel.reservedByMe && spotForPanel.reservationId && (
+                {!adminEditMode && (isPending || isOccupied || isBlocked) && spotForPanel.reservedByMe && spotForPanel.reservationId && (
                   <Button sx={{ mt: 2 }} color="error" variant="outlined" onClick={cancelMyReservation}>
                     {t('delete')}
                   </Button>
@@ -607,7 +850,9 @@ const CarparkOverview = () => {
             )}
             <Divider sx={{ my: 2 }} />
             <Typography variant="body2" color="text.secondary">
-              {isSpecialSpot
+              {adminEditMode && isAdminUser
+                ? t('carparkEditModeHint')
+                : isSpecialSpot
                 ? t('carparkContactStaff')
                 : isBlocked
                   ? t('carparkBlocked')

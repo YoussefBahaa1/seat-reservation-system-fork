@@ -316,6 +316,7 @@ CREATE TABLE `parking_spots` (
   `spot_label` varchar(255) NOT NULL,
   `spot_type` varchar(40) NOT NULL DEFAULT 'STANDARD',
   `covered` tinyint(1) NOT NULL DEFAULT 0,
+  `manually_blocked` tinyint(1) NOT NULL DEFAULT 0,
   `charging_kw` int(11) DEFAULT NULL,
   PRIMARY KEY (`spot_label`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

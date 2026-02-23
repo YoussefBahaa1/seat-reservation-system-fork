@@ -16,6 +16,7 @@ public class ParkingSchemaMigration {
     private static final String RESERVATIONS_TABLE = "parking_reservations";
     private static final String STATUS_COLUMN = "reservation_status";
     private static final String SPOTS_TABLE = "parking_spots";
+    private static final String MANUALLY_BLOCKED_COLUMN = "manually_blocked";
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -57,10 +58,25 @@ public class ParkingSchemaMigration {
                     + "spot_label VARCHAR(255) NOT NULL,"
                     + "spot_type VARCHAR(40) NOT NULL DEFAULT 'STANDARD',"
                     + "covered TINYINT(1) NOT NULL DEFAULT 0,"
+                    + "manually_blocked TINYINT(1) NOT NULL DEFAULT 0,"
                     + "charging_kw INT NULL,"
                     + "PRIMARY KEY (spot_label)"
                     + ")"
             );
+
+            final Integer blockedColumnExists = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.COLUMNS "
+                    + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                Integer.class,
+                SPOTS_TABLE,
+                MANUALLY_BLOCKED_COLUMN
+            );
+            if (blockedColumnExists == null || blockedColumnExists == 0) {
+                jdbcTemplate.execute(
+                    "ALTER TABLE " + SPOTS_TABLE + " ADD COLUMN " + MANUALLY_BLOCKED_COLUMN + " TINYINT(1) NOT NULL DEFAULT 0"
+                );
+                logger.info("Parking schema migration added '{}.{}'.", SPOTS_TABLE, MANUALLY_BLOCKED_COLUMN);
+            }
 
             seedDefaultParkingSpots();
             logger.info("Parking schema migration ensured '{}' defaults.", SPOTS_TABLE);
@@ -88,7 +104,7 @@ public class ParkingSchemaMigration {
 
     private void seedSpot(final String label, final String spotType) {
         jdbcTemplate.update(
-            "INSERT IGNORE INTO " + SPOTS_TABLE + " (spot_label, spot_type, covered, charging_kw) VALUES (?, ?, 0, NULL)",
+            "INSERT IGNORE INTO " + SPOTS_TABLE + " (spot_label, spot_type, covered, manually_blocked, charging_kw) VALUES (?, ?, 0, 0, NULL)",
             label,
             spotType
         );

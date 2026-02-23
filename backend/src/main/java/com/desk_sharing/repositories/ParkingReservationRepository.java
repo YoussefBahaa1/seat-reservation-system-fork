@@ -57,9 +57,26 @@ public interface ParkingReservationRepository extends JpaRepository<ParkingReser
         @Param("endTime") Time endTime
     );
 
+    @Query(value = "SELECT * FROM parking_reservations "
+            + "WHERE user_id = :userId AND day = :day AND spot_label IN (:spotLabels) "
+            + "AND reservation_status = 'REJECTED' "
+            + "AND "
+            + "((:startTime BETWEEN begin AND end) OR (:endTime BETWEEN begin AND end) OR "
+            + "(begin >= :startTime AND begin < :endTime) OR (end > :startTime AND end <= :endTime))",
+            nativeQuery = true)
+    List<ParkingReservation> findRejectedOverlapsForUser(
+        @Param("day") Date day,
+        @Param("spotLabels") List<String> spotLabels,
+        @Param("startTime") Time startTime,
+        @Param("endTime") Time endTime,
+        @Param("userId") int userId
+    );
+
     List<ParkingReservation> findByStatusOrderByCreatedAtAsc(ParkingReservationStatus status);
 
     long countByStatus(ParkingReservationStatus status);
 
     List<ParkingReservation> findByUserId(int userId);
+
+    List<ParkingReservation> findByUserIdOrderByDayAscBeginAsc(int userId);
 }

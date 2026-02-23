@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.desk_sharing.entities.ParkingReservation;
+import com.desk_sharing.entities.ParkingSpot;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
+import com.desk_sharing.model.ParkingMyReservationDTO;
 import com.desk_sharing.model.ParkingReviewItemDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.services.ParkingReservationService;
@@ -46,6 +48,24 @@ public class ParkingController {
         userService.logging("parkingDelete( " + id + " )");
         parkingReservationService.deleteReservation(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/reservations/mine")
+    public ResponseEntity<List<ParkingMyReservationDTO>> myReservations() {
+        userService.logging("parkingMyReservations()");
+        return new ResponseEntity<>(parkingReservationService.getMyReservations(), HttpStatus.OK);
+    }
+
+    @PostMapping("/spots/{spotLabel}/block")
+    public ResponseEntity<ParkingSpot> blockSpot(@PathVariable("spotLabel") String spotLabel) {
+        userService.logging("parkingBlockSpot( " + spotLabel + " )");
+        return new ResponseEntity<>(parkingReservationService.setSpotManualBlocked(spotLabel, true), HttpStatus.OK);
+    }
+
+    @PostMapping("/spots/{spotLabel}/unblock")
+    public ResponseEntity<ParkingSpot> unblockSpot(@PathVariable("spotLabel") String spotLabel) {
+        userService.logging("parkingUnblockSpot( " + spotLabel + " )");
+        return new ResponseEntity<>(parkingReservationService.setSpotManualBlocked(spotLabel, false), HttpStatus.OK);
     }
 
     @GetMapping("/review/pending")
