@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,12 +26,12 @@ import com.desk_sharing.entities.ParkingSpotType;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
+import com.desk_sharing.model.ParkingMyReservationDTO;
 import com.desk_sharing.model.ParkingReviewItemDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
 import com.desk_sharing.repositories.ParkingSpotRepository;
 import com.desk_sharing.repositories.UserRepository;
-
 import lombok.AllArgsConstructor;
 
 @Service
@@ -136,6 +137,51 @@ public class ParkingReservationService {
         return spot == null ? null : spot.getChargingKw();
     }
 
+    private static String formatTimeValue(final Time time) {
+        if (time == null) return null;
+        return time.toLocalTime().truncatedTo(ChronoUnit.MINUTES).toString();
+    }
+
+    private String displayUserForReservation(final ParkingReservation reservation) {
+        if (reservation == null) return null;
+        return userRepository.findById(reservation.getUserId())
+            .map(user -> {
+                final String fullName = ((user.getName() == null ? "" : user.getName().trim()) + " "
+                    + (user.getSurname() == null ? "" : user.getSurname().trim())).trim();
+                if (!fullName.isBlank()) {
+                    return user.getEmail() == null || user.getEmail().isBlank()
+                        ? fullName
+                        : fullName + " (" + user.getEmail() + ")";
+                }
+                return user.getEmail();
+            })
+            .orElse("unknown");
+    }
+
+    private ParkingAvailabilityResponseDTO availabilityRow(
+        final String label,
+        final String status,
+        final boolean reservedByMe,
+        final Long reservationId,
+        final ParkingSpotType spotType,
+        final boolean covered,
+        final Integer chargingKw,
+        final ParkingReservation overlapForDetails
+    ) {
+        return new ParkingAvailabilityResponseDTO(
+            label,
+            status,
+            reservedByMe,
+            reservationId,
+            spotType.name(),
+            covered,
+            chargingKw,
+            overlapForDetails == null ? null : formatTimeValue(overlapForDetails.getBegin()),
+            overlapForDetails == null ? null : formatTimeValue(overlapForDetails.getEnd()),
+            overlapForDetails == null ? null : displayUserForReservation(overlapForDetails)
+        );
+    }
+
     public List<ParkingAvailabilityResponseDTO> getAvailability(final ParkingAvailabilityRequestDTO request) {
         if (request == null || request.getSpotLabels() == null || request.getSpotLabels().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "spotLabels must not be empty");
@@ -164,8 +210,16 @@ public class ParkingReservationService {
         final Map<String, Long> myReservationIdByLabel = new HashMap<>();
         final Set<String> pendingLabels = new HashSet<>();
         final Set<String> approvedLabels = new HashSet<>();
+        final Map<String, ParkingReservation> activeOverlapForDetailsByLabel = new HashMap<>();
         for (final String label : occupiedLabels) {
             final List<ParkingReservation> overlaps = parkingReservationRepository.findOverlapsForSpot(day, label, begin, end);
+            final ParkingReservation activeOverlapForDetails = overlaps.stream()
+                .sorted((a, b) -> a.getBegin().compareTo(b.getBegin()))
+                .findFirst()
+                .orElse(null);
+            if (activeOverlapForDetails != null) {
+                activeOverlapForDetailsByLabel.put(label, activeOverlapForDetails);
+            }
             if (overlaps.stream().map(ParkingReservationService::effectiveStatus).anyMatch(status -> status == ParkingReservationStatus.PENDING)) {
                 pendingLabels.add(label);
             }
@@ -178,41 +232,52 @@ public class ParkingReservationService {
                 myReservationIdByLabel.put(label, myOverlap.getId());
             }
         }
+        final Map<String, ParkingReservation> rejectedOverlapForMeByLabel = new HashMap<>();
+        parkingReservationRepository.findRejectedOverlapsForUser(day, requestedLabels, begin, end, myUserId).stream()
+            .sorted((a, b) -> a.getBegin().compareTo(b.getBegin()))
+            .forEach(res -> rejectedOverlapForMeByLabel.putIfAbsent(res.getSpotLabel(), res));
 
         return requestedLabels.stream().map(label -> {
             final ParkingSpot spot = spotByLabel.get(label);
             final ParkingSpotType spotType = effectiveSpotType(spot, label);
             final boolean covered = effectiveCovered(spot);
             final Integer chargingKw = effectiveChargingKw(spot, spotType);
+            final ParkingReservation activeOverlap = activeOverlapForDetailsByLabel.get(label);
+            final ParkingReservation rejectedMine = rejectedOverlapForMeByLabel.get(label);
 
             if (spotType == ParkingSpotType.SPECIAL_CASE) {
-                return new ParkingAvailabilityResponseDTO(label, "BLOCKED", false, null, spotType.name(), covered, chargingKw);
+                return availabilityRow(label, "BLOCKED", false, null, spotType, covered, chargingKw, null);
             }
             if (approvedLabels.contains(label)) {
                 final boolean mine = myOccupiedLabels.contains(label);
-                return new ParkingAvailabilityResponseDTO(
+                return availabilityRow(
                     label,
                     "OCCUPIED",
                     mine,
                     mine ? myReservationIdByLabel.get(label) : null,
-                    spotType.name(),
+                    spotType,
                     covered,
-                    chargingKw
+                    chargingKw,
+                    activeOverlap
                 );
             }
             if (pendingLabels.contains(label)) {
                 final boolean mine = myOccupiedLabels.contains(label);
-                return new ParkingAvailabilityResponseDTO(
+                return availabilityRow(
                     label,
                     "PENDING",
                     mine,
                     mine ? myReservationIdByLabel.get(label) : null,
-                    spotType.name(),
+                    spotType,
                     covered,
-                    chargingKw
+                    chargingKw,
+                    activeOverlap
                 );
             }
-            return new ParkingAvailabilityResponseDTO(label, "AVAILABLE", false, null, spotType.name(), covered, chargingKw);
+            if (rejectedMine != null) {
+                return availabilityRow(label, "BLOCKED", true, null, spotType, covered, chargingKw, rejectedMine);
+            }
+            return availabilityRow(label, "AVAILABLE", false, null, spotType, covered, chargingKw, null);
         }).toList();
     }
 
@@ -238,6 +303,12 @@ public class ParkingReservationService {
         final List<ParkingReservation> overlaps = parkingReservationRepository.findOverlapsForSpot(day, spotLabel, begin, end);
         if (overlaps != null && !overlaps.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Spot is already reserved for this time range");
+        }
+        final List<ParkingReservation> rejectedForMe = parkingReservationRepository.findRejectedOverlapsForUser(
+            day, List.of(spotLabel), begin, end, myUserId
+        );
+        if (rejectedForMe != null && !rejectedForMe.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Your request for this time range was already rejected");
         }
 
         final ParkingReservation reservation = new ParkingReservation();
@@ -286,6 +357,20 @@ public class ParkingReservationService {
         return parkingReservationRepository.countByStatus(ParkingReservationStatus.PENDING);
     }
 
+    public List<ParkingMyReservationDTO> getMyReservations() {
+        final int myUserId = getCurrentUser().getId();
+        return parkingReservationRepository.findByUserIdOrderByDayAscBeginAsc(myUserId).stream()
+            .map(reservation -> new ParkingMyReservationDTO(
+                reservation.getId(),
+                reservation.getSpotLabel(),
+                reservation.getDay(),
+                reservation.getBegin(),
+                reservation.getEnd(),
+                effectiveStatus(reservation).name()
+            ))
+            .toList();
+    }
+
     public ParkingReservation approveReservation(final long id) {
         requireAdmin();
         final ParkingReservation reservation = parkingReservationRepository.findById(id)
@@ -313,6 +398,7 @@ public class ParkingReservationService {
         if (effectiveStatus(reservation) != ParkingReservationStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Reservation is not pending");
         }
-        parkingReservationRepository.deleteById(id);
+        reservation.setStatus(ParkingReservationStatus.REJECTED);
+        parkingReservationRepository.save(reservation);
     }
 }
