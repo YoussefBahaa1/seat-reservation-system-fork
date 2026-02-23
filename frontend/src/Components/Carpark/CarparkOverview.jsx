@@ -12,9 +12,10 @@ const CARPARK_SVG_URL = '/Assets/carpark_overview_ready.svg';
 const CARPARK_SELECTED_DATE_KEY = 'carparkSelectedDate';
 const CARPARK_DEFAULT_DURATION_MINUTES = 120;
 const CARPARK_MIN_LEAD_MINUTES = 30;
-const CARPARK_RES_STATUS_SNAPSHOT_KEY = 'carparkReservationStatusSnapshot';
-const CARPARK_NOTIFIED_STATUS_KEY = 'carparkNotifiedReservationStatus';
-const CARPARK_NOTIFIED_REMINDERS_KEY = 'carparkNotifiedReservationReminders';
+const CARPARK_NOTIFICATION_STATE_VERSION = 'v2';
+const CARPARK_RES_STATUS_SNAPSHOT_KEY = `carparkReservationStatusSnapshot_${CARPARK_NOTIFICATION_STATE_VERSION}`;
+const CARPARK_NOTIFIED_STATUS_KEY = `carparkNotifiedReservationStatus_${CARPARK_NOTIFICATION_STATE_VERSION}`;
+const CARPARK_NOTIFIED_REMINDERS_KEY = `carparkNotifiedReservationReminders_${CARPARK_NOTIFICATION_STATE_VERSION}`;
 
 const readSessionJson = (key, fallback) => {
   try {
@@ -33,6 +34,11 @@ const writeSessionJson = (key, value) => {
   } catch {
     // ignore storage issues
   }
+};
+
+const namespacedCarparkKey = (baseKey) => {
+  const userPart = localStorage.getItem('userId') || localStorage.getItem('email') || 'anon';
+  return `${baseKey}_${userPart}`;
 };
 
 const trimTimeForDisplay = (t) => (typeof t === 'string' ? t.slice(0, 5) : '');
@@ -439,6 +445,9 @@ const CarparkOverview = () => {
 
   useEffect(() => {
     let cancelled = false;
+    const snapshotKey = namespacedCarparkKey(CARPARK_RES_STATUS_SNAPSHOT_KEY);
+    const notifiedStatusKey = namespacedCarparkKey(CARPARK_NOTIFIED_STATUS_KEY);
+    const notifiedRemindersKey = namespacedCarparkKey(CARPARK_NOTIFIED_REMINDERS_KEY);
 
     const pollMyReservations = () => {
       getRequest(
@@ -451,9 +460,9 @@ const CarparkOverview = () => {
           const previousSnapshotObj =
             reservationStatusSnapshotRef.current.size > 0
               ? Object.fromEntries(reservationStatusSnapshotRef.current)
-              : readSessionJson(CARPARK_RES_STATUS_SNAPSHOT_KEY, {});
-          const notifiedStatus = readSessionJson(CARPARK_NOTIFIED_STATUS_KEY, {});
-          const notifiedReminders = readSessionJson(CARPARK_NOTIFIED_REMINDERS_KEY, {});
+              : readSessionJson(snapshotKey, {});
+          const notifiedStatus = readSessionJson(notifiedStatusKey, {});
+          const notifiedReminders = readSessionJson(notifiedRemindersKey, {});
           const nextSnapshot = new Map();
           const now = new Date();
 
@@ -468,9 +477,11 @@ const CarparkOverview = () => {
             const day = reservation?.day ?? '';
             const begin = trimTimeForDisplay(reservation?.begin);
             const end = trimTimeForDisplay(reservation?.end);
+            const createdAt = reservation?.createdAt ? String(reservation.createdAt) : '';
+            const reservationFingerprint = `${id}:${day}:${reservation?.begin ?? ''}:${reservation?.end ?? ''}:${createdAt}`;
 
             if (prevStatus === 'PENDING' && (status === 'APPROVED' || status === 'REJECTED')) {
-              const statusNotifyKey = `${id}:${status}`;
+              const statusNotifyKey = `${reservationFingerprint}:${status}`;
               if (!notifiedStatus[statusNotifyKey]) {
                 addPageNotification(
                   status === 'APPROVED' ? 'success' : 'warning',
@@ -492,7 +503,7 @@ const CarparkOverview = () => {
                 const diffMs = start.getTime() - now.getTime();
                 const diffMin = diffMs / 60000;
                 if (diffMin > 0 && diffMin <= 30) {
-                  const reminderKey = `${id}:${day}:${reservation?.begin}`;
+                  const reminderKey = `${reservationFingerprint}:REMINDER_30M`;
                   if (!notifiedReminders[reminderKey]) {
                     addPageNotification(
                       'info',
@@ -507,9 +518,9 @@ const CarparkOverview = () => {
           }
 
           reservationStatusSnapshotRef.current = nextSnapshot;
-          writeSessionJson(CARPARK_RES_STATUS_SNAPSHOT_KEY, Object.fromEntries(nextSnapshot));
-          writeSessionJson(CARPARK_NOTIFIED_STATUS_KEY, notifiedStatus);
-          writeSessionJson(CARPARK_NOTIFIED_REMINDERS_KEY, notifiedReminders);
+          writeSessionJson(snapshotKey, Object.fromEntries(nextSnapshot));
+          writeSessionJson(notifiedStatusKey, notifiedStatus);
+          writeSessionJson(notifiedRemindersKey, notifiedReminders);
         },
         () => {
           // keep page usable even if notification polling fails
@@ -523,7 +534,7 @@ const CarparkOverview = () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [t]);
+  }, [i18n.language]);
 
   const spotForPanel = selectedSpot ?? hoveredSpot;
   const isSpecialSpot = spotForPanel?.special === true;
