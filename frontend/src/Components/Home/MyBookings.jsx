@@ -4,12 +4,20 @@ import moment from "moment";
 import { useTranslation } from 'react-i18next';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import './MyBookings.css';
 import {getRequest, deleteRequest} from '../RequestFunctions/RequestFunctions';
 import LayoutPage from '../Templates/LayoutPage';
 import LayoutModal from '../Templates/LayoutModal';
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
+
+const BookingEvent = ({ event }) => (
+  <div className="mybookings-event-content">
+    <div className="mybookings-event-title">{event.title}</div>
+    {event.room && <div className="mybookings-event-room">{event.room}</div>}
+  </div>
+);
 
 const MyBookings = () => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -18,12 +26,13 @@ const MyBookings = () => {
   const location = useLocation();
   const navigate = useNavigate();
   // Defines which view is displayed per default. Either day, week or month.
-  const [defaultView, setDefaultView] = useState(''); 
+  const [defaultView, setDefaultView] = useState({ viewModeName: 'week' }); 
   const [selectedBookingEvent, setSelectedBookingEvent] = useState(null);
   // The current booking object (with id, room, desk) 
   const [theBookingEvent, setTheBookingEvent] = useState(null);
   //const userId = localStorage.getItem('userId');
   const localizer = momentLocalizer(moment);
+  const archiveLookbackDays = 90;
   const calendarFormats = {
     timeGutterFormat: (date, culture, loc) => loc.format(date, 'HH:mm', culture),
     eventTimeRangeFormat: ({ start, end }, culture, loc) =>
@@ -43,9 +52,15 @@ const MyBookings = () => {
         `${process.env.REACT_APP_BACKEND_URL}/bookings/user/${userId}`, 
         headers.current,
         (bookings) => {
-          const calendarEvents = bookings.map((booking) => ({
+          const earliestVisibleDay = moment().startOf('day').subtract(archiveLookbackDays, 'days');
+          const filteredBookings = bookings.filter((booking) => {
+            const bookingDay = moment(booking.day, 'YYYY-MM-DD', true);
+            return bookingDay.isValid() && bookingDay.isSameOrAfter(earliestVisibleDay);
+          });
+          const calendarEvents = filteredBookings.map((booking) => ({
             id: booking.id,
             title: `${t('desk')} ${booking.desk.remark}`,
+            room: booking.room?.remark || booking.desk?.room?.remark || '',
             start: new Date(booking.day + 'T' + booking.begin),
             end: new Date(booking.day + 'T' + booking.end),
             desk: booking.desk
@@ -57,7 +72,7 @@ const MyBookings = () => {
         }
       );
     },
-    [setEvents, t]
+    [archiveLookbackDays, setEvents, t]
   );
 
   // Fetch defauflt viewmode
@@ -72,8 +87,9 @@ const MyBookings = () => {
         headers.current,
         setDefaultView,
         (errorCode) => { 
-          console.log('Fehler beim Abrufen der Buchungen:', errorCode);
-          toast.error(t(errorCode+''));          
+          console.log('Error fetching default view mode:', errorCode);
+          setDefaultView({ viewModeName: 'week' });
+          toast.error(t('httpOther'));          
         },
     );
     
@@ -89,7 +105,8 @@ const MyBookings = () => {
   
   useEffect(() => {
     if (selectedBookingEvent) {
-      const updatedTitle = `${t('desk')} ${selectedBookingEvent.desk.id}`;
+      const deskLabel = selectedBookingEvent?.desk?.remark || selectedBookingEvent?.desk?.id || '';
+      const updatedTitle = `${t('desk')} ${deskLabel}`.trim();
   
       // Nur aktualisieren, wenn sich der Titel tatsächlich ändert
       if (selectedBookingEvent.title !== updatedTitle) {
@@ -101,11 +118,15 @@ const MyBookings = () => {
   const handleEventSelect = async (event) => {
     if (event.id !== selectedBookingEvent?.id) {
       setSelectedBookingEvent(event);
+      setTheBookingEvent(null);
       getRequest(
         `${process.env.REACT_APP_BACKEND_URL}/bookings/${event.id}`,
         headers.current,
         setTheBookingEvent,
-        () => {throw new Error('Failed to fetch booking details');}        
+        () => {
+          console.log('Failed to fetch booking details');
+          toast.error(t('httpOther'));
+        }        
       );
     }
   };
@@ -113,15 +134,108 @@ const MyBookings = () => {
   const reloadCalendar = async () => {
     fetchBookings();
     setSelectedBookingEvent(null);
+    setTheBookingEvent(null);
   };  
 
   const deleteBooking = async () => {
+    const selectedBookingId = selectedBookingEvent?.id;
+    if (!selectedBookingId) {
+      toast.error(t('httpOther'));
+      return;
+    }
+    if (theBookingEvent?.id && theBookingEvent.id !== selectedBookingId) {
+      toast.error(t('httpOther'));
+      return;
+    }
+    const idToDelete = theBookingEvent?.id || selectedBookingId;
     deleteRequest(
-      `${process.env.REACT_APP_BACKEND_URL}/bookings/${theBookingEvent.id}`,
+      `${process.env.REACT_APP_BACKEND_URL}/bookings/${idToDelete}`,
       headers.current,
       reloadCalendar,
-      () => {console.log('Error deleting booking:');}
+      () => {
+        console.log('Error deleting booking:');
+        toast.error(t('httpOther'));
+      }
     );
+  };
+
+  const escapeIcsText = (text) => {
+    if (!text) return '';
+    return String(text)
+      .replace(/\\/g, '\\\\')
+      .replace(/\n/g, '\\n')
+      .replace(/;/g, '\\;')
+      .replace(/,/g, '\\,');
+  };
+
+  const exportIcs = () => {
+    if (!selectedBookingEvent) return;
+    const hasMatchingDetails = theBookingEvent?.id === selectedBookingEvent?.id;
+    const booking = hasMatchingDetails ? theBookingEvent : selectedBookingEvent;
+    const start = moment(selectedBookingEvent.start);
+    const end = moment(selectedBookingEvent.end);
+    const deskRemark = booking?.desk?.remark || selectedBookingEvent?.desk?.remark || '';
+    const roomRemark = booking?.room?.remark || selectedBookingEvent?.room || selectedBookingEvent?.desk?.room?.remark || '';
+    const summary = `${t('desk')} ${deskRemark}`.trim();
+    const uid = `booking-${booking?.id || selectedBookingEvent?.id || 'unknown'}@desksharing`;
+    const dtstamp = moment().utc().format('YYYYMMDDTHHmmss[Z]');
+    const dtstart = start.format('YYYYMMDDTHHmmss');
+    const dtend = end.format('YYYYMMDDTHHmmss');
+
+    const lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Desk Sharing Tool//MyBookings//EN',
+      'CALSCALE:GREGORIAN',
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTAMP:${dtstamp}`,
+      `DTSTART:${dtstart}`,
+      `DTEND:${dtend}`,
+      `SUMMARY:${escapeIcsText(summary)}`,
+      roomRemark ? `LOCATION:${escapeIcsText(`${t('room')}: ${roomRemark}`)}` : null,
+      `DESCRIPTION:${escapeIcsText(`${t('desk')}: ${deskRemark}${roomRemark ? `, ${t('room')}: ${roomRemark}` : ''}`)}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].filter(Boolean);
+
+    const icsContent = lines.join('\r\n');
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const filename = `booking_${start.format('YYYYMMDD')}.ics`;
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  };
+
+  const editBooking = () => {
+    if (!theBookingEvent || theBookingEvent.id !== selectedBookingEvent?.id) {
+      toast.error(t('httpOther'));
+      return;
+    }
+    const roomId = theBookingEvent.room?.id || theBookingEvent.desk?.room?.id;
+    const deskId = theBookingEvent.desk?.id;
+    if (!roomId || !deskId) {
+      console.log('Missing roomId or deskId for edit booking');
+      return;
+    }
+    const start = new Date(`${theBookingEvent.day}T${theBookingEvent.begin}`);
+    navigate('/desks', {
+      state: {
+        roomId,
+        date: start,
+        editBooking: {
+          bookingId: theBookingEvent.id,
+          deskId,
+          day: theBookingEvent.day,
+          begin: theBookingEvent.begin,
+          end: theBookingEvent.end,
+        },
+      },
+    });
   };
   
   function create_helpText() {
@@ -130,7 +244,7 @@ const MyBookings = () => {
 
   // Get selected date and view from location state
   const selectedDate = location.state?.date ? new Date(location.state.date) : null;
-  const initialView = location.state?.view || defaultView.viewModeName;
+  const initialView = location.state?.view || defaultView?.viewModeName || 'week';
   const [currentDate, setCurrentDate] = useState(selectedDate || new Date());
 
   return (
@@ -141,7 +255,10 @@ const MyBookings = () => {
       <>
         <LayoutModal
           isOpen={selectedBookingEvent !== null}
-          onClose={()=>{setSelectedBookingEvent(null);}}
+          onClose={() => {
+            setSelectedBookingEvent(null);
+            setTheBookingEvent(null);
+          }}
           submit={deleteBooking}
           submitTxt={t('delete')}
           title={i18n.language === 'de' ? 'Diese Buchung entfernen' : 'Delete this booking'}
@@ -153,8 +270,45 @@ const MyBookings = () => {
                 <p>{t('start')}: {moment(selectedBookingEvent.start).format('HH:mm')}</p>
                 <p>{t('end')}: {moment(selectedBookingEvent.end).format('HH:mm')}</p>
                 
-                {theBookingEvent && theBookingEvent.room && <p>{t('room')}: {theBookingEvent.room.remark}</p> }
-                {theBookingEvent && theBookingEvent.desk && <p>{t('desk')}: {/*theBookingEvent.desk.id + ' ' + */theBookingEvent.desk.remark}</p> }
+                {theBookingEvent && theBookingEvent.id === selectedBookingEvent.id && theBookingEvent.room && <p>{t('room')}: {theBookingEvent.room.remark}</p> }
+                {theBookingEvent && theBookingEvent.id === selectedBookingEvent.id && theBookingEvent.desk && <p>{t('desk')}: {theBookingEvent.desk.remark}</p> }
+                <Button
+                  id="mybookings_edit_booking_btn"
+                  sx={{
+                    marginTop: '10px',
+                    padding: '8px 12px',
+                    backgroundColor: '#0b5f2a',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    textTransform: 'none',
+                    '&:hover': { backgroundColor: '#b7e0c8' }
+                  }}
+                  variant="contained"
+                  onClick={editBooking}
+                  disabled={!theBookingEvent || theBookingEvent.id !== selectedBookingEvent?.id}
+                >
+                  {t('editBooking')}
+                </Button>
+                <Button
+                  id="mybookings_export_ics_btn"
+                  sx={{
+                    marginTop: '10px',
+                    marginLeft: '10px',
+                    padding: '8px 12px',
+                    backgroundColor: '#0b5f2a',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontSize: '14px',
+                    textTransform: 'none',
+                    '&:hover': { backgroundColor: '#b7e0c8' }
+                  }}
+                  variant="contained"
+                  onClick={exportIcs}
+                  disabled={!selectedBookingEvent}
+                >
+                  {t('exportIcs')}
+                </Button>
               </div>
             } 
           </div>
@@ -175,7 +329,7 @@ const MyBookings = () => {
                   alignSelf: 'flex-start',
                   '&:hover': { backgroundColor: '#b7e0c8' }
                 }}
-                onClick={() => navigate('/freeDesks', { state: { date: currentDate } })}
+                onClick={() => navigate('/freedesks', { state: { date: currentDate } })}
               >
                 {t('addBooking')}
               </Button>
@@ -184,10 +338,12 @@ const MyBookings = () => {
                 formats={calendarFormats}
                 style={{ height: '100vh' }}
                 eventPropGetter={(event) => ({
+                  className: 'mybookings-event',
                   style: {
                     backgroundColor: "#3174ad",
                   },
                 })}
+                components={{ event: BookingEvent }}
                 events={events}
                 startAccessor='start'
                 endAccessor='end'
@@ -211,7 +367,7 @@ const MyBookings = () => {
                   time: t("time"),
                   event: t("event"),
                   noEventsInRange: t("noEventsInRange")
-              }}
+                }}
               />
             </>
           )}

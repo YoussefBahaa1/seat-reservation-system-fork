@@ -68,8 +68,8 @@ public interface ParkingReservationRepository extends JpaRepository<ParkingReser
         @Param("day") Date day,
         @Param("spotLabels") List<String> spotLabels,
         @Param("startTime") Time startTime,
-        @Param("endTime") Time endTime,
-        @Param("userId") int userId
+            @Param("endTime") Time endTime,
+            @Param("userId") int userId
     );
 
     List<ParkingReservation> findByStatusOrderByCreatedAtAsc(ParkingReservationStatus status);
@@ -79,4 +79,8 @@ public interface ParkingReservationRepository extends JpaRepository<ParkingReser
     List<ParkingReservation> findByUserId(int userId);
 
     List<ParkingReservation> findByUserIdOrderByDayAscBeginAsc(int userId);
+
+    List<ParkingReservation> findByDay(Date day);
+
+    long countByDay(Date day);
 }

@@ -62,7 +62,7 @@ const SidebarComponent = () => {
       setActiveTab('series');
       //setSeriesSubMenuOpen(true);
     }
-    if (location.pathname === '/freeDesks') {
+    if (location.pathname === '/freedesks' || location.pathname === '/freeDesks') {
       setActiveTab('freeDesks');
       //setSeriesSubMenuOpen(false);
     }
@@ -95,7 +95,7 @@ const SidebarComponent = () => {
         break;
 
       case 'freeDesks':
-        navigate("/freeDesks", { replace: true });
+        navigate("/freedesks", { replace: true });
         break;
 
       case 'favourites':
@@ -229,7 +229,7 @@ const SidebarComponent = () => {
             icon={<IoCalendarNumberOutline />}
             onClick={() => handleClick("calendar")}
           >
-            {t("calendar")}
+            {t("home")}
           </MenuItem>
           <MenuItem
             id='sidebar_bookings'

@@ -6,6 +6,8 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +28,7 @@ import com.desk_sharing.entities.ParkingReservationStatus;
 import com.desk_sharing.entities.ParkingSpot;
 import com.desk_sharing.entities.ParkingSpotType;
 import com.desk_sharing.entities.UserEntity;
+import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
 import com.desk_sharing.model.ParkingMyReservationDTO;
@@ -379,6 +382,23 @@ public class ParkingReservationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot delete other user's reservation");
         }
         parkingReservationRepository.deleteById(id);
+    }
+
+    public List<BookingDayEventDTO> getReservationsForDate(final Date day) {
+        if (day == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing day");
+        }
+        return parkingReservationRepository.findByDay(day).stream()
+            .map(BookingDayEventDTO::new)
+            .toList();
+    }
+
+    public Dictionary<Date, Integer> getAllReservationsForDates(final List<Date> days) {
+        Dictionary<Date, Integer> slots = new Hashtable<>();
+        for (Date day : days) {
+            slots.put(day, Math.toIntExact(parkingReservationRepository.countByDay(day)));
+        }
+        return slots;
     }
 
     public List<ParkingReviewItemDTO> getPendingReservationsForReview() {

@@ -1,0 +1,617 @@
+import { Box, Button, Chip, Divider, Paper, Typography, Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'react-toastify';
+import { postRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
+import CreateDatePicker from '../misc/CreateDatePicker';
+import CreateTimePicker from '../misc/CreateTimePicker';
+
+const CARPARK_SVG_URL = '/Assets/carpark_overview_ready.svg';
+const CARPARK_SELECTED_DATE_KEY = 'carparkSelectedDate';
+
+const parseFloatAttr = (el, name, fallback = 0) => {
+  const raw = el.getAttribute(name);
+  const parsed = raw == null ? NaN : Number.parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const isPointInRect = (x, y, rectX, rectY, rectW, rectH) =>
+  x >= rectX && x <= rectX + rectW && y >= rectY && y <= rectY + rectH;
+
+const getClosestNumericLabel = (labels, x, y) => {
+  let best = null;
+  let bestDistSq = Infinity;
+
+  for (const label of labels) {
+    const dx = label.x - x;
+    const dy = label.y - y;
+    const distSq = dx * dx + dy * dy;
+    if (distSq < bestDistSq) {
+      bestDistSq = distSq;
+      best = label;
+    }
+  }
+
+  if (!best) return null;
+
+  // The current SVG layout keeps labels reasonably close to their spots.
+  const maxDistSq = 160 * 160;
+  return bestDistSq <= maxDistSq ? best : null;
+};
+
+const getSpotMetaFromDataset = (rect) => ({
+  label: rect.dataset.spotLabel ?? '?',
+  type: rect.dataset.spotType ?? 'unknown',
+  lit: rect.dataset.spotLit === 'true',
+  accessible: rect.dataset.spotAccessible === 'true',
+  special: rect.dataset.spotSpecial === 'true',
+  selectable: rect.dataset.spotSelectable !== 'false',
+  status: rect.dataset.spotStatus ?? 'UNKNOWN',
+  reservedByMe: rect.dataset.spotReservedByMe === 'true',
+  reservationId: rect.dataset.spotReservationId ? Number(rect.dataset.spotReservationId) : null,
+});
+
+const CarparkView = ({
+  selectedDate: controlledSelectedDate,
+  onSelectedDateChange,
+  detailsVariant = 'panel',
+  showHoverDetails,
+  headerAction = null,
+  onReservationsChanged = null,
+}) => {
+  const { t } = useTranslation();
+  const location = useLocation();
+  const containerRef = useRef(null);
+  const cleanupRef = useRef([]);
+  const selectedRectRef = useRef(null);
+  const svgRef = useRef(null);
+  const headersRef = useRef(JSON.parse(sessionStorage.getItem('headers')));
+  const spotRectsByLabelRef = useRef(new Map());
+
+  const [selectedSpot, setSelectedSpot] = useState(null);
+  const [hoveredSpot, setHoveredSpot] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const [zoom, setZoom] = useState(1);
+  const [internalDate, setInternalDate] = useState(() => {
+    const fromState = location.state?.date ? new Date(location.state.date) : null;
+    if (fromState && !Number.isNaN(fromState.valueOf())) {
+      return fromState;
+    }
+    const stored = sessionStorage.getItem(CARPARK_SELECTED_DATE_KEY);
+    if (stored) {
+      const parsed = new Date(stored);
+      if (!Number.isNaN(parsed.valueOf())) {
+        return parsed;
+      }
+    }
+    return new Date();
+  });
+  const [startTime, setStartTime] = useState('08:00');
+  const [endTime, setEndTime] = useState('10:00');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const effectiveShowHover = showHoverDetails ?? detailsVariant === 'panel';
+  const selectedDate = controlledSelectedDate ?? internalDate;
+  const setSelectedDate = onSelectedDateChange ?? setInternalDate;
+  const allowSelectUnavailable = detailsVariant === 'modal';
+
+  const clearSelection = useCallback(() => {
+    if (selectedRectRef.current) {
+      selectedRectRef.current.classList.remove('carpark-selected');
+    }
+    selectedRectRef.current = null;
+    setSelectedSpot(null);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const cleanupCurrent = () => {
+      for (const fn of cleanupRef.current) fn();
+      cleanupRef.current = [];
+      selectedRectRef.current = null;
+      svgRef.current = null;
+      if (containerRef.current) containerRef.current.replaceChildren();
+    };
+
+    const load = async () => {
+      setLoadError('');
+      setSelectedSpot(null);
+      setHoveredSpot(null);
+      cleanupCurrent();
+
+      const resp = await fetch(CARPARK_SVG_URL, { cache: 'no-cache' });
+      if (!resp.ok) {
+        throw new Error(`Failed to load SVG (${resp.status})`);
+      }
+      const svgText = await resp.text();
+
+      const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+      const svg = doc.documentElement;
+      if (!svg || svg.localName !== 'svg') {
+        throw new Error('Invalid SVG document');
+      }
+
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      svg.style.width = '100%';
+      svg.style.height = 'auto';
+      svg.style.display = 'block';
+
+      // Make sure labels don't intercept pointer events (so hover/click behavior is driven by the spot rects).
+      for (const textEl of Array.from(svg.querySelectorAll('text'))) {
+        textEl.style.pointerEvents = 'none';
+      }
+
+      const defs = svg.querySelector('defs') ?? svg.insertBefore(doc.createElementNS(svg.namespaceURI, 'defs'), svg.firstChild);
+      const style = doc.createElementNS(svg.namespaceURI, 'style');
+      style.textContent = `
+        .carpark-spot { cursor: pointer; }
+        .carpark-spot.carpark-hover { fill: #90caf9 !important; }
+        .carpark-spot.carpark-selected { fill: #1976d2 !important; }
+        .carpark-spot:focus { outline: none; }
+        .carpark-status-available { fill: #2e7d32 !important; }
+        .carpark-status-occupied { fill: #c62828 !important; }
+        .carpark-status-blocked { fill: #9e9e9e !important; }
+      `;
+      defs.appendChild(style);
+
+      const localCleanup = [];
+      const allTextNodes = Array.from(svg.querySelectorAll('text'))
+        .map((el) => ({
+          value: (el.textContent ?? '').trim(),
+          x: parseFloatAttr(el, 'x', NaN),
+          y: parseFloatAttr(el, 'y', NaN),
+        }))
+        .filter((t) => t.value !== '' && Number.isFinite(t.x) && Number.isFinite(t.y));
+
+      const labelTexts = allTextNodes.filter((t) => /^\d+$/.test(t.value));
+      const litTexts = allTextNodes.filter((t) => t.value.toUpperCase() === 'LIT');
+      const accessibleTexts = allTextNodes.filter(
+        (t) => t.value.includes('♿') || t.value.includes('â™ż')
+      );
+
+      // Only "stall" rectangles are selectable/hoverable (blank "empty" spots are view-only).
+      const spotRects = Array.from(svg.querySelectorAll('rect.stall')).filter((rect) => {
+        const w = parseFloatAttr(rect, 'width');
+        const h = parseFloatAttr(rect, 'height');
+        return w >= 40 && h >= 40;
+      });
+      spotRectsByLabelRef.current = new Map();
+      for (let idx = 0; idx < spotRects.length; idx += 1) {
+        const rect = spotRects[idx];
+        rect.classList.add('carpark-spot');
+
+        const x = parseFloatAttr(rect, 'x');
+        const y = parseFloatAttr(rect, 'y');
+        const w = parseFloatAttr(rect, 'width');
+        const h = parseFloatAttr(rect, 'height');
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+
+        const closest = getClosestNumericLabel(labelTexts, cx, cy);
+        const spotLabel = closest?.value ?? `${idx + 1}`;
+        const isSpecial = spotLabel === '23';
+        const isSelectable = !isSpecial;
+
+        const isLit = litTexts.some((t) => isPointInRect(t.x, t.y, x, y, w, h));
+        const isAccessible = accessibleTexts.some((t) => isPointInRect(t.x, t.y, x, y, w, h));
+
+        rect.dataset.spotLabel = spotLabel;
+        rect.dataset.spotType = 'stall';
+        rect.dataset.spotLit = isLit ? 'true' : 'false';
+        rect.dataset.spotAccessible = isAccessible ? 'true' : 'false';
+        rect.dataset.spotSpecial = isSpecial ? 'true' : 'false';
+        rect.dataset.spotSelectable = isSelectable ? 'true' : 'false';
+        // Default to AVAILABLE so the UI is usable even before the first availability refresh completes.
+        rect.dataset.spotStatus = isSpecial ? 'BLOCKED' : 'AVAILABLE';
+        rect.dataset.spotReservedByMe = 'false';
+        rect.dataset.spotReservationId = '';
+        spotRectsByLabelRef.current.set(spotLabel, rect);
+        rect.classList.add(isSpecial ? 'carpark-status-blocked' : 'carpark-status-available');
+
+        rect.setAttribute('tabindex', isSelectable ? '0' : '-1');
+        rect.setAttribute('role', isSelectable ? 'button' : 'img');
+        if (!isSelectable) {
+          rect.style.cursor = 'default';
+        }
+        rect.setAttribute(
+          'aria-label',
+          `Parking spot ${spotLabel}${isSpecial ? ', special case' : isAccessible ? ', accessible' : ', standard'}${isLit ? ', LIT' : ''}`
+        );
+
+        const setSelectedRect = () => {
+          if (!isSelectable) return;
+          const status = rect.dataset.spotStatus;
+          if (!allowSelectUnavailable && status && status !== 'AVAILABLE') return;
+          if (status === 'BLOCKED') return;
+          if (selectedRectRef.current && selectedRectRef.current !== rect) {
+            selectedRectRef.current.classList.remove('carpark-selected');
+          }
+          selectedRectRef.current = rect;
+          rect.classList.add('carpark-selected');
+          setSelectedSpot(getSpotMetaFromDataset(rect));
+        };
+
+        const onMouseEnter = () => {
+          rect.classList.add('carpark-hover');
+          if (effectiveShowHover) {
+            setHoveredSpot(getSpotMetaFromDataset(rect));
+          }
+        };
+        const onMouseLeave = () => {
+          rect.classList.remove('carpark-hover');
+          if (effectiveShowHover) {
+            setHoveredSpot(null);
+          }
+        };
+        const onClick = (e) => {
+          e.stopPropagation();
+          setSelectedRect();
+        };
+        const onKeyDown = (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setSelectedRect();
+          }
+        };
+
+        rect.addEventListener('mouseenter', onMouseEnter);
+        rect.addEventListener('mouseleave', onMouseLeave);
+        rect.addEventListener('click', onClick);
+        rect.addEventListener('keydown', onKeyDown);
+
+        localCleanup.push(() => {
+          rect.removeEventListener('mouseenter', onMouseEnter);
+          rect.removeEventListener('mouseleave', onMouseLeave);
+          rect.removeEventListener('click', onClick);
+          rect.removeEventListener('keydown', onKeyDown);
+        });
+      }
+
+      const onSvgClick = () => {
+        clearSelection();
+      };
+      svg.addEventListener('click', onSvgClick);
+      localCleanup.push(() => svg.removeEventListener('click', onSvgClick));
+
+      // If the pointer is not over an interactive stall rect, do not show hover details.
+      if (effectiveShowHover) {
+        const onSvgMouseMove = (e) => {
+          const target = e.target;
+          if (!(target instanceof Element)) return;
+          if (!target.closest('.carpark-spot')) {
+            setHoveredSpot(null);
+          }
+        };
+        const onSvgMouseLeave = () => setHoveredSpot(null);
+        svg.addEventListener('mousemove', onSvgMouseMove);
+        svg.addEventListener('mouseleave', onSvgMouseLeave);
+        localCleanup.push(() => svg.removeEventListener('mousemove', onSvgMouseMove));
+        localCleanup.push(() => svg.removeEventListener('mouseleave', onSvgMouseLeave));
+      }
+
+      if (cancelled) {
+        for (const fn of localCleanup) fn();
+        return;
+      }
+
+      svgRef.current = svg;
+      cleanupRef.current = localCleanup;
+      containerRef.current?.appendChild(svg);
+    };
+
+    load().catch((err) => {
+      if (cancelled) return;
+      setLoadError(err instanceof Error ? err.message : 'Failed to load carpark overview.');
+    });
+
+    return () => {
+      cancelled = true;
+      cleanupCurrent();
+    };
+  }, [effectiveShowHover, allowSelectUnavailable, clearSelection]);
+
+  useEffect(() => {
+    if (!svgRef.current) return;
+    svgRef.current.style.transform = `scale(${zoom})`;
+    svgRef.current.style.transformOrigin = '0 0';
+  }, [zoom]);
+
+  useEffect(() => {
+    if (!selectedDate || Number.isNaN(selectedDate.valueOf())) return;
+    sessionStorage.setItem(CARPARK_SELECTED_DATE_KEY, selectedDate.toISOString());
+  }, [selectedDate]);
+
+  const spotForPanel = effectiveShowHover ? (selectedSpot ?? hoveredSpot) : selectedSpot;
+  const isSpecialSpot = spotForPanel?.special === true;
+  const isBlocked = spotForPanel?.status === 'BLOCKED' || isSpecialSpot;
+  const isOccupied = spotForPanel?.status === 'OCCUPIED';
+  const isAvailable = spotForPanel?.status === 'AVAILABLE';
+
+  const formatISODate = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const timeToMinutes = (tStr) => {
+    if (!tStr) return NaN;
+    const [hh, mm] = tStr.split(':');
+    const h = Number.parseInt(hh, 10);
+    const m = Number.parseInt(mm, 10);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return NaN;
+    return h * 60 + m;
+  };
+
+  const refreshAvailability = () => {
+    if (!spotRectsByLabelRef.current || spotRectsByLabelRef.current.size === 0) return;
+    if (!selectedDate || !startTime || !endTime) return;
+    if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+      toast.warning(t('timerangeIsNotValid'));
+      return;
+    }
+
+    const spotLabels = Array.from(spotRectsByLabelRef.current.keys());
+    const day = formatISODate(selectedDate);
+    setIsRefreshing(true);
+
+    postRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/parking/availability`,
+      headersRef.current,
+      (data) => {
+        const statusByLabel = new Map();
+        for (const row of data ?? []) {
+          statusByLabel.set(String(row.spotLabel), row);
+        }
+
+        for (const [label, rect] of spotRectsByLabelRef.current.entries()) {
+          rect.classList.remove('carpark-status-available', 'carpark-status-occupied', 'carpark-status-blocked');
+
+          const row = statusByLabel.get(label);
+          const status = row?.status ?? (label === '23' ? 'BLOCKED' : 'AVAILABLE');
+          rect.dataset.spotStatus = status;
+          rect.dataset.spotReservedByMe = row?.reservedByMe ? 'true' : 'false';
+          rect.dataset.spotReservationId = row?.reservationId ? String(row.reservationId) : '';
+
+          if (status === 'AVAILABLE') rect.classList.add('carpark-status-available');
+          if (status === 'OCCUPIED') rect.classList.add('carpark-status-occupied');
+          if (status === 'BLOCKED') rect.classList.add('carpark-status-blocked');
+        }
+
+        // Update currently shown panel state if hovering/selected
+        if (selectedRectRef.current) setSelectedSpot(getSpotMetaFromDataset(selectedRectRef.current));
+        setIsRefreshing(false);
+      },
+      (errorCode) => {
+        setIsRefreshing(false);
+        console.error('Failed to fetch parking availability', errorCode);
+        toast.error(t('httpOther'));
+      },
+      {
+        spotLabels,
+        day,
+        begin: startTime,
+        end: endTime,
+      }
+    );
+  };
+
+  useEffect(() => {
+    refreshAvailability();
+    const interval = setInterval(() => refreshAvailability(), 5000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, startTime, endTime]);
+
+  const reserveSelected = () => {
+    if (!selectedSpot || selectedSpot.status !== 'AVAILABLE') return;
+    const day = formatISODate(selectedDate);
+
+    postRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/parking/reservations`,
+      headersRef.current,
+      () => {
+        toast.success(t('booked'));
+        refreshAvailability();
+        if (onReservationsChanged) {
+          onReservationsChanged();
+        }
+      },
+      (errorCode) => {
+        if (errorCode === 409) toast.warning(t('overlap'));
+        else toast.error(t('httpOther'));
+      },
+      {
+        spotLabel: selectedSpot.label,
+        day,
+        begin: startTime,
+        end: endTime,
+      }
+    );
+  };
+
+  const cancelMyReservation = () => {
+    const reservationId = spotForPanel?.reservationId;
+    if (!reservationId) return;
+    deleteRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/parking/reservations/${reservationId}`,
+      headersRef.current,
+      () => {
+        toast.success(t('bookingDeleted'));
+        refreshAvailability();
+        if (onReservationsChanged) {
+          onReservationsChanged();
+        }
+      },
+      () => toast.error(t('httpOther'))
+    );
+  };
+
+  const detailsBody = (
+    <>
+      {detailsVariant === 'panel' && !spotForPanel && (
+        <Typography variant="body2" color="text.secondary">
+          {t('carparkNoSelection')}
+        </Typography>
+      )}
+      {spotForPanel && (
+        <>
+          <Typography variant="body1" sx={{ fontWeight: 700 }}>
+            {t('carparkSpot')} {spotForPanel.label}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t(`carparkStatus_${spotForPanel.status}`)}
+            {spotForPanel.reservedByMe ? ` (${t('carparkReservedByMe')})` : ''}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t(spotForPanel.type === 'stall' ? 'carparkTypeStall' : 'carparkTypeEmpty')}
+          </Typography>
+          <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {isSpecialSpot ? (
+              <Typography variant="body2">{t('carparkSpecialCase')}</Typography>
+            ) : spotForPanel.accessible ? (
+              <Typography variant="body2">♿</Typography>
+            ) : (
+              <Typography variant="body2">{t('carparkStandard')}</Typography>
+            )}
+            {spotForPanel.lit && <Typography variant="body2">LIT</Typography>}
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {selectedSpot ? t('carparkSelected') : t('carparkHover')}
+          </Typography>
+          {selectedSpot && isAvailable && (
+            <Button sx={{ mt: 2 }} variant="contained" onClick={reserveSelected}>
+              {t('carparkReserve')}
+            </Button>
+          )}
+          {isOccupied && spotForPanel.reservedByMe && spotForPanel.reservationId && (
+            <Button sx={{ mt: 2 }} color="error" variant="outlined" onClick={cancelMyReservation}>
+              {t('delete')}
+            </Button>
+          )}
+        </>
+      )}
+      {(detailsVariant === 'panel' || spotForPanel) && (
+        <>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="body2" color="text.secondary">
+            {isSpecialSpot
+              ? t('carparkContactStaff')
+              : isBlocked
+                ? t('carparkBlocked')
+                : isOccupied
+                  ? t('carparkOccupied')
+                  : isAvailable
+                    ? t('carparkAvailable')
+              : t('carparkHintClick')}
+          </Typography>
+        </>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Box sx={{ minWidth: 220, flex: '0 1 220px' }}>
+            <CreateDatePicker date={selectedDate} setter={setSelectedDate} label={t('date')} />
+          </Box>
+          <Box sx={{ minWidth: 160, flex: '0 1 160px' }}>
+            <CreateTimePicker time={startTime} setter={setStartTime} label={t('startTime')} />
+          </Box>
+          <Box sx={{ minWidth: 160, flex: '0 1 160px' }}>
+            <CreateTimePicker time={endTime} setter={setEndTime} label={t('endTime')} />
+          </Box>
+          <Button variant="contained" onClick={refreshAvailability} disabled={isRefreshing}>
+            {t('carparkRefresh')}
+          </Button>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Chip size="small" label={t('carparkLegendAvailable')} sx={{ bgcolor: '#2e7d32', color: '#fff' }} />
+            <Chip size="small" label={t('carparkLegendOccupied')} sx={{ bgcolor: '#c62828', color: '#fff' }} />
+            <Chip size="small" label={t('carparkLegendBlocked')} sx={{ bgcolor: '#9e9e9e', color: '#fff' }} />
+          </Box>
+          {headerAction && (
+            <Box sx={{ ml: 'auto', display: 'flex' }}>
+              {headerAction}
+            </Box>
+          )}
+        </Box>
+      </Paper>
+
+      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ flex: '1 1 720px', minWidth: 320 }}>
+          <Paper variant="outlined" sx={{ p: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', px: 1, py: 0.5 }}>
+              <Typography variant="body2" sx={{ flex: 1 }}>
+                {t('carparkHintClick')}
+              </Typography>
+              <Button size="small" variant="outlined" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))}>
+                –
+              </Button>
+              <Button size="small" variant="outlined" onClick={() => setZoom((z) => Math.min(2, +(z + 0.1).toFixed(2)))}>
+                +
+              </Button>
+              <Button size="small" variant="text" onClick={() => setZoom(1)} disabled={zoom === 1}>
+                {t('carparkReset')}
+              </Button>
+            </Box>
+            <Divider />
+            <Box
+              ref={containerRef}
+              sx={{
+                overflow: 'auto',
+                maxHeight: 600,
+                backgroundColor: '#fff',
+              }}
+            />
+            {loadError && (
+              <Typography variant="body2" color="error" sx={{ px: 1, py: 1 }}>
+                {loadError}
+              </Typography>
+            )}
+          </Paper>
+        </Box>
+
+        {detailsVariant === 'panel' && (
+          <Box sx={{ flex: '0 1 320px', minWidth: 280 }}>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                {t('carparkDetails')}
+              </Typography>
+              {detailsBody}
+            </Paper>
+          </Box>
+        )}
+      </Box>
+
+      {detailsVariant === 'modal' && (
+        <Dialog
+          open={Boolean(selectedSpot)}
+          onClose={clearSelection}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="h6" sx={{ flex: 1 }}>
+              {t('carparkDetails')}
+            </Typography>
+            <IconButton onClick={clearSelection} aria-label={t('close')}>
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers>
+            {detailsBody}
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+};
+
+export default CarparkView;
