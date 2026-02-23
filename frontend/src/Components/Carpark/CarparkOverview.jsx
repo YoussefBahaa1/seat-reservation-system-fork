@@ -666,7 +666,7 @@ const CarparkOverview = () => {
 
   const setSpotBlocked = (blocked) => {
     if (!isAdminUser || !adminEditMode || !selectedSpot?.label) return;
-    if (selectedSpot?.spotCategory === 'SPECIAL_CASE') {
+    if (selectedSpot?.special) {
       toast.warning(t('carparkEditModeSpecialCase'));
       return;
     }
