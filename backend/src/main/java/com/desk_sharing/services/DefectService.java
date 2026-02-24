@@ -60,6 +60,9 @@ public class DefectService {
         }
 
         DefectCategory category;
+        if (dto.getCategory() == null || dto.getCategory().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category is required");
+        }
         try {
             category = DefectCategory.valueOf(dto.getCategory());
         } catch (IllegalArgumentException e) {
@@ -67,6 +70,9 @@ public class DefectService {
         }
 
         DefectUrgency urgency;
+        if (dto.getUrgency() == null || dto.getUrgency().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Urgency is required");
+        }
         try {
             urgency = DefectUrgency.valueOf(dto.getUrgency());
         } catch (IllegalArgumentException e) {
@@ -157,6 +163,10 @@ public class DefectService {
 
     @Transactional
     public Defect updateStatus(Long id, String newStatusStr) {
+        if (newStatusStr == null || newStatusStr.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status is required");
+        }
+
         DefectStatus newStatus;
         try {
             newStatus = DefectStatus.valueOf(newStatusStr);
