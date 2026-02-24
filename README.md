@@ -83,6 +83,7 @@ A list of most of the params is in the following table:
 | IP   | The ip or name of the host machine    | my-srv     | Needed |
 | NETWORK | The name of the docker network used for this project | mynetwork_dev | Needed.  One of the two defined networks in docker-compose.yml |
 | USE_TLS | True if tls shall be used | false | Needed |
+| PROTOCOLL | Protocol for frontend→backend URLs (http/https) | http | Used by docker-compose/build scripts |
 | LDAP_DIR_CONTEXT_URL | The url of the ldap/AD server | ldaps://srv.de | Empty if no ldap is needed.
 | LDAP_DIR_CONTEXT_PRINCIPAL | The username of the member of AD | ldap_service_user,OU=Funktion,OU=AD-Management,DC=foo,DC=bar,DC=baz | Needed if LDAP_DIR_CONTEXT_PRINCIPAL is not empty | 
 | LDAP_USER_BASE | The base ou if we look for users. | OU=org | Needed if LDAP_DIR_CONTEXT_PRINCIPAL is not empty |
@@ -93,22 +94,28 @@ A list of most of the params is in the following table:
 | ERROR_USER_NOT_FOUND_IN_AD | Error if a user was not found in ad. This value is an key in frontend/src/locales | "ERROR_USER_NOT_FOUND_IN_AD" | Needed |
 | ERROR_USER_NOT_FOUND_IN_DAO | Error if a user was not found in our db. This value is an key in frontend/src/locales | "ERROR_USER_NOT_FOUND_IN_DAO" | Needed |
 | ERROR_WRONG_PW | Error if the password is wrong. This value is an key in frontend/src/locales | "ERROR_WRONG_PW" | Needed |
+| ERROR_USER_DEACTIVATED | Error if the user account is deactivated | "ERROR_USER_DEACTIVATED" | Needed |
 | http_proxy | The proxy server for http | http://proxy.de:3128 | Not needed |
 | https_proxy | The proxy server for https | http://proxy.de:3128 | Not needed |
-| TEST_EMPLOYEE_MAIL | Mail for a test employee | test.employee@mail.de | Needed for tests |
+| TEST_USER_MAIL | Mail for a test employee | test.employee@mail.de | Needed for tests |
 | TEST_ADMIN_MAIL | Mail for a test admin | test.admin@mail.de | Needed for tests |
-| TEST_SERVICE_PERSONNEL_MAIL | Mail for a test employee | test.employee@mail.de | Needed for tests |
-| TEST_EMPLOYEE_PW | PW for test employee | test | Needed for tests |
+| TEST_SERVICE_PERSONNEL_MAIL | Mail for test service personnel | test.servicepersonnel@mail.de | Needed for tests |
+| TEST_USER_PW | PW for test employee | test | Needed for tests |
 | TEST_ADMIN_PW | PW for test admin | test | Needed for tests |
-| TEST_SERVICE_PERSONNEL_PW | PW for test admin | test | Needed for tests |
+| TEST_SERVICE_PERSONNEL_PW | PW for test service personnel | test | Needed for tests |
 | FRONTEND_TARGET | Set build to production | "production_runtime" | Needed. Dont change | 
 | FRONTEND_KEY_FILE | Name of the frontend tls key file (unencrypted) | frontend.key | Needed. Must be in $PATH_TO_TLS/frontend/. |
 | FRONTEND_CRT_FILE | Name of the frontend tls crt file | frontend.crt | Needed.  Must be in $PATH_TO_TLS/frontend/. | 
 | CREATE_SERIES_DEFAULT_STARTTIME | Default start time for series creation | 12:00:00 | Needed |
 | CREATE_SERIES_DEFAULT_ENDTIME | Default end time for series creation | 14:00:00 | Needed |
-| CREATE_SERIES_DEFAULT_FREQUENCY=daily | Default frequency for series creation | daily | Needed |
-| FRONTEND_PORT | The exposed port where the frontend container accepts connections | 3000 | Needed |
+| CREATE_SERIES_DEFAULT_FREQUENCY | Default frequency for series creation | daily | Needed |
+| FRONTEND_PORT | The exposed port where the frontend container accepts connections | 3001 | Needed |
+| FRONTEND_CONTAINER_PORT | Port inside the frontend container (80 for http, 443 if USE_TLS=true) | 80 | Needed |
 | FRONTEND_CONTAINER | Name of the frontend container | seat-reservation-system-frontend-1 | Needed. Depending on the project name. Since my project is called seat-reservation-system the container is named seat-reservation-system-frontend-1. | 
+| REACT_APP_SUPPORT_ADMIN_EMAIL | Support contact email (admin) shown in frontend | test.admin@mail.de | Optional |
+| REACT_APP_SUPPORT_ADMIN_PHONE | Support contact phone (admin) shown in frontend | 000000000 | Optional |
+| REACT_APP_SUPPORT_SERVICE_EMAIL | Support contact email (service) shown in frontend | test.servicepersonnel@mail.de | Optional |
+| REACT_APP_SUPPORT_SERVICE_PHONE | Support contact phone (service) shown in frontend | 111111111 | Optional |
 | FRONTEND_BASE | Frontend base path (prod: /frontend-main, local dev: /) | /frontend-main | Needed |
 | BACKEND_PATH | Backend path prefix used by frontend | /backend-main | Needed |
 | REACT_APP_BASENAME | React Router basename (local dev) | / | Needed |
@@ -122,8 +129,8 @@ A list of most of the params is in the following table:
 | CORS_ALLOWED_ORIGINS | A list of allowed origins. Only evaluated if STRICT_CORS=true. | https://my-serv:3000,http://my-serv:3000 |
 | MAIL_HOST | SMTP host (MailHog default) | mailhog | Needed for notifications |
 | MAIL_PORT | SMTP port | 1025 | Needed for notifications |
-| MAIL_USERNAME | SMTP username |  | Set if SMTP requires auth |
-| MAIL_PASSWORD | SMTP password |  | Set if SMTP requires auth |
+| MAIL_USERNAME | SMTP username | / | Set if SMTP requires auth |
+| MAIL_PASSWORD | SMTP password | / | Set if SMTP requires auth |
 | MAIL_PROTOCOL | SMTP protocol | smtp | Needed |
 | MAIL_TLS_ENABLED | Enable STARTTLS | false (for MailHog) | Set true for real SMTP |
 | MAIL_SMTP_AUTH | Enable SMTP auth | false | Set true for real SMTP |
@@ -131,9 +138,12 @@ A list of most of the params is in the following table:
 | BOOKING_TIMEZONE_ID | Timezone for ICS | Europe/Berlin | Needed |
 | ICS_NOTIFICATIONS_ENABLED | Toggle calendar emails | true | Needed |
 | FRONTEND_BASE_URL | Frontend URL for links in emails | http://localhost:3001 | Needed |
+| MFA_SECRET_ENCRYPTION_KEY | Encryption key for MFA TOTP secrets | (set a strong random) | Needed in production |
 | DATABASE_PORT | The exposed port where the db container accepts connections | 3307 | Needed |
-| DATABASE_CONTAINER | Name of the db container | seat-reservation-system-database-1 | Needed. Depending on the project name. Since my project is called seat-reservation-system the container is named seat-reservation-system-database-1 |
 | VOLUME | Name of the volume of the db | mariadb_data |Needed. One of the two defined volumes in docker-compose.yml |
+| DATABASE_CONTAINER | Name of the db container | seat-reservation-system-fork-database-1 | Needed. Depending on the project name. Since my project is called seat-reservation-system the container is named seat-reservation-system-fork-database-1 |
+| PW_DB | Database password (read from tls/pws/pw_db.txt by scripts) | default | Needed |
+
 
 ### Outlook / ICS notifications
 - Features:
@@ -154,7 +164,7 @@ The test files are located in cypress/cypress/integration/.
 
 If you freshly cloned this project most of the tests will fail, since the test files use some hard coded things. For example: some tests assume that a specific building is stored in the database, and therefore the images of the floor belonging to the building must be stored in `$PROJECT_PATH/frontend/public/Assets/...` . If these are not present in your project the test will fail.
 
-## Running unit tests - Sprint 1
+### Running unit tests 
 Start by setting the JAVA_HOME environment varible inside your environment running:
 export JAVA_HOME="(path to your JDK)" 
 export PATH="$JAVA_HOME/bin:$PATH"
