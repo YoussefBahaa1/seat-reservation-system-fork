@@ -1,4 +1,6 @@
 package com.desk_sharing.entities;
+import java.sql.Date;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -67,8 +69,15 @@ public class Desk {
     @Column(name = "special_features", nullable = true, columnDefinition = "TEXT")
     private String specialFeatures;
 
-    // public Desk(Room room, String equipment) {
-    //     this.room = room;
-    //     this.equipment = equipment;
-    // }
+    @Column(name = "is_blocked", nullable = false)
+    private boolean blocked = false;
+
+    @Column(name = "blocked_reason_category", nullable = true, length = 30)
+    private String blockedReasonCategory;
+
+    @Column(name = "blocked_estimated_end_date", nullable = true)
+    private Date blockedEstimatedEndDate;
+
+    @Column(name = "blocked_by_defect_id", nullable = true)
+    private Long blockedByDefectId;
 }

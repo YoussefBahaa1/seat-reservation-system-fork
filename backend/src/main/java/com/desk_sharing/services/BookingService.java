@@ -188,6 +188,10 @@ public class BookingService {
 
         final Desk desk = deskService.getDeskById(deskId)
             .orElseThrow(() -> new IllegalArgumentException("Desk not found with id: " + bookingData.getDeskId()));
+
+        if (desk.isBlocked()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This workstation is currently blocked due to a defect and cannot be booked.");
+        }
         
         // Backend validation: do not trust frontend/UI for booking rules
         validateBookingTimes(bookingData.getDay(), bookingData.getBegin(), bookingData.getEnd(), bookingSettingsService.getCurrentSettings());
@@ -320,6 +324,10 @@ public class BookingService {
 		Optional<Booking> bookingById = getBookingById(bookingId);
 		if(bookingById.isPresent()) {
 			Booking booking = bookingById.get();
+			if (booking.getDesk() != null && booking.getDesk().isBlocked()) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"This workstation was blocked due to a defect since your booking started. Cannot confirm.");
+			}
 			booking.setBookingInProgress(false);
 			booking.setLockExpiryTime(null);
             if (booking.getCalendarUid() == null) {

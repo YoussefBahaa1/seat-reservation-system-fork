@@ -29,7 +29,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -148,7 +147,7 @@ class ParkingReservationServiceTest {
     }
 
     @Test
-    void rejectReservation_deletesPendingForAdmin() {
+    void rejectReservation_marksPendingRejectedForAdmin() {
         ParkingReservationService service = new ParkingReservationService(
             parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
         authenticateAs(9, "admin@example.com", true);
@@ -158,11 +157,13 @@ class ParkingReservationServiceTest {
         pending.setStatus(ParkingReservationStatus.PENDING);
 
         when(parkingReservationRepository.findById(6L)).thenReturn(java.util.Optional.of(pending));
-        doNothing().when(parkingReservationRepository).deleteById(6L);
+        when(parkingReservationRepository.save(any(ParkingReservation.class))).thenAnswer(inv -> inv.getArgument(0));
 
         service.rejectReservation(6L);
 
-        verify(parkingReservationRepository).deleteById(6L);
+        ArgumentCaptor<ParkingReservation> captor = ArgumentCaptor.forClass(ParkingReservation.class);
+        verify(parkingReservationRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(ParkingReservationStatus.REJECTED);
     }
 
     private void authenticateAs(int userId, String email, boolean admin) {

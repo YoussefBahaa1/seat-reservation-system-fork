@@ -20,7 +20,7 @@ import { MdVisibility } from 'react-icons/md';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { AiOutlineTeam } from "react-icons/ai";
-import { MdLocalParking, MdSupportAgent } from 'react-icons/md';
+import { MdLocalParking, MdSupportAgent, MdBuild } from 'react-icons/md';
 import { IoMdNotifications } from 'react-icons/io';
 import Defaults from "./Defaults";
 import VisibilityPreferences from "./VisibilityPreferences";
@@ -71,6 +71,9 @@ const SidebarComponent = () => {
     }
     if (location.pathname === '/supportContacts') {
       setActiveTab('supportContacts');
+    }
+    if (location.pathname === '/defects') {
+      setActiveTab('defects');
     }
 
   }, [location.pathname, activeTab]);
@@ -138,6 +141,10 @@ const SidebarComponent = () => {
         navigate("/supportContacts", { replace: true });
         break;
 
+      case 'defects':
+        navigate("/defects", { replace: true });
+        break;
+
       case 'logout':
         setIsLogoutConfirmationOpen(true);
         break;
@@ -173,6 +180,7 @@ const SidebarComponent = () => {
     localStorage.removeItem('name');
     localStorage.removeItem('surname');
     localStorage.removeItem('admin');
+    localStorage.removeItem('servicePersonnel');
     localStorage.removeItem('visibility');
     // Reset language to browser preference for the unauthenticated screens
     const browserLang = navigator.language.split('-')[0] || 'en';
@@ -221,6 +229,16 @@ const SidebarComponent = () => {
               onClick={() => handleClick("admin")}
             >
               {t("admin")}
+            </MenuItem>
+          )}
+          {(localStorage.getItem("admin") === 'true' || localStorage.getItem("servicePersonnel") === 'true') && (
+            <MenuItem
+              id='sidebar_defects'
+              active={activeTab === "defects"}
+              icon={<MdBuild />}
+              onClick={() => handleClick("defects")}
+            >
+              {t("defects")}
             </MenuItem>
           )}
           <MenuItem

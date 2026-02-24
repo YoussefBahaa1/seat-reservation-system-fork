@@ -66,6 +66,7 @@ const LoginPage = () => {
     localStorage.setItem('name', String(data.name));
     localStorage.setItem('surname', String(data.surname));
     localStorage.setItem('admin', String(data.admin));
+    localStorage.setItem('servicePersonnel', String(data.servicePersonnel));
     localStorage.setItem('visibility', String(data.visibility));
     const userLang = localStorage.getItem(`language_${data.id}`) || 'en';
     i18n.changeLanguage(userLang);
@@ -107,6 +108,7 @@ const LoginPage = () => {
             name: data.name,
             surname: data.surname,
             admin: data.admin,
+            servicePersonnel: data.servicePersonnel,
             visibility: data.visibility
           }
         });

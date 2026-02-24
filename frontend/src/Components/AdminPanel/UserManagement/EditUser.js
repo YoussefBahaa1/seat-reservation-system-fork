@@ -1,4 +1,4 @@
-import { FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, Checkbox, Button, Divider, Box } from '@mui/material';
+import { FormControl, FormControlLabel, FormLabel, TextField, Checkbox, Button, Divider, Box } from '@mui/material';
 import { toast } from 'react-toastify';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from "react-i18next";
@@ -18,9 +18,7 @@ export default function EditUser({ isOpen, onClose }) {
   const [surname, setSurname] = useState('');
   const [department, setDepartment] = useState('');
   //const [visibility, setVisibility] = useState();
-  const [isAdmin, setIsAdmin] = useState();
-  const [isEmployee, setIsEmployee] = useState();
-  const [isServicePersonnel, setIsServicePersonnel] = useState();
+  const [selectedRole, setSelectedRole] = useState('EMPLOYEE');
   const [visibilityMode, setVisibilityMode] = useState('FULL_NAME');
   // Password reset state
   const [showResetPassword, setShowResetPassword] = useState(false);
@@ -42,6 +40,12 @@ export default function EditUser({ isOpen, onClose }) {
   useEffect(() => {
     getAllUsers();
   }, [getAllUsers]);
+
+  const handleRoleChange = (role, checked) => {
+    if (checked) {
+      setSelectedRole(role);
+    }
+  };
 
   async function updateUser() {
     if(!email  || !name || !surname){
@@ -68,9 +72,9 @@ export default function EditUser({ isOpen, onClose }) {
         'name': name,
         'surname': surname,
         'department': department,
-        'admin': isAdmin,
-        'employee': isEmployee,
-        'servicePersonnel': isServicePersonnel,
+        'admin': selectedRole === 'ADMIN',
+        'employee': selectedRole === 'EMPLOYEE',
+        'servicePersonnel': selectedRole === 'SERVICE_PERSONNEL',
         'visibility': visibilityMode
       })
     );
@@ -85,9 +89,13 @@ export default function EditUser({ isOpen, onClose }) {
       setEmail(toBeEditedUser.email);
       setName(toBeEditedUser.name);
       setSurname(toBeEditedUser.surname);
-      setIsAdmin(toBeEditedUser.admin);
-      setIsEmployee(toBeEditedUser.employee);
-      setIsServicePersonnel(toBeEditedUser.servicePersonnel);
+      if (toBeEditedUser.admin) {
+        setSelectedRole('ADMIN');
+      } else if (toBeEditedUser.servicePersonnel) {
+        setSelectedRole('SERVICE_PERSONNEL');
+      } else {
+        setSelectedRole('EMPLOYEE');
+      }
       setDepartment(toBeEditedUser.department || '');
       setVisibilityMode(toBeEditedUser.visibility || 'FULL_NAME');
       // Reset password fields when opening edit modal
@@ -207,48 +215,34 @@ export default function EditUser({ isOpen, onClose }) {
           />
         </FormControl>
         <br/><br/>
-        <FormControl id='editUserModal-setIsAdmin'>
-          <FormLabel id='ratioIsAdmin'>{t('admin')}</FormLabel>
-            <RadioGroup
-              row
-              aria-labelledby='ratioIsAdmin'
-              value={isAdmin}
-              onChange={(e)=> {
-                const adminValue = e.target.value === 'true' || e.target.value === true;
-                setIsAdmin(adminValue);
-                // If admin is set, disable employee/service personnel checkboxes
-                if (adminValue) {
-                  setIsEmployee(false);
-                  setIsServicePersonnel(false);
-                }
-              }}
-            >
-            <FormControlLabel id='radioAdmin_true' value={true} control={<Radio />} label={t('true')} />
-            <FormControlLabel id='radioAdmin_false' value={false} control={<Radio />} label={t('false')} />
-          </RadioGroup>
-        </FormControl>
-        <br/><br/>
         <FormControl id='editUser-roles'>
-          <FormLabel>{t('employee')} / {t('servicePersonnel')}</FormLabel>
+          <FormLabel>{t('role')}</FormLabel>
           <FormControlLabel
             control={
               <Checkbox
-                checked={isEmployee || false}
-                onChange={(e) => setIsEmployee(e.target.checked)}
-                disabled={isAdmin}
+                checked={selectedRole === 'ADMIN'}
+                onChange={(e) => handleRoleChange('ADMIN', e.target.checked)}
               />
             }
-            label={t('employee')}
+            label={t('admin')}
           />
           <FormControlLabel
             control={
               <Checkbox
-                checked={isServicePersonnel || false}
-                onChange={(e) => setIsServicePersonnel(e.target.checked)}
-                disabled={isAdmin}
+                checked={selectedRole === 'SERVICE_PERSONNEL'}
+                onChange={(e) => handleRoleChange('SERVICE_PERSONNEL', e.target.checked)}
               />
             }
             label={t('servicePersonnel')}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={selectedRole === 'EMPLOYEE'}
+                onChange={(e) => handleRoleChange('EMPLOYEE', e.target.checked)}
+              />
+            }
+            label={t('employee')}
           />
         </FormControl>
         
