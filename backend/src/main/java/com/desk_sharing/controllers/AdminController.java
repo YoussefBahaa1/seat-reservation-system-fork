@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,6 +41,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
@@ -205,11 +208,16 @@ public class AdminController {
      * @return The updated user as RepsonseEntity. 
      */
     @PutMapping("users")
-    public ResponseEntity<UserEntity> updateUser(@RequestBody UserDto userDto) {
+    public ResponseEntity<?> updateUser(@RequestBody UserDto userDto) {
         userService.logging("updateUser( " + userDto.toString() + " )");
-        final UserEntity updatedUser = userService.updateUser(userDto);
-        final HttpStatus status = (updatedUser != null) ? HttpStatus.OK : HttpStatus.CONFLICT;
-        return ResponseEntity.status(status).body(updatedUser);
+        try {
+            final UserEntity updatedUser = userService.updateUser(userDto);
+            return ResponseEntity.status(HttpStatus.OK).body(updatedUser);
+        } catch (ResponseStatusException ex) {
+            Map<String, String> body = new HashMap<>();
+            body.put("error", ex.getReason() == null ? "Update failed" : ex.getReason());
+            return ResponseEntity.status(ex.getStatusCode()).body(body);
+        }
     }
 
     @DeleteMapping("users/ff/{id}")
@@ -253,32 +261,21 @@ public class AdminController {
         }
         user.setActive(true); // New users are active by default
         
-        // Assign roles based on the flags
-        List<Role> roles = new ArrayList<>();
-        
-        if (registerDto.isAdmin()) {
-            // Admin only - admins inherit employee and service personnel via role hierarchy
-            Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new RuntimeException("ROLE_ADMIN not found"));
-            roles.add(adminRole);
-        } else {
-            // Non-admin: assign employee and/or service personnel roles
-            if (!registerDto.isEmployee() && !registerDto.isServicePersonnel()) {
-                return new ResponseEntity<>("User must have at least one role (employee or service personnel)", HttpStatus.BAD_REQUEST);
-            }
-            
-            if (registerDto.isEmployee()) {
-                Role employeeRole = roleRepository.findByName("ROLE_EMPLOYEE")
-                    .orElseThrow(() -> new RuntimeException("ROLE_EMPLOYEE not found"));
-                roles.add(employeeRole);
-            }
-            
-            if (registerDto.isServicePersonnel()) {
-                Role servicePersonnelRole = roleRepository.findByName("ROLE_SERVICE_PERSONNEL")
-                    .orElseThrow(() -> new RuntimeException("ROLE_SERVICE_PERSONNEL not found"));
-                roles.add(servicePersonnelRole);
-            }
+        // Exactly one role is allowed.
+        int selectedRoles = (registerDto.isAdmin() ? 1 : 0)
+            + (registerDto.isEmployee() ? 1 : 0)
+            + (registerDto.isServicePersonnel() ? 1 : 0);
+        if (selectedRoles != 1) {
+            return new ResponseEntity<>("Exactly one role must be selected", HttpStatus.BAD_REQUEST);
         }
+
+        List<Role> roles = new ArrayList<>();
+        String roleName = registerDto.isAdmin()
+            ? "ROLE_ADMIN"
+            : (registerDto.isServicePersonnel() ? "ROLE_SERVICE_PERSONNEL" : "ROLE_EMPLOYEE");
+        Role selectedRole = roleRepository.findByName(roleName)
+            .orElseThrow(() -> new RuntimeException(roleName + " not found"));
+        roles.add(selectedRole);
         
         user.setRoles(roles);
         userRepository.save(user);

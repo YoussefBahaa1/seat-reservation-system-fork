@@ -11,6 +11,7 @@ import {postRequest, getRequest} from '../RequestFunctions/RequestFunctions';
 import {DeskTable} from '../misc/DesksTable';
 import bookingPostRequest from '../misc/bookingPostRequest';
 import LayoutPage from '../Templates/LayoutPage';
+import ReportDefectModal from '../Defects/ReportDefectModal';
 
 const FreeDesks = () => {
     const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -31,6 +32,8 @@ const FreeDesks = () => {
 
     const [startTime, setStartTime] = useState(defaultStartTime);
     const [endTime, setEndTime] = useState(defaultEndTime);
+    const [reportDefectDeskId, setReportDefectDeskId] = useState(null);
+    const [isReportDefectOpen, setIsReportDefectOpen] = useState(false);
 
     /**
      * Fetch all buildings and if an default building is found 
@@ -162,7 +165,21 @@ const FreeDesks = () => {
                     </FormControl>
                 <br/><br/>
                 {
-                    (possibleDesks && possibleDesks.length > 0 ? <DeskTable name={'freeDesks'} desks={possibleDesks} submit_function={addBooking} /> : <div>{t('noDesksForRange')}</div>)
+                    (possibleDesks && possibleDesks.length > 0 ? <DeskTable name={'freeDesks'} desks={possibleDesks} submit_function={addBooking} onReportDefect={(desk) => {
+                        getRequest(
+                            `${process.env.REACT_APP_BACKEND_URL}/defects/active?deskId=${desk.id}`,
+                            headers.current,
+                            () => toast.warning(t('defectAlreadyOpen')),
+                            (status) => {
+                                if (status === 404) {
+                                    setReportDefectDeskId(desk.id);
+                                    setIsReportDefectOpen(true);
+                                } else {
+                                    toast.error(t('defectReportFailed'));
+                                }
+                            }
+                        );
+                    }} /> : <div>{t('noDesksForRange')}</div>)
                 }
             </>
         );
@@ -173,6 +190,7 @@ const FreeDesks = () => {
     }
 
     return (
+        <>
         <LayoutPage
             title={t('freeDesks')}
             helpText={create_helpText()}
@@ -180,6 +198,12 @@ const FreeDesks = () => {
         >
             <CreateContent/>
         </LayoutPage>
+        <ReportDefectModal
+            isOpen={isReportDefectOpen}
+            onClose={() => setIsReportDefectOpen(false)}
+            deskId={reportDefectDeskId}
+        />
+        </>
     );
 };
 

@@ -13,6 +13,7 @@ import { FaStar, FaRegStar } from 'react-icons/fa';
 import LayoutPage from '../../Templates/LayoutPage.jsx';
 import { getRequest, postRequest, putRequest, deleteRequest } from '../../RequestFunctions/RequestFunctions';
 import bookingPostRequest from '../../misc/bookingPostRequest.js';
+import ReportDefectModal from '../../Defects/ReportDefectModal';
 //import { buildFullDaySlots } from './buildFullDaySlots.js';
 
 const Booking = () => {
@@ -49,6 +50,7 @@ const Booking = () => {
     maxDurationMinutes: 360,
     maxAdvanceDays: 30,
   });
+  const [isReportDefectOpen, setIsReportDefectOpen] = useState(false);
 
   const eventRef = useRef(event);
   const eventsRef = useRef(events);
@@ -376,7 +378,6 @@ const Booking = () => {
       ],
     });
   };
-
   /** ----- EFFECTS ----- */
   // Fetch room once
   useEffect(() => { fetchRoom(); }, [fetchRoom]);
@@ -540,6 +541,23 @@ const Booking = () => {
                   placement="right"
                   title={
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                      {desk.blocked && (
+                        <>
+                          <Typography variant="caption" sx={{ fontWeight: 700, color: '#ff9800' }}>
+                            {t('defectBlocked')}
+                          </Typography>
+                          {desk.blockedReasonCategory && (
+                            <Typography variant="caption">
+                              {t('defectBlockedReason', { reason: desk.blockedReasonCategory.replace(/_/g, ' ') })}
+                            </Typography>
+                          )}
+                          {desk.blockedEstimatedEndDate && (
+                            <Typography variant="caption">
+                              {t('defectBlockedUntil', { date: desk.blockedEstimatedEndDate })}
+                            </Typography>
+                          )}
+                        </>
+                      )}
                       <Typography variant="caption">{t('booking.tooltip.identifier')}: {showOrPlaceholder(desk?.workstationIdentifier)}</Typography>
                       <Typography variant="caption">{t('booking.tooltip.type')}: {showOrPlaceholder(desk?.workstationType)}</Typography>
                       <Typography variant="caption">{t('booking.tooltip.monitors')}: {monitorSummary(desk)}</Typography>
@@ -551,26 +569,36 @@ const Booking = () => {
                 >
                   <Box
                     sx={{
-                      backgroundColor: desk.id === clickedDeskId ? '#ffdd00' : 'yellowgreen',
+                      backgroundColor: desk.blocked
+                        ? '#bdbdbd'
+                        : desk.id === clickedDeskId ? '#ffdd00' : 'yellowgreen',
                       height: '125px',
                       width: '140px',
                       borderRadius: '7px',
                       padding: '5px',
-                      cursor: 'pointer',
+                      cursor: desk.blocked ? 'not-allowed' : 'pointer',
+                      opacity: desk.blocked ? 0.6 : 1,
                       boxShadow: '0px 0px 5px rgba(0,0,0,0.2)',
                       transition: desk.id === clickedDeskId ? '0.25s' : 'box-shadow 0.3s',
-                      '&:hover': { boxShadow: '0px 0px 10px rgba(0,0,0,0.4)' },
+                      '&:hover': { boxShadow: desk.blocked ? undefined : '0px 0px 10px rgba(0,0,0,0.4)' },
                     }}
                     onClick={() => {
+                      if (desk.blocked) {
+                        toast.warning(t('defectAlreadyOpen'));
+                        return;
+                      }
                       setClickedDeskId(desk.id);
                       setClickedDeskRemark(desk.remark);
-
-                      // Save selection to sessionStorage 
                       sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: desk.id }));
                     }}
                   >
                     <Typography sx={typography_sx}>{desk.remark}</Typography>
                     <Typography sx={typography_sx}>{t(desk.equipment.equipmentName)}</Typography>
+                    {desk.blocked && (
+                      <Typography sx={{ ...typography_sx, fontSize: '0.7rem', color: '#d32f2f', fontWeight: 600 }}>
+                        {t('defectBlocked')}
+                      </Typography>
+                    )}
                   </Box>
                 </Tooltip>
               </Box>
@@ -646,31 +674,76 @@ const Booking = () => {
             }}
           />
 
-          <Button
-            id="submit_booking_btn"
-            sx={{
-              margin: '10px',
-              padding: '15px',
-              backgroundColor: '#008444',
-              borderRadius: '8px',
-              color: '#fff',
-              fontSize: '16px',
-              textAlign: 'center',
-              transition: 'all 0.5s',
-              '&.Mui-disabled': {
-                backgroundColor: '#7a7a7a',
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+            <Button
+              id="submit_booking_btn"
+              sx={{
+                margin: '10px',
+                padding: '15px',
+                backgroundColor: '#008444',
+                borderRadius: '8px',
                 color: '#fff',
-                opacity: 0.8,
-              },
-            }}
-            onClick={booking}
-            disabled={isBookingPending}
-            aria-busy={isBookingPending ? 'true' : 'false'}
-          >
-            {t('book')}
-          </Button>
+                fontSize: '16px',
+                textAlign: 'center',
+                transition: 'all 0.5s',
+                '&.Mui-disabled': {
+                  backgroundColor: '#7a7a7a',
+                  color: '#fff',
+                  opacity: 0.8,
+                },
+              }}
+              onClick={booking}
+              disabled={isBookingPending}
+              aria-busy={isBookingPending ? 'true' : 'false'}
+            >
+              {t('book')}
+            </Button>
+            {clickedDeskId && (
+              <Button
+                id="report_defect_btn"
+                sx={{
+                  margin: '10px',
+                  padding: '15px',
+                  backgroundColor: '#d32f2f',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  fontSize: '16px',
+                  textAlign: 'center',
+                  transition: 'all 0.5s',
+                  '&:hover': { backgroundColor: '#b71c1c' },
+                }}
+                onClick={() => {
+                  const desk = desks.find(d => d.id === clickedDeskId);
+                  if (desk && desk.blocked) {
+                    toast.warning(t('defectAlreadyOpen'));
+                    return;
+                  }
+                  getRequest(
+                    `${process.env.REACT_APP_BACKEND_URL}/defects/active?deskId=${clickedDeskId}`,
+                    headers.current,
+                    () => toast.warning(t('defectAlreadyOpen')),
+                    (status) => {
+                      if (status === 404) {
+                        setIsReportDefectOpen(true);
+                      } else {
+                        toast.error(t('defectReportFailed'));
+                      }
+                    }
+                  );
+                }}
+              >
+                {t('reportDefect')}
+              </Button>
+            )}
+          </Box>
         </Box>
       </Box>
+
+      <ReportDefectModal
+        isOpen={isReportDefectOpen}
+        onClose={() => setIsReportDefectOpen(false)}
+        deskId={clickedDeskId}
+      />
     </LayoutPage>
   );
 };

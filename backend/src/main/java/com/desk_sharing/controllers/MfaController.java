@@ -91,6 +91,7 @@ public class MfaController {
                 user.getName(),
                 user.getSurname(),
                 user.isAdmin(),
+                user.isServicePersonnel(),
                 user.isVisibility(),
                 visibilityMode,
                 "SUCCESS",
