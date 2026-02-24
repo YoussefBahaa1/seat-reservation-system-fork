@@ -5,6 +5,7 @@ import java.sql.Time;
 
 import com.desk_sharing.entities.Booking;
 import com.desk_sharing.entities.ParkingReservation;
+import com.desk_sharing.entities.ParkingReservationStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,6 +25,7 @@ public class BookingDayEventDTO {
     private String workspaceType;
     private Long parkingId;
     private String parkingType;
+    private String parkingStatus;
     private String mode;
 
     public BookingDayEventDTO(final Booking booking) {
@@ -40,6 +42,7 @@ public class BookingDayEventDTO {
             booking.getDesk() != null && booking.getDesk().getEquipment() != null
                 ? booking.getDesk().getEquipment().getEquipmentName()
                 : null,
+            null,
             null,
             null,
             "desk"
@@ -71,6 +74,7 @@ public class BookingDayEventDTO {
             null,
             parseSpotLabel(reservation.getSpotLabel()),
             null,
+            (reservation.getStatus() == null ? ParkingReservationStatus.APPROVED : reservation.getStatus()).name(),
             "parking"
         );
     }
