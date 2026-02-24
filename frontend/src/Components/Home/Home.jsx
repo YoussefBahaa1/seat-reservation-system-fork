@@ -135,7 +135,10 @@ const Home = () => {
 
       postRequest(
         endpoint,
-        headers,
+        {
+          ...(headers || {}),
+          'Content-Type': 'application/json'
+        },
         (data) => {
           for (const day in data) {
             const newEvent = {
@@ -157,7 +160,7 @@ const Home = () => {
             toast.error(t(httpErrorKey(errorCode)));
           }
         },
-        JSON.stringify(daysInMonth)  // Tage des Monats an den Server senden
+        daysInMonth  // send as JSON array
       );
     },
     [headers, t, setEvents, mode]  // Abhängigkeiten, die sich ändern könnten
