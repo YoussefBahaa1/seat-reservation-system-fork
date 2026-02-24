@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.UUID;
+import java.util.Locale;
+import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -100,11 +102,12 @@ public class CalendarNotificationService {
         LocalDateTime end = LocalDateTime.of(booking.getDay().toLocalDate(), booking.getEnd().toLocalTime());
         ZonedDateTime startZ = start.atZone(zoneId);
         ZonedDateTime endZ = end.atZone(zoneId);
-        String summary = isGerman()
+        boolean german = isGerman(booking.getUser());
+        String summary = german
             ? "Schreibtisch-Buchung " + getDeskLabel(booking)
             : "Desk booking " + getDeskLabel(booking);
         String location = buildLocation(booking.getRoom());
-        String description = buildDescription(booking);
+        String description = buildDescription(booking, german);
 
         return new IcsEventBuilder.IcsPayload(
             booking.getCalendarUid(),
@@ -144,15 +147,15 @@ public class CalendarNotificationService {
         return sb.toString();
     }
 
-    private String buildDescription(Booking booking) {
+    private String buildDescription(Booking booking, boolean german) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Desk: ").append(booking.getDesk() != null ? booking.getDesk().getRemark() : "").append("\\n");
-        sb.append("Room: ").append(booking.getRoom() != null ? booking.getRoom().getRemark() : "").append("\\n");
+        sb.append(german ? "Schreibtisch: " : "Desk: ").append(booking.getDesk() != null ? booking.getDesk().getRemark() : "").append("\\n");
+        sb.append(german ? "Raum: " : "Room: ").append(booking.getRoom() != null ? booking.getRoom().getRemark() : "").append("\\n");
         if (booking.getDesk() != null && booking.getDesk().getEquipment() != null) {
-            sb.append("Workspace type: ").append(booking.getDesk().getEquipment().getEquipmentName()).append("\\n");
+            sb.append(german ? "Arbeitsplatztyp: " : "Workspace type: ").append(booking.getDesk().getEquipment().getEquipmentName()).append("\\n");
         }
         if (!isBlank(frontendBaseUrl)) {
-            sb.append("Manage booking: ").append(frontendBaseUrl).append("/home");
+            sb.append(german ? "Buchung verwalten: " : "Manage booking: ").append(frontendBaseUrl).append("/home");
         }
         return sb.toString();
     }
@@ -180,9 +183,10 @@ public class CalendarNotificationService {
     }
 
     private String buildSubject(Booking booking, String action) {
-        String roomName = booking.getRoom() != null ? booking.getRoom().getRemark() : isGerman() ? "Raum" : "room";
-        String deskName = booking.getDesk() != null ? booking.getDesk().getRemark() : isGerman() ? "Schreibtisch" : "desk";
-        if (isGerman()) {
+        boolean german = isGerman(booking.getUser());
+        String roomName = booking.getRoom() != null ? booking.getRoom().getRemark() : german ? "Raum" : "room";
+        String deskName = booking.getDesk() != null ? booking.getDesk().getRemark() : german ? "Schreibtisch" : "desk";
+        if (german) {
             return String.format("Buchung %s: %s / %s am %s %s", action, roomName, deskName,
                 booking.getDay().toString(), booking.getBegin().toString());
         }
@@ -192,7 +196,8 @@ public class CalendarNotificationService {
 
     private String buildTextBody(Booking booking, String action) {
         StringBuilder sb = new StringBuilder();
-        if (isGerman()) {
+        boolean german = isGerman(booking.getUser());
+        if (german) {
             sb.append("Ihre Schreibtischbuchung wurde ").append(action).append(".").append("\n");
             sb.append("Schreibtisch: ").append(booking.getDesk() != null ? booking.getDesk().getRemark() : "").append("\n");
             sb.append("Raum: ").append(booking.getRoom() != null ? booking.getRoom().getRemark() : "").append("\n");
@@ -206,7 +211,7 @@ public class CalendarNotificationService {
             sb.append("Time: ").append(booking.getBegin()).append(" - ").append(booking.getEnd()).append("\n");
         }
         if (!isBlank(frontendBaseUrl)) {
-            sb.append(isGerman() ? "Verwalten oder anzeigen in der App: " : "Manage or view in app: ");
+            sb.append(german ? "Verwalten oder anzeigen in der App: " : "Manage or view in app: ");
             sb.append(frontendBaseUrl).append("/home");
         }
         return sb.toString();
@@ -216,7 +221,21 @@ public class CalendarNotificationService {
         return s == null || s.isBlank();
     }
 
-    private boolean isGerman() {
-        return "de".equalsIgnoreCase(LocaleContextHolder.getLocale().getLanguage());
+    private boolean isGerman(UserEntity user) {
+        Locale currentReq = LocaleContextHolder.getLocale();
+        if (user != null && user.getLocale() != null && !user.getLocale().isBlank()) {
+            boolean german = Locale.forLanguageTag(user.getLocale()).getLanguage().equalsIgnoreCase("de");
+            log.info("Booking notification locale userLocale='{}' requestLocale='{}' resolvedGerman={}", user.getLocale(),
+                currentReq != null ? currentReq.toLanguageTag() : "null", german);
+            return german;
+        }
+        if (currentReq != null) {
+            boolean german = "de".equalsIgnoreCase(currentReq.getLanguage());
+            log.info("Booking notification locale from requestLocale='{}' resolvedGerman={}",
+                currentReq.toLanguageTag(), german);
+            return german;
+        }
+        log.info("Booking notification locale fallback German=true");
+        return true; // default German
     }
 }

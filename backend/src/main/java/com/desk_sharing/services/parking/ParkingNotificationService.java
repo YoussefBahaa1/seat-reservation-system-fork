@@ -62,12 +62,25 @@ public class ParkingNotificationService {
     }
 
     private boolean resolveGermanPreference(ParkingReservation res, UserEntity user) {
+        // 1) Persisted user locale (set at request creation) takes precedence
+        if (user != null && user.getLocale() != null && !user.getLocale().isBlank()) {
+            return Locale.forLanguageTag(user.getLocale()).getLanguage().equalsIgnoreCase("de");
+        }
+
+        // 2) Request-captured locale from creation time
         String tag = res.getRequestLocale();
         if (tag != null && !tag.isBlank()) {
             return Locale.forLanguageTag(tag).getLanguage().equalsIgnoreCase("de");
         }
-        // Fallback only to current request locale; UserEntity has no locale column.
-        return "de".equalsIgnoreCase(LocaleContextHolder.getLocale().getLanguage());
+
+        // 3) Current request locale header (admin) as last resort
+        Locale lc = LocaleContextHolder.getLocale();
+        if (lc != null) {
+            return "de".equalsIgnoreCase(lc.getLanguage());
+        }
+
+        // 4) Default to German for primary user base
+        return true;
     }
 
     private String buildSubject(ParkingReservation res, boolean approved, boolean de) {

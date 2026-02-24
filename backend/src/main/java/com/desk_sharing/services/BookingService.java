@@ -10,6 +10,7 @@ import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
 import com.desk_sharing.repositories.RoomRepository;
+import com.desk_sharing.repositories.UserRepository;
 import com.desk_sharing.services.BookingSettingsService;
 import com.desk_sharing.services.calendar.CalendarNotificationService;
 import com.desk_sharing.services.calendar.BookingNotificationEvent;
@@ -17,6 +18,7 @@ import com.desk_sharing.services.calendar.NotificationAction;
 
 import org.springframework.stereotype.Service;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -27,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.Locale;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -44,6 +47,8 @@ public class BookingService {
     private final RoomRepository roomRepository;
     
     private final DeskRepository deskRepository;
+
+    private final UserRepository userRepository;
 
     private final UserService userService;
 
@@ -188,7 +193,18 @@ public class BookingService {
 
         final Desk desk = deskService.getDeskById(deskId)
             .orElseThrow(() -> new IllegalArgumentException("Desk not found with id: " + bookingData.getDeskId()));
-        
+
+        // Keep user's preferred locale aligned with the language used while creating the booking.
+        final Locale reqLocale = LocaleContextHolder.getLocale();
+        final String localeTag = (reqLocale != null ? reqLocale.toLanguageTag() : null);
+        if (localeTag != null && !localeTag.isBlank()
+            && (user.getLocale() == null || user.getLocale().isBlank()
+                || !localeTag.equalsIgnoreCase(user.getLocale()))) {
+            user.setLocale(localeTag);
+            // Persist via repository to avoid side effects in userService
+            userRepository.save(user);
+        }
+
         // Backend validation: do not trust frontend/UI for booking rules
         validateBookingTimes(bookingData.getDay(), bookingData.getBegin(), bookingData.getEnd(), bookingSettingsService.getCurrentSettings());
         
@@ -320,6 +336,19 @@ public class BookingService {
 		Optional<Booking> bookingById = getBookingById(bookingId);
 		if(bookingById.isPresent()) {
 			Booking booking = bookingById.get();
+
+            // Align user's stored locale with the language used during confirmation
+            final Locale reqLocale = LocaleContextHolder.getLocale();
+            final String localeTag = (reqLocale != null ? reqLocale.toLanguageTag() : null);
+            if (localeTag != null && !localeTag.isBlank()) {
+                final UserEntity user = booking.getUser();
+                if (user != null && (user.getLocale() == null || user.getLocale().isBlank()
+                        || !localeTag.equalsIgnoreCase(user.getLocale()))) {
+                    user.setLocale(localeTag);
+                    userRepository.save(user);
+                }
+            }
+
 			booking.setBookingInProgress(false);
 			booking.setLockExpiryTime(null);
             if (booking.getCalendarUid() == null) {

@@ -370,6 +370,14 @@ public class ParkingReservationService {
                 : Locale.GERMAN.toLanguageTag();
         }
         reservation.setRequestLocale(requestLocale);
+        // Persist user locale once known
+        // Keep user's preferred locale in sync with the language they used while creating the request.
+        if (requestLocale != null && !requestLocale.isBlank()
+            && (currentUser.getLocale() == null || currentUser.getLocale().isBlank()
+                || !requestLocale.equalsIgnoreCase(currentUser.getLocale()))) {
+            currentUser.setLocale(requestLocale);
+            userRepository.save(currentUser);
+        }
 
         return parkingReservationRepository.save(reservation);
     }
@@ -494,6 +502,7 @@ public class ParkingReservationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Reservation is not pending");
         }
         reservation.setStatus(ParkingReservationStatus.REJECTED);
-        parkingReservationRepository.save(reservation);
+        final ParkingReservation saved = parkingReservationRepository.save(reservation);
+        parkingNotificationService.notifyDecision(saved, false);
     }
 }

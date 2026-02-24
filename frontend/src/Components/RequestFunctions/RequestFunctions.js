@@ -40,7 +40,10 @@ function resolveHeaders(headers) {
 
   // Always send current UI language so backend can localize responses/emails
   try {
-    resolved['Accept-Language'] = i18n?.language || 'en';
+    const storedLng = (typeof localStorage !== 'undefined')
+      ? localStorage.getItem('i18nextLng')
+      : null;
+    resolved['Accept-Language'] = storedLng || i18n?.language || 'en';
   } catch {
     resolved['Accept-Language'] = 'en';
   }

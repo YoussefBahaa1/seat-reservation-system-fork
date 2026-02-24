@@ -51,6 +51,9 @@ public class UserEntity {
     // Parking notifications
     @Column(name = "notify_parking_decision", nullable = false, columnDefinition = "bit(1) default 1")
     private boolean notifyParkingDecision = true;
+
+    @Column(name = "locale", length = 10)
+    private String locale;
     
     // Department field (free-text)
     @Column(name = "department", nullable = true)
