@@ -66,8 +66,11 @@ public class ParkingNotificationService {
         if (tag != null && !tag.isBlank()) {
             return Locale.forLanguageTag(tag).getLanguage().equalsIgnoreCase("de");
         }
-        // Fallback only to current request locale; UserEntity has no locale column.
-        return "de".equalsIgnoreCase(LocaleContextHolder.getLocale().getLanguage());
+        Locale lc = LocaleContextHolder.getLocale();
+        if (lc != null) {
+            return "de".equalsIgnoreCase(lc.getLanguage());
+        }
+        return true; // default German
     }
 
     private String buildSubject(ParkingReservation res, boolean approved, boolean de) {
