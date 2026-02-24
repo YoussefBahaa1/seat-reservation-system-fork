@@ -13,7 +13,8 @@ const CARPARK_SELECTED_DATE_KEY = 'carparkSelectedDate';
 const CARPARK_DEFAULT_DURATION_MINUTES = 120;
 const CARPARK_MIN_LEAD_MINUTES = 30;
 const CARPARK_OVERLAP_BUFFER_MINUTES = 30;
-const CARPARK_NOTIFICATION_STATE_VERSION = 'v2';
+const CARPARK_NOTIFICATION_STATE_VERSION = 'v3';
+const CARPARK_DECISION_NOTIFICATION_FALLBACK_WINDOW_MINUTES = 20;
 const CARPARK_RES_STATUS_SNAPSHOT_KEY = `carparkReservationStatusSnapshot_${CARPARK_NOTIFICATION_STATE_VERSION}`;
 const CARPARK_NOTIFIED_STATUS_KEY = `carparkNotifiedReservationStatus_${CARPARK_NOTIFICATION_STATE_VERSION}`;
 const CARPARK_NOTIFIED_REMINDERS_KEY = `carparkNotifiedReservationReminders_${CARPARK_NOTIFICATION_STATE_VERSION}`;
@@ -48,6 +49,20 @@ const parseReservationStart = (day, begin) => {
   if (!day || !begin) return null;
   const normalizedTime = String(begin).length >= 8 ? String(begin) : `${String(begin)}:00`;
   const parsed = new Date(`${day}T${normalizedTime}`);
+  return Number.isNaN(parsed.valueOf()) ? null : parsed;
+};
+
+const parseCreatedAtValue = (createdAt) => {
+  if (!createdAt) return null;
+
+  if (Array.isArray(createdAt)) {
+    const [y, mo, d, h = 0, mi = 0, s = 0, ns = 0] = createdAt.map((v) => Number(v));
+    if (![y, mo, d, h, mi, s, ns].every(Number.isFinite)) return null;
+    const parsed = new Date(y, Math.max(0, mo - 1), d, h, mi, s, Math.floor(ns / 1_000_000));
+    return Number.isNaN(parsed.valueOf()) ? null : parsed;
+  }
+
+  const parsed = new Date(createdAt);
   return Number.isNaN(parsed.valueOf()) ? null : parsed;
 };
 
@@ -478,10 +493,20 @@ const CarparkOverview = () => {
             const day = reservation?.day ?? '';
             const begin = trimTimeForDisplay(reservation?.begin);
             const end = trimTimeForDisplay(reservation?.end);
-            const createdAt = reservation?.createdAt ? String(reservation.createdAt) : '';
+            const createdAtRaw = reservation?.createdAt ?? null;
+            const createdAt = createdAtRaw ? String(createdAtRaw) : '';
+            const createdAtDate = parseCreatedAtValue(createdAtRaw);
             const reservationFingerprint = `${id}:${day}:${reservation?.begin ?? ''}:${reservation?.end ?? ''}:${createdAt}`;
+            const isTerminalDecision = status === 'APPROVED' || status === 'REJECTED';
+            const firstSeenTerminalRecently =
+              !prevStatus &&
+              isTerminalDecision &&
+              createdAtDate &&
+              (now.getTime() - createdAtDate.getTime()) <=
+                CARPARK_DECISION_NOTIFICATION_FALLBACK_WINDOW_MINUTES * 60 * 1000 &&
+              (now.getTime() - createdAtDate.getTime()) >= 0;
 
-            if (prevStatus === 'PENDING' && (status === 'APPROVED' || status === 'REJECTED')) {
+            if ((prevStatus === 'PENDING' && isTerminalDecision) || firstSeenTerminalRecently) {
               const statusNotifyKey = `${reservationFingerprint}:${status}`;
               if (!notifiedStatus[statusNotifyKey]) {
                 addPageNotification(
