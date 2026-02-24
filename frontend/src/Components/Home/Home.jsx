@@ -238,7 +238,7 @@ const Home = () => {
   useEffect(() => {
     getRequest(
       `${process.env.REACT_APP_BACKEND_URL}/rooms`,
-      headers.current,
+      headers,
       (data) => setRooms(Array.isArray(data) ? data : []),
       (errorCode) => {
         console.log('Error fetching rooms:', errorCode);
@@ -246,7 +246,7 @@ const Home = () => {
     );
     getRequest(
       `${process.env.REACT_APP_BACKEND_URL}/desks`,
-      headers.current,
+      headers,
       (data) => setDesks(Array.isArray(data) ? data : []),
       (errorCode) => {
         console.log('Error fetching desks:', errorCode);
