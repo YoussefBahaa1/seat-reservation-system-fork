@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { formatDate_yyyymmdd_to_ddmmyyyy } from '../misc/formatDate';
 import {DeskTable} from '../misc/DesksTable';
 import LayoutPage from '../Templates/LayoutPage';
+import ReportDefectModal from '../Defects/ReportDefectModal';
 
 /**
  * Interface to create series (=recurrent) bookings.
@@ -29,6 +30,8 @@ const CreateSeries = () => {
     const [repaint, setRepaint] = useState(false)
     const [dayOfTheWeek, setDayOfTheWeek] = useState(0);
     const [buildings, setBuildings] = useState([]);
+    const [reportDefectDeskId, setReportDefectDeskId] = useState(null);
+    const [isReportDefectOpen, setIsReportDefectOpen] = useState(false);
     
     function create_headline() {
         return i18n.language === 'de' ? 'Erstellen von Serienterminen' : 'Creation of Series Bookings';
@@ -329,13 +332,28 @@ const CreateSeries = () => {
                 </div>
                 <br/><br/>
                 {
-                    dates && dates.length > 0 && (possibleDesks && possibleDesks.length > 0 ? <DeskTable name={'createSeries'} desks={possibleDesks} submit_function={addSeries}/> : <div>{t('noDesksForRange')}</div>)
+                    dates && dates.length > 0 && (possibleDesks && possibleDesks.length > 0 ? <DeskTable name={'createSeries'} desks={possibleDesks} submit_function={addSeries} onReportDefect={(desk) => {
+                        getRequest(
+                            `${process.env.REACT_APP_BACKEND_URL}/defects/active?deskId=${desk.id}`,
+                            headers.current,
+                            () => toast.warning(t('defectAlreadyOpen')),
+                            (status) => {
+                                if (status === 404) {
+                                    setReportDefectDeskId(desk.id);
+                                    setIsReportDefectOpen(true);
+                                } else {
+                                    toast.error(t('defectReportFailed'));
+                                }
+                            }
+                        );
+                    }}/> : <div>{t('noDesksForRange')}</div>)
                 }
             </>
         );
     };
     
     return (
+        <>
         <LayoutPage
             title={create_headline()}
             helpText={i18n.language === 'de' ? 'Wählen Sie zunächst das Start- und Endedatum, wie auch den Start- und Endzeitpunkt aus.<br/>Legen Sie im Anschluss eine Frequenz und das gewünschte Gebäude fest. Gegegebenfalls können Sie noch einen Wochentag setzen.<br/>In der unteren Tabelle können Sie nun ein mögliches Zimmer für Ihre Serienbuchungen auswählen.' : 'First, select the start and end date, as well as the start and end time.</br>Then, choose a frequency and the desired building. If necessary, you can also set a weekday.</br>In the table below, you can now select a possible room for your recurring bookings'}
@@ -343,6 +361,12 @@ const CreateSeries = () => {
         >
             <CreateContent/>
         </LayoutPage>
+        <ReportDefectModal
+            isOpen={isReportDefectOpen}
+            onClose={() => setIsReportDefectOpen(false)}
+            deskId={reportDefectDeskId}
+        />
+        </>
     );
 };
 

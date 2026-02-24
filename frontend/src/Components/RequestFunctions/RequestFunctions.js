@@ -63,14 +63,14 @@ async function request(type, url, headers, successFunction, failFunction, body =
     if (axios.isAxiosError(error)) {
       if (error.response) {
         // Server antwortete mit einem Statuscode außerhalb von 2xx
-        failFunction(error.response.status);
+        failFunction(error.response.status, error.response.data ?? null);
       } else {
         console.error(`Netzwerk- oder Serverfehler bei ${type} ${url}:`, error.message);
-        failFunction(null); // Optional: Kannst du auch anders behandeln
+        failFunction(null, null); // Optional: Kannst du auch anders behandeln
       }
     } else {
       console.error(`Unbekannter Fehler bei ${type} ${url}:`, error);
-      failFunction(null);
+      failFunction(null, null);
     }
   }
 }

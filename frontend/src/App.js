@@ -22,11 +22,16 @@ import Favourites from './Components/Home/Favourites';
 import SupportContacts from './Components/Home/SupportContacts';
 import JwtHeartbeat from './Components/misc/JwtHearbeat';
 import CarparkOverview from './Components/Carpark/CarparkOverview';
+import DefectDashboard from './Components/Defects/DefectDashboard';
 import './i18n';
 
 function AppRoutes() {
   const location = useLocation();
   const isLoginPage = location.pathname === "/";
+  const canAccessAdmin = localStorage.getItem('admin') === 'true';
+  const canAccessDefects =
+    localStorage.getItem('admin') === 'true' ||
+    localStorage.getItem('servicePersonnel') === 'true';
 
   return (
     <>
@@ -36,7 +41,10 @@ function AppRoutes() {
         <Route path="/home" element={<Home />} />
         <Route path="/floor" element={<Floor />} />
         <Route path="/desks" element={<Booking />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route
+          path="/admin"
+          element={canAccessAdmin ? <AdminPage /> : <Navigate to="/home" replace />}
+        />
         <Route path="/mybookings" element={<MyBookings />} />
         <Route path="/manageseries" element={<ManageSeries />} />
         <Route path="/createseries" element={<CreateSeries />} />
@@ -46,6 +54,10 @@ function AppRoutes() {
         <Route path='/supportContacts' element={<SupportContacts />} />
         <Route path="/carpark" element={<CarparkOverview />} />
         <Route path="/favourites" element={<Favourites />} />
+        <Route
+          path="/defects"
+          element={canAccessDefects ? <DefectDashboard /> : <Navigate to="/home" replace />}
+        />
         <Route path="*" element={<Navigate to="/home" />} />
       </Routes>
     </>

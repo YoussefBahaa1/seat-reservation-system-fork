@@ -1,4 +1,4 @@
-import { FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, Checkbox } from '@mui/material';
+import { FormControl, FormControlLabel, FormLabel, TextField, Checkbox } from '@mui/material';
 import {useRef, useState} from 'react';
 import { toast } from 'react-toastify';
 import { useTranslation } from "react-i18next";
@@ -15,9 +15,13 @@ export default function AddUser({ isOpen, onClose }) {
   const [surname, setSurname] = useState('');
   const [department, setDepartment] = useState('');
   //const [visibility, setVisibility] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isEmployee, setIsEmployee] = useState(true);
-  const [isServicePersonnel, setIsServicePersonnel] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('EMPLOYEE');
+
+  const handleRoleChange = (role, checked) => {
+    if (checked) {
+      setSelectedRole(role);
+    }
+  };
 
   async function addUser(){
     if(!email || !password || !name || !surname){
@@ -46,9 +50,9 @@ export default function AddUser({ isOpen, onClose }) {
         'name': name,
         'surname': surname,
         'department': department,
-        'admin': isAdmin,
-        'employee': isEmployee,
-        'servicePersonnel': isServicePersonnel,
+        'admin': selectedRole === 'ADMIN',
+        'employee': selectedRole === 'EMPLOYEE',
+        'servicePersonnel': selectedRole === 'SERVICE_PERSONNEL',
         'visibility': true,
       })
     );
@@ -118,49 +122,34 @@ export default function AddUser({ isOpen, onClose }) {
         />
       </FormControl>
       <br/><br/>
-      <FormControl id='addUser-isAdmin'>
-        <FormLabel id='addUser-isAdmin-label'>{t('admin')}?</FormLabel>
-        <RadioGroup
-          row
-          aria-labelledby='addUser-isAdmin-label'
-          value={isAdmin}
-          onChange={(e)=> {
-            const adminValue = e.target.value === 'true';
-            setIsAdmin(adminValue);
-            // If admin is set, disable employee/service personnel checkboxes
-            if (adminValue) {
-              setIsEmployee(false);
-              setIsServicePersonnel(false);
-            }
-          }}
-        >
-          <FormControlLabel id='radioAdmin_true' value='true' control={<Radio />} label={t('true')} />
-          <FormControlLabel id='radioAdmin_false' value='false' control={<Radio />} label={t('false')} />
-        
-        </RadioGroup>
-      </FormControl>
-      <br/><br/>
       <FormControl id='addUser-roles'>
-        <FormLabel>{t('employee')} / {t('servicePersonnel')}</FormLabel>
+        <FormLabel>{t('role')}</FormLabel>
         <FormControlLabel
           control={
             <Checkbox
-              checked={isEmployee}
-              onChange={(e) => setIsEmployee(e.target.checked)}
-              disabled={isAdmin}
+              checked={selectedRole === 'ADMIN'}
+              onChange={(e) => handleRoleChange('ADMIN', e.target.checked)}
             />
           }
-          label={t('employee')}
+          label={t('admin')}
         />
         <FormControlLabel
           control={
             <Checkbox
-              checked={isServicePersonnel}
-              onChange={(e) => setIsServicePersonnel(e.target.checked)}
-              disabled={isAdmin}
+              checked={selectedRole === 'SERVICE_PERSONNEL'}
+              onChange={(e) => handleRoleChange('SERVICE_PERSONNEL', e.target.checked)}
             />
           }
           label={t('servicePersonnel')}
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={selectedRole === 'EMPLOYEE'}
+              onChange={(e) => handleRoleChange('EMPLOYEE', e.target.checked)}
+            />
+          }
+          label={t('employee')}
         />
       </FormControl>
       {/*<br></br>

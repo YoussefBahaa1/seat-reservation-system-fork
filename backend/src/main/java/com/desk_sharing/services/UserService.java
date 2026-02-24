@@ -1,5 +1,6 @@
 package com.desk_sharing.services;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -16,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.desk_sharing.repositories.UserRepository;
 import com.desk_sharing.security.JWTGenerator;
@@ -137,6 +139,7 @@ public class UserService  {
                 user.getName(),
                 user.getSurname(),
                 user.isAdmin(),
+                user.isServicePersonnel(),
                 user.isVisibility(),
                 mode.name(),
                 mfaToken
@@ -153,6 +156,7 @@ public class UserService  {
             user.getName(),
             user.getSurname(),
             user.isAdmin(),
+            user.isServicePersonnel(),
             user.isVisibility(),
             mode.name(),
             "SUCCESS",
@@ -316,11 +320,55 @@ public class UserService  {
             }
         }
 
-        setAdmin(userFromDB, userDto.isAdmin());
-        setEmployee(userFromDB, userDto.isEmployee());
-        setServicePersonnel(userFromDB, userDto.isServicePersonnel());
+        int selectedRoles = (userDto.isAdmin() ? 1 : 0)
+            + (userDto.isEmployee() ? 1 : 0)
+            + (userDto.isServicePersonnel() ? 1 : 0);
+        if (selectedRoles != 1) {
+            throw new ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST,
+                "Exactly one role must be selected"
+            );
+        }
+
+        boolean roleApplied = applySingleRole(
+            userFromDB,
+            userDto.isAdmin(),
+            userDto.isEmployee(),
+            userDto.isServicePersonnel()
+        );
+        if (!roleApplied) {
+            throw new ResponseStatusException(
+                org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
+                "Selected role is not configured in the system"
+            );
+        }
 
         return userRepository.save(userFromDB);
+    }
+
+    private boolean applySingleRole(
+        final UserEntity userFromDB,
+        final boolean admin,
+        final boolean employee,
+        final boolean servicePersonnel
+    ) {
+        int selectedRoles = (admin ? 1 : 0) + (employee ? 1 : 0) + (servicePersonnel ? 1 : 0);
+        if (selectedRoles != 1) {
+            return false;
+        }
+
+        String selectedRoleName = admin
+            ? "ROLE_ADMIN"
+            : (servicePersonnel ? "ROLE_SERVICE_PERSONNEL" : "ROLE_EMPLOYEE");
+        Role selectedRole = roleRepository.findByName(selectedRoleName).orElse(null);
+        if (selectedRole == null) {
+            return false;
+        }
+
+        List<Role> newRoles = new ArrayList<>();
+        newRoles.add(selectedRole);
+        userFromDB.setRoles(newRoles);
+        return true;
     }
 
     public boolean setAdmin(final UserEntity userFromDB, boolean shallAdmin) {
