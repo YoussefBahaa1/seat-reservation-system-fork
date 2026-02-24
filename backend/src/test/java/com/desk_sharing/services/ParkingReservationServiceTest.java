@@ -2,8 +2,11 @@ package com.desk_sharing.services;
 
 import com.desk_sharing.entities.ParkingReservation;
 import com.desk_sharing.entities.ParkingReservationStatus;
+import com.desk_sharing.entities.ParkingSpot;
+import com.desk_sharing.entities.ParkingSpotType;
 import com.desk_sharing.entities.Role;
 import com.desk_sharing.entities.UserEntity;
+import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
 import com.desk_sharing.repositories.ParkingSpotRepository;
@@ -15,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,7 +26,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.sql.Date;
 import java.sql.Time;
 import java.time.LocalDate;
+import java.util.Dictionary;
 import java.util.List;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,6 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -44,6 +51,7 @@ class ParkingReservationServiceTest {
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
+        LocaleContextHolder.resetLocaleContext();
     }
 
     @Test
@@ -229,6 +237,202 @@ class ParkingReservationServiceTest {
         ArgumentCaptor<ParkingReservation> captor = ArgumentCaptor.forClass(ParkingReservation.class);
         verify(parkingReservationRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(ParkingReservationStatus.REJECTED);
+    }
+
+    @Test
+    void getReservationsForDate_throwsBadRequestOnNullDay() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+
+        assertThatThrownBy(() -> service.getReservationsForDate(null))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("Missing day");
+    }
+
+    @Test
+    void getReservationsForDate_mapsParkingReservationToDayEvent() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+
+        Date day = Date.valueOf(LocalDate.now().plusDays(1));
+        ParkingReservation reservation = new ParkingReservation();
+        reservation.setId(8L);
+        reservation.setUserId(21);
+        reservation.setSpotLabel("32");
+        reservation.setDay(day);
+        reservation.setBegin(Time.valueOf("08:00:00"));
+        reservation.setEnd(Time.valueOf("10:00:00"));
+        reservation.setStatus(ParkingReservationStatus.PENDING);
+        when(parkingReservationRepository.findByDay(day)).thenReturn(List.of(reservation));
+
+        List<BookingDayEventDTO> result = service.getReservationsForDate(day);
+
+        assertThat(result).hasSize(1);
+        BookingDayEventDTO dto = result.get(0);
+        assertThat(dto.getId()).isEqualTo(8L);
+        assertThat(dto.getUserId()).isEqualTo(21);
+        assertThat(dto.getParkingId()).isEqualTo(32L);
+        assertThat(dto.getParkingStatus()).isEqualTo("PENDING");
+        assertThat(dto.getMode()).isEqualTo("parking");
+    }
+
+    @Test
+    void getAllReservationsForDates_returnsCountForEachDay() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+
+        Date day1 = Date.valueOf(LocalDate.now().plusDays(1));
+        Date day2 = Date.valueOf(LocalDate.now().plusDays(2));
+        when(parkingReservationRepository.countByDay(day1)).thenReturn(3L);
+        when(parkingReservationRepository.countByDay(day2)).thenReturn(0L);
+
+        Dictionary<Date, Integer> counts = service.getAllReservationsForDates(List.of(day1, day2));
+
+        assertThat(counts.get(day1)).isEqualTo(3);
+        assertThat(counts.get(day2)).isEqualTo(0);
+        verify(parkingReservationRepository).countByDay(day1);
+        verify(parkingReservationRepository).countByDay(day2);
+    }
+
+    @Test
+    void setSpotManualBlocked_blocksSpotForAdmin() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingSpot spot = new ParkingSpot();
+        spot.setSpotLabel("32");
+        spot.setSpotType(ParkingSpotType.STANDARD);
+        spot.setManuallyBlocked(false);
+        when(parkingSpotRepository.findById("32")).thenReturn(java.util.Optional.of(spot));
+        when(parkingSpotRepository.save(any(ParkingSpot.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ParkingSpot saved = service.setSpotManualBlocked("32", true);
+
+        assertThat(saved.isManuallyBlocked()).isTrue();
+        verify(parkingSpotRepository).save(spot);
+    }
+
+    @Test
+    void setSpotManualBlocked_rejectsNonAdmin() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(3, "user@example.com", false);
+
+        assertThatThrownBy(() -> service.setSpotManualBlocked("32", true))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("Admin role required");
+    }
+
+    @Test
+    void setSpotManualBlocked_rejectsSpecialCaseSpot() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingSpot special = new ParkingSpot();
+        special.setSpotLabel("23");
+        special.setSpotType(ParkingSpotType.SPECIAL_CASE);
+        when(parkingSpotRepository.findById("23")).thenReturn(java.util.Optional.of(special));
+
+        assertThatThrownBy(() -> service.setSpotManualBlocked("23", true))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("Special-case spots cannot be manually blocked/unblocked");
+        verify(parkingSpotRepository, never()).save(any(ParkingSpot.class));
+    }
+
+    @Test
+    void createReservation_rejectsWhenSpotIsManuallyBlocked() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+
+        ParkingSpot blockedSpot = new ParkingSpot();
+        blockedSpot.setSpotLabel("7");
+        blockedSpot.setSpotType(ParkingSpotType.STANDARD);
+        blockedSpot.setManuallyBlocked(true);
+        when(parkingSpotRepository.findById("7")).thenReturn(java.util.Optional.of(blockedSpot));
+
+        ParkingReservationRequestDTO request = new ParkingReservationRequestDTO();
+        request.setSpotLabel("7");
+        request.setDay(LocalDate.now().plusDays(1).toString());
+        request.setBegin("10:00");
+        request.setEnd("11:00");
+
+        assertThatThrownBy(() -> service.createReservation(request))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("This spot is blocked");
+    }
+
+    @Test
+    void createReservation_keepsProvidedRequestLocale() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(42, "me@example.com", false);
+
+        LocalDate day = LocalDate.now().plusDays(1);
+        ParkingReservationRequestDTO request = new ParkingReservationRequestDTO();
+        request.setSpotLabel("2");
+        request.setDay(day.toString());
+        request.setBegin("10:00");
+        request.setEnd("11:00");
+        request.setLocale("de-DE");
+
+        when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("2"), any(Time.class), any(Time.class)))
+            .thenReturn(List.of());
+        when(parkingReservationRepository.save(any(ParkingReservation.class)))
+            .thenAnswer(inv -> inv.getArgument(0));
+
+        ParkingReservation saved = service.createReservation(request);
+        assertThat(saved.getRequestLocale()).isEqualTo("de-DE");
+    }
+
+    @Test
+    void createReservation_usesLocaleContextFallbackWhenRequestLocaleMissing() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(42, "me@example.com", false);
+        LocaleContextHolder.setLocale(Locale.forLanguageTag("es-ES"));
+
+        LocalDate day = LocalDate.now().plusDays(1);
+        ParkingReservationRequestDTO request = new ParkingReservationRequestDTO();
+        request.setSpotLabel("2");
+        request.setDay(day.toString());
+        request.setBegin("10:00");
+        request.setEnd("11:00");
+        request.setLocale(" ");
+
+        when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("2"), any(Time.class), any(Time.class)))
+            .thenReturn(List.of());
+        when(parkingReservationRepository.save(any(ParkingReservation.class)))
+            .thenAnswer(inv -> inv.getArgument(0));
+
+        ParkingReservation saved = service.createReservation(request);
+        assertThat(saved.getRequestLocale()).isEqualTo("es-ES");
+    }
+
+    @Test
+    void approveReservation_notifiesOnApproval() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingReservation pending = new ParkingReservation();
+        pending.setId(12L);
+        pending.setSpotLabel("1");
+        pending.setDay(Date.valueOf(LocalDate.now().plusDays(1)));
+        pending.setBegin(Time.valueOf("10:00:00"));
+        pending.setEnd(Time.valueOf("10:30:00"));
+        pending.setStatus(ParkingReservationStatus.PENDING);
+
+        when(parkingReservationRepository.findById(12L)).thenReturn(java.util.Optional.of(pending));
+        when(parkingReservationRepository.findApprovedOverlapsForSpot(any(Date.class), eq("1"), any(Time.class), any(Time.class)))
+            .thenReturn(List.of());
+        when(parkingReservationRepository.save(any(ParkingReservation.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ParkingReservation approved = service.approveReservation(12L);
+
+        assertThat(approved.getStatus()).isEqualTo(ParkingReservationStatus.APPROVED);
+        verify(parkingNotificationService).notifyDecision(approved, true);
     }
 
     private void authenticateAs(int userId, String email, boolean admin) {

@@ -1,8 +1,11 @@
 package com.desk_sharing.controllers;
 
 import com.desk_sharing.entities.ParkingReservation;
+import com.desk_sharing.entities.ParkingSpot;
+import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
+import com.desk_sharing.model.ParkingMyReservationDTO;
 import com.desk_sharing.model.ParkingReviewItemDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.services.ParkingReservationService;
@@ -17,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import java.sql.Date;
 import java.sql.Time;
 import java.time.LocalDateTime;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -139,5 +144,101 @@ class ParkingControllerTest {
         verify(userService).logging("parkingReviewReject( " + 19L + " )");
         verify(parkingReservationService).rejectReservation(19L);
         assertThat(resp.getStatusCode().value()).isEqualTo(204);
+    }
+
+    @Test
+    void myReservations_returnsOkAndDelegates() {
+        List<ParkingMyReservationDTO> body = List.of(
+            new ParkingMyReservationDTO(4L, "32", Date.valueOf("2099-01-01"), Time.valueOf("08:00:00"), Time.valueOf("10:00:00"), "PENDING", LocalDateTime.now())
+        );
+        when(parkingReservationService.getMyReservations()).thenReturn(body);
+
+        ResponseEntity<List<ParkingMyReservationDTO>> resp = controller.myReservations();
+
+        verify(userService).logging("parkingMyReservations()");
+        verify(parkingReservationService).getMyReservations();
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isSameAs(body);
+    }
+
+    @Test
+    void blockSpot_returnsOkAndDelegates() {
+        ParkingSpot spot = new ParkingSpot();
+        spot.setSpotLabel("32");
+        spot.setManuallyBlocked(true);
+        when(parkingReservationService.setSpotManualBlocked("32", true)).thenReturn(spot);
+
+        ResponseEntity<ParkingSpot> resp = controller.blockSpot("32");
+
+        verify(userService).logging("parkingBlockSpot( " + "32" + " )");
+        verify(parkingReservationService).setSpotManualBlocked("32", true);
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isSameAs(spot);
+    }
+
+    @Test
+    void unblockSpot_returnsOkAndDelegates() {
+        ParkingSpot spot = new ParkingSpot();
+        spot.setSpotLabel("32");
+        spot.setManuallyBlocked(false);
+        when(parkingReservationService.setSpotManualBlocked("32", false)).thenReturn(spot);
+
+        ResponseEntity<ParkingSpot> resp = controller.unblockSpot("32");
+
+        verify(userService).logging("parkingUnblockSpot( " + "32" + " )");
+        verify(parkingReservationService).setSpotManualBlocked("32", false);
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isSameAs(spot);
+    }
+
+    @Test
+    void getAllBookingsForDate_delegatesAndReturnsDictionary() {
+        List<Date> days = List.of(Date.valueOf("2099-01-01"), Date.valueOf("2099-01-02"));
+        Dictionary<Date, Integer> counts = new Hashtable<>();
+        counts.put(Date.valueOf("2099-01-01"), 2);
+        counts.put(Date.valueOf("2099-01-02"), 5);
+        when(parkingReservationService.getAllReservationsForDates(days)).thenReturn(counts);
+
+        Dictionary<Date, Integer> resp = controller.getAllBookingsForDate(days);
+
+        verify(userService).logging("parkingGetAllBookingsForDate( " + days + " )");
+        verify(parkingReservationService).getAllReservationsForDates(days);
+        assertThat(resp).isSameAs(counts);
+    }
+
+    @Test
+    void getReservationsForDay_acceptsGermanDateFormat() {
+        Date expected = Date.valueOf("2099-02-01");
+        List<BookingDayEventDTO> body = List.of();
+        when(parkingReservationService.getReservationsForDate(expected)).thenReturn(body);
+
+        ResponseEntity<List<BookingDayEventDTO>> resp = controller.getReservationsForDay("01.02.2099");
+
+        verify(userService).logging("parkingDay( " + "01.02.2099" + " )");
+        verify(parkingReservationService).getReservationsForDate(expected);
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isSameAs(body);
+    }
+
+    @Test
+    void getReservationsForDay_acceptsIsoDateFormat() {
+        Date expected = Date.valueOf("2099-02-01");
+        List<BookingDayEventDTO> body = List.of();
+        when(parkingReservationService.getReservationsForDate(expected)).thenReturn(body);
+
+        ResponseEntity<List<BookingDayEventDTO>> resp = controller.getReservationsForDay("2099-02-01");
+
+        verify(userService).logging("parkingDay( " + "2099-02-01" + " )");
+        verify(parkingReservationService).getReservationsForDate(expected);
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isSameAs(body);
+    }
+
+    @Test
+    void getReservationsForDay_invalidDateReturnsBadRequest() {
+        ResponseEntity<List<BookingDayEventDTO>> resp = controller.getReservationsForDay("not-a-date");
+
+        verify(userService).logging("parkingDay( " + "not-a-date" + " )");
+        assertThat(resp.getStatusCode().value()).isEqualTo(400);
     }
 }
