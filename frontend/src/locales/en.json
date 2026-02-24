@@ -205,6 +205,7 @@
     
     "deleteBooking": "Delete Booking",
     "editBooking": "Edit Booking",
+    "exportIcs": "Export ICS",
     "overviewBooking": "Overview of Bookings",
     "search": "Search",
     "roomID": "Room ID",
@@ -268,6 +269,8 @@
     ,"parkingTypes":"Parking types"
     ,"switchToParking":"Switch to parking"
     ,"switchToDesk":"Switch to desk"
+    ,"switchToFloor":"Switch to floor"
+    ,"switchToCalendar":"Switch to calendar"
     ,"selectedDateLabel":"Selected date"
     ,"addBooking":"Add booking"
     ,"enableFilter":"Enable Filter"

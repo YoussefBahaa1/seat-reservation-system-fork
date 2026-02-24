@@ -83,33 +83,34 @@ const FloorImage = (
             />
             <br/><br/>
             {floor !== '' && (
-                <div style={{position: 'relative', display:'inline-block'}} onMouseDown={handleMouseClick}>
-                    <img src={`/Assets/${floor.building.name}/${floor.nameOfImg}`} alt='floorImage'  
-                        style={{ maxWidth: '100%', maxHeight: '600px', position: 'relative' }} 
-                    />
-                    {click_freely && x !== 0.0 && y !== 0.0 && (
-                        <div
-                            style={{
-                                position: 'absolute', fontSize: '30px', transform: 'translate(-50%, -50%)',
-                                top: `${y}%`,
-                                left: `${x}%`
-                            }}
-                        >
-                            <IconButton>
-                                <LaptopIcon 
-                                    style={{ 
-                                        color: new_color, 
-                                        fontSize: '24px' 
-                                    }}
-                                />
-                            </IconButton>
-                        </div>
-                    )}
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ position: 'relative', display:'inline-block' }} onMouseDown={handleMouseClick}>
+                        <img
+                            src={`/Assets/${floor.building.name}/${floor.nameOfImg}`}
+                            alt='floorImage'
+                            style={{ maxWidth: '100%', maxHeight: '750px', position: 'relative', display: 'block' }}
+                        />
+                        {click_freely && x !== 0.0 && y !== 0.0 && (
+                            <div
+                                style={{
+                                    position: 'absolute', fontSize: '30px', transform: 'translate(-50%, -50%)',
+                                    top: `${y}%`,
+                                    left: `${x}%`
+                                }}
+                            >
+                                <IconButton>
+                                    <LaptopIcon 
+                                        style={{ 
+                                            color: new_color, 
+                                            fontSize: '24px' 
+                                        }}
+                                    />
+                                </IconButton>
+                            </div>
+                        )}
 
-                    {/* Render icons for all rooms matching the current floor */}
-                    {
-                        rooms
-                        .map((room, i) => (
+                        {/* Render icons for all rooms matching the current floor */}
+                        {rooms.map((room, i) => (
                             <div
                                 key={i}                                
                                 style={{
@@ -127,23 +128,24 @@ const FloorImage = (
                                         </React.Fragment>
                                     }
                                 >
-                                <IconButton
-                                    onMouseEnter={handleMouseEnter}
-                                    onMouseLeave={handleMouseLeave}
-                                    id={`icon_button_${room.remark}`}
-                                    onClick={() => setRoom(room)}
-                                >
-                                    <LaptopIcon
-                                        style={{ 
-                                            color: present_color, 
-                                            fontSize: '24px'
-                                        }}
-                                        id={`icon_${room.remark}`}
-                                    />
-                                </IconButton>
-                            </HtmlTooltip>
-                        </div>
-                    ))}
+                                    <IconButton
+                                        onMouseEnter={handleMouseEnter}
+                                        onMouseLeave={handleMouseLeave}
+                                        id={`icon_button_${room.remark}`}
+                                        onClick={() => setRoom(room)}
+                                    >
+                                        <LaptopIcon
+                                            style={{ 
+                                                color: present_color, 
+                                                fontSize: '24px'
+                                            }}
+                                            id={`icon_${room.remark}`}
+                                        />
+                                    </IconButton>
+                                </HtmlTooltip>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
         </>

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.desk_sharing.entities.ParkingReservation;
+import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.entities.ParkingSpot;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
@@ -20,6 +21,11 @@ import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.services.ParkingReservationService;
 import com.desk_sharing.services.UserService;
 
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Dictionary;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -91,5 +97,29 @@ public class ParkingController {
         userService.logging("parkingReviewReject( " + id + " )");
         parkingReservationService.rejectReservation(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @PostMapping("/getAllBookingsForDate")
+    public Dictionary<Date, Integer> getAllBookingsForDate(@RequestBody List<Date> days) {
+        userService.logging("parkingGetAllBookingsForDate( " + days + " )");
+        return parkingReservationService.getAllReservationsForDates(days);
+    }
+
+    @GetMapping("/day/{date}")
+    public ResponseEntity<List<BookingDayEventDTO>> getReservationsForDay(@PathVariable("date") String date) {
+        userService.logging("parkingDay( " + date + " )");
+        try {
+            Date parsedDate;
+            try {
+                LocalDate parsedLocalDate = LocalDate.parse(date, DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+                parsedDate = Date.valueOf(parsedLocalDate);
+            } catch (DateTimeParseException e) {
+                parsedDate = Date.valueOf(date);
+            }
+            List<BookingDayEventDTO> reservations = parkingReservationService.getReservationsForDate(parsedDate);
+            return new ResponseEntity<>(reservations, HttpStatus.OK);
+        } catch (IllegalArgumentException | DateTimeParseException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 }

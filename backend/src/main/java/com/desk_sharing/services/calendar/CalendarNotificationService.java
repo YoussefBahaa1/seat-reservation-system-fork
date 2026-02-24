@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.lang.NonNull;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -172,7 +173,8 @@ public class CalendarNotificationService {
                 new ByteArrayResource(icsContent.getBytes(StandardCharsets.UTF_8)));
 
             mailSender.send(mimeMessage);
-        } catch (MessagingException e) {
+        } catch (MessagingException | MailException e) {
+            // Calendar email issues must never break booking CRUD flows.
             log.warn("Failed to send calendar notification for booking {}: {}", booking.getId(), e.getMessage());
         }
     }

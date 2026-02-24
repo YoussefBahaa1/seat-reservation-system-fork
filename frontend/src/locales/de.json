@@ -205,6 +205,7 @@
     
     "deleteBooking": "Buchung Entfernen",
     "editBooking": "Buchung Bearbeiten",
+    "exportIcs": "Als ICS exportieren",
     "overviewBooking": "Buchungsübersicht",
     "search": "Suchen",
     "roomID": "Tisch ID",
@@ -268,6 +269,8 @@
     ,"parkingTypes":"Parkplatztypen"
     ,"switchToParking":"Zu Parkplatz wechseln"
     ,"switchToDesk":"Zu Arbeitsplatz wechseln"
+    ,"switchToFloor":"Zur Etage wechseln"
+    ,"switchToCalendar":"Zum Kalender wechseln"
     ,"selectedDateLabel":"Ausgewähltes Datum"
     ,"addBooking":"Buchung hinzufügen"
     ,"enableFilter":"Filter aktivieren"
