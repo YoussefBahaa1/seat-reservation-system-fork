@@ -230,7 +230,7 @@
 }
 
 .home-day-event {
-  background-color: #9e9e9e;
+  background-color: #505050;
   color: #ffffff;
   border-radius: 8px;
   padding: 4px 6px;
@@ -240,6 +240,16 @@
 
 .home-day-event--mine {
   background-color: #3174ad;
+}
+
+.home-day-event--mine-pending {
+  background-color: #f9a825;
+  color: #000000;
+}
+
+.home-day-event--pending-other {
+  background-color: #c9c9c9;
+  color: #1f1f1f;
 }
 
 .home-day-event-title {

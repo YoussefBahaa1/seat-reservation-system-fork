@@ -34,6 +34,7 @@ const Home = () => {
   });
   const [dayDeskEvents, setDayDeskEvents] = useState([]);
   const [dayParkingEvents, setDayParkingEvents] = useState([]);
+  const [myParkingStatusesById, setMyParkingStatusesById] = useState({});
   const [viewMode, setViewMode] = useState(() => sessionStorage.getItem('homeViewMode') || 'calendar');
   const [mode, setMode] = useState(() => sessionStorage.getItem('homeDayMode') || 'desk');
   const [selectedDeskFilters, setSelectedDeskFilters] = useState(() => {
@@ -148,6 +149,23 @@ const Home = () => {
           toast.error(t(errorCode + ''));
         }
         setDayParkingEvents([]);
+      }
+    );
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/parking/reservations/mine`,
+      headers.current,
+      (data) => {
+        const statuses = {};
+        (Array.isArray(data) ? data : []).forEach((reservation) => {
+          if (reservation?.id != null) {
+            statuses[String(reservation.id)] = String(reservation.status || '').toUpperCase();
+          }
+        });
+        setMyParkingStatusesById(statuses);
+      },
+      (errorCode) => {
+        console.log('Error fetching my parking reservations:', errorCode);
+        setMyParkingStatusesById({});
       }
     );
   }, [selectedDate, headers, t]);
@@ -324,6 +342,24 @@ const Home = () => {
     });
     return groups;
   }, [filteredDayEvents, timeBlocks]);
+
+  const getDayEventClassName = (event) => {
+    const isMine = event.userId && String(event.userId) === currentUserId;
+    const parkingStatus = String(event?.parkingStatus || '').toUpperCase();
+    if (!isMine) {
+      if (mode === 'parking' && parkingStatus === 'PENDING') {
+        return 'home-day-event home-day-event--pending-other';
+      }
+      return 'home-day-event';
+    }
+    if (mode === 'parking') {
+      const status = myParkingStatusesById[String(event.id)] || '';
+      if (status === 'PENDING') {
+        return 'home-day-event home-day-event--mine-pending';
+      }
+    }
+    return 'home-day-event home-day-event--mine';
+  };
 
   const BookingEvent = ({ event }) => {
     const count = event?.resource?.count ?? 0;
@@ -571,11 +607,7 @@ const Home = () => {
               {block.events.map((event) => (
                 <div
                   key={event.id}
-                  className={
-                    event.userId && String(event.userId) === currentUserId
-                      ? 'home-day-event home-day-event--mine'
-                      : 'home-day-event'
-                  }
+                  className={getDayEventClassName(event)}
                 >
                   <div className="home-day-event-title">
                     {mode === 'desk'
