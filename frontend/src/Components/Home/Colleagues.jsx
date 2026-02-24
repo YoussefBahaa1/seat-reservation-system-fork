@@ -3,9 +3,7 @@ import {Table, Tooltip, Button, TableBody, TableCell, TableContainer,Typography,
 import { useTranslation } from 'react-i18next';
 import { getRequest, postRequest } from '../RequestFunctions/RequestFunctions';
 import CreateDatePicker from '../misc/CreateDatePicker';
-import { toast } from 'react-toastify';
 import { formatDate_yyyymmdd_to_ddmmyyyy } from '../misc/formatDate';
-import isEmail from '../misc/isEmail';
 import LayoutPage from '../Templates/LayoutPage';
 
 const Colleagues = () => {
@@ -15,17 +13,14 @@ const Colleagues = () => {
     // Default endTime is 2 hours ahead.
     const [groups, setGroups] = useState([]);
     const [selectedGroup, setSelectedGroup] = useState('');
-    const [memberObjects, setMemberObjects] = useState([]); 
+    const [memberObjects, setMemberObjects] = useState([]);
     const [emailsString, setEmailsString] = useState('');
 
     function search() {
-      const emailStrings = emailsString.split(',').map(emailString => emailString.trim());
-      for (const emailString of emailStrings) {
-        if (isEmail(emailString)) 
-          continue;
-        toast.error(i18n.language === 'de' ? `${emailString} ist keine gültige Lit-Emailadresse.` : `${emailString} is not a valid lit email address.`);
-        return;
-      }
+      const emailStrings = emailsString
+        .split(',')
+        .map(emailString => emailString.trim())
+        .filter(emailString => emailString.length > 0);
       
       postRequest(
         `${process.env.REACT_APP_BACKEND_URL}/bookings/getBookingsFromColleaguesOnDate/${new Date(date).toISOString().split('T')[0]}`,
@@ -68,8 +63,8 @@ const Colleagues = () => {
     }
 
     function create_helpText() {
-      return i18n.language === 'de' ? '<h1>Buchungen von Kollegen</h1><ul><li>Geben Sie zunächst die Emailadressen der Kollegen, jeweils durch ein Komma getrennt, ein. Alternativ können Sie auch eine Gruppe auswählen und so die Emailadressen vorbelegen lassen.</li><li>Anschließend muss ein Datum ausgewählt werden.</li> <li>Starten Sie die Suche um die Buchungen der ausgewählten Kollegen zum bestimmten Datum einzusehen.</li></ul>' : 
-                                                          '<h1>Bookings if colleagues</h1><ul><li>Type in the email addresses of the colleagues, each seperated by a comma. Alternatively you can select a group to autofill the email addresses of the group members.</li><li>Additionally choose a date.</li> <li>Start the search to see which user has bookings on the selected date.</li></ul>';
+      return i18n.language === 'de' ? '<h1>Buchungen von Kollegen</h1><ul><li>Geben Sie zunächst die E-Mail-Adressen, Namen oder Abkürzungen der Kollegen ein (jeweils durch Komma getrennt). Alternativ können Sie auch eine Gruppe auswählen und so die E-Mail-Adressen vorbelegen lassen.</li><li>Anschließend muss ein Datum ausgewählt werden.</li> <li>Starten Sie die Suche, um die Buchungen der ausgewählten Kollegen zum gewählten Datum einzusehen.</li></ul>' : 
+                                                          '<h1>Bookings of colleagues</h1><ul><li>Type the colleagues\' email addresses, names, or abbreviations, each separated by a comma. Alternatively, select a group to autofill member email addresses.</li><li>Also choose a date.</li> <li>Start the search to see bookings on the selected date.</li></ul>';
     }
     
     return (
@@ -78,12 +73,12 @@ const Colleagues = () => {
         helpText={create_helpText()}
         withPaddingX={true}
       >
-        <Tooltip title={i18n.language === 'de' ? 'Die Email-Adresse des Kollegen. Bei mehreren durch Kommata getrennt.' : 'The email address. In case of more than one, comma seperated.'}>
+        <Tooltip title={i18n.language === 'de' ? 'E-Mail-Adresse, Name oder Abkürzung eines Kollegen. Bei mehreren durch Kommata getrennt.' : 'A colleague email, name, or abbreviation. For multiple entries, separate with commas.'}>
           <TextField
             id='emailsString'
             variant='outlined'
             fullWidth
-            placeholder={i18n.language === 'de' ? 'Kommaseparierte E-Mail-Adressen' : 'Comma seperated email addresses'}
+            placeholder={i18n.language === 'de' ? 'Kommaseparierte E-Mail-Adressen, Namen oder Abkürzungen' : 'Comma separated emails, names, or abbreviations'}
             value={emailsString}
             onChange={e => {
                 setEmailsString(e.target.value);
@@ -140,7 +135,7 @@ const Colleagues = () => {
         </Button>
         <br/>
         <br/>
-        {Object.keys(memberObjects).length > 0 &&
+        {memberObjects.length > 0 &&
           <TableContainer component={Paper} sx={{
               maxHeight: 400, // Set max height
               overflowY: 'auto', // Enable vertical scroll
@@ -151,18 +146,20 @@ const Colleagues = () => {
             <Table stickyHeader id='colleagues_table'>
               <TableHead>
                 <TableRow key='colleagues_table_header' id='colleagues_table_header'>
+                  <TableCell>{i18n.language === 'de' ? 'Name/Abkürzung' : 'Name/Abbreviation'}</TableCell>
                   <TableCell>Email</TableCell>
                   <TableCell>{t('bookings')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {Object.keys(memberObjects).map(memberEmail => (
-                  <TableRow key={memberEmail} id={memberEmail}>
-                      <TableCell id={`${memberEmail}_mail`}>{memberEmail}</TableCell>
-                      <TableCell id={`${memberEmail}_bookings`}>
+                {memberObjects.map((member) => (
+                  <TableRow key={member.email} id={member.email}>
+                      <TableCell id={`${member.email}_displayName`}>{member.displayName}</TableCell>
+                      <TableCell id={`${member.email}_mail`}>{member.email}</TableCell>
+                      <TableCell id={`${member.email}_bookings`}>
                         <div style={{ width: '100%', overflowX: 'auto' }}>
                           <div style={{ whiteSpace: 'nowrap', minWidth: 'max-content' }}>
-                            {memberObjects[memberEmail].map((booking, index) => (
+                            {(member.bookings || []).map((booking, index) => (
                               <span
                                 key={index}
                                 style={{

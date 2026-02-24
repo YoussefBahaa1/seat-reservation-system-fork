@@ -3,10 +3,12 @@ package com.desk_sharing.services;
 import com.desk_sharing.entities.Booking;
 import com.desk_sharing.entities.Desk;
 import com.desk_sharing.entities.Room;
+import com.desk_sharing.entities.VisibilityMode;
 import com.desk_sharing.model.BookingDTO;
 import com.desk_sharing.model.BookingEditDTO;
 import com.desk_sharing.model.BookingProjectionDTO;
 import com.desk_sharing.model.BookingDayEventDTO;
+import com.desk_sharing.model.ColleagueBookingsDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
 import com.desk_sharing.repositories.RoomRepository;
@@ -56,26 +58,171 @@ public class BookingService {
     private final BookingSettingsService bookingSettingsService;
 
     /**
-     * Find and return an key-value-list of with every booking at date for each email.
-     * 
-     * @param emailStrings   A list of emails. One for each user for whom we like to find the bookings at date.
-     * @param date   The date on which we want to find the bookings for each user with an email in emailStrings.
-     * @return A key-value-list of every booking at date. The key is the email and the value is a list of bookings.
+     * Find and return bookings of visible colleagues (non-anonymous) for the requested date.
+     *
+     * @param searchTerms A list of identifiers (email, full name, abbreviation).
+     * @param date The date on which to fetch bookings.
+     * @return A list of colleagues with display label, email and bookings.
      */
-    public Map<String, List<BookingProjectionDTO>> getBookingsFromColleaguesOnDate(
-        final List<String> emailStrings, 
-        final Date date) 
-        {
-        final Map<String, List<BookingProjectionDTO>> bookingsForEmail = new HashMap<>();
-        for (final String emailString: emailStrings) {
+    public List<ColleagueBookingsDTO> getBookingsFromColleaguesOnDate(
+        final List<String> searchTerms,
+        final Date date
+    ) {
+        if (searchTerms == null || searchTerms.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        final List<UserEntity> safeUsers = Optional.ofNullable(userService.getAllUsers()).orElse(Collections.emptyList());
+        final Map<String, UserEntity> usersByNormalizedEmail = safeUsers.stream()
+            .filter(Objects::nonNull)
+            .filter(user -> user.getEmail() != null && !user.getEmail().isBlank())
+            .collect(Collectors.toMap(
+                user -> normalizeSearchTerm(user.getEmail()),
+                user -> user,
+                (first, second) -> first,
+                LinkedHashMap::new
+            ));
+
+        final LinkedHashSet<String> resolvedEmails = resolveSearchTermsToEmails(searchTerms, safeUsers, usersByNormalizedEmail);
+        final List<ColleagueBookingsDTO> result = new ArrayList<>();
+
+        for (final String emailString : resolvedEmails) {
+            final UserEntity user = usersByNormalizedEmail.get(normalizeSearchTerm(emailString));
+            if (isAnonymous(user)) {
+                continue;
+            }
+
             final List<BookingProjectionDTO> bookingProjectionDtos = bookingRepository
                 .getEveryBookingForEmail("%" + emailString + "%").stream()
                 .map(BookingProjectionDTO::new)
                 .filter(bookingProjectionDto -> bookingProjectionDto.getDay().equals(date))
                 .toList();
-            bookingsForEmail.put(emailString, bookingProjectionDtos);
+
+            result.add(new ColleagueBookingsDTO(
+                buildDisplayName(user, emailString),
+                emailString,
+                bookingProjectionDtos
+            ));
         }
-        return bookingsForEmail;
+
+        return result;
+    }
+
+    private LinkedHashSet<String> resolveSearchTermsToEmails(
+        final List<String> searchTerms,
+        final List<UserEntity> users,
+        final Map<String, UserEntity> usersByNormalizedEmail
+    ) {
+        final LinkedHashSet<String> resolvedEmails = new LinkedHashSet<>();
+
+        for (final String rawTerm : searchTerms) {
+            if (rawTerm == null || rawTerm.trim().isEmpty()) {
+                continue;
+            }
+            final String term = rawTerm.trim();
+            final String normalizedTerm = normalizeSearchTerm(term);
+            final String compactTerm = compactSearchTerm(term);
+
+            final List<String> matchingEmails = users.stream()
+                .filter(user -> !isAnonymous(user))
+                .filter(user -> userMatchesSearchTerm(user, normalizedTerm, compactTerm))
+                .map(UserEntity::getEmail)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(email -> !email.isEmpty())
+                .toList();
+
+            if (!matchingEmails.isEmpty()) {
+                resolvedEmails.addAll(matchingEmails);
+                continue;
+            }
+
+            // Keep legacy behavior for plain email inputs not present in users table.
+            if (term.contains("@")) {
+                final UserEntity mappedUser = usersByNormalizedEmail.get(normalizedTerm);
+                if (mappedUser == null) {
+                    resolvedEmails.add(term);
+                } else if (!isAnonymous(mappedUser)) {
+                    resolvedEmails.add(mappedUser.getEmail().trim());
+                }
+            }
+        }
+        return resolvedEmails;
+    }
+
+    private boolean userMatchesSearchTerm(final UserEntity user, final String normalizedTerm, final String compactTerm) {
+        if (user == null || normalizedTerm.isEmpty()) {
+            return false;
+        }
+
+        final String email = normalizeSearchTerm(user.getEmail());
+        final String name = normalizeSearchTerm(user.getName());
+        final String surname = normalizeSearchTerm(user.getSurname());
+        final String fullName = (name + " " + surname).trim();
+
+        if (email.contains(normalizedTerm)
+            || name.contains(normalizedTerm)
+            || surname.contains(normalizedTerm)
+            || fullName.contains(normalizedTerm)) {
+            return true;
+        }
+
+        final String abbreviation = buildAbbreviation(name, surname);
+        return !compactTerm.isEmpty() && compactSearchTerm(abbreviation).equals(compactTerm);
+    }
+
+    private boolean isAnonymous(final UserEntity user) {
+        if (user == null) {
+            return false;
+        }
+        final VisibilityMode mode = user.getVisibilityMode() == null ? VisibilityMode.FULL_NAME : user.getVisibilityMode();
+        return mode == VisibilityMode.ANONYMOUS;
+    }
+
+    private String buildDisplayName(final UserEntity user, final String emailFallback) {
+        if (user == null) {
+            return emailFallback;
+        }
+
+        final String name = user.getName() == null ? "" : user.getName().trim();
+        final String surname = user.getSurname() == null ? "" : user.getSurname().trim();
+        final String fullName = (name + " " + surname).trim();
+
+        final VisibilityMode mode = user.getVisibilityMode() == null ? VisibilityMode.FULL_NAME : user.getVisibilityMode();
+        if (mode == VisibilityMode.ABBREVIATION) {
+            final String abbreviation = buildAbbreviation(name, surname);
+            if (!abbreviation.isBlank()) {
+                return abbreviation;
+            }
+        }
+
+        if (!fullName.isBlank()) {
+            return fullName;
+        }
+
+        final String abbreviation = buildAbbreviation(name, surname);
+        if (!abbreviation.isBlank()) {
+            return abbreviation;
+        }
+
+        return emailFallback;
+    }
+
+    private String normalizeSearchTerm(final String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String compactSearchTerm(final String value) {
+        return normalizeSearchTerm(value).replaceAll("[^\\p{Alnum}]", "");
+    }
+
+    private String buildAbbreviation(final String name, final String surname) {
+        final String first = name.isEmpty() ? "" : name.substring(0, 1);
+        final String last = surname.isEmpty() ? "" : surname.substring(0, 1);
+        if (first.isEmpty() && last.isEmpty()) {
+            return "";
+        }
+        return last.isEmpty() ? first : first + "." + last;
     }
     
     /**
