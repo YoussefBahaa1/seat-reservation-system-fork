@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - develop
-      - feature/ci.yml 
+      - feature/ci.yml
+      - feature/mybookings-4.6 
     paths:
       - backend/**
       - .github/workflows/ci.yml
+
   pull_request:
     branches:
       - main
