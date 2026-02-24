@@ -409,7 +409,6 @@ public class ParkingReservationService {
                 : Locale.GERMAN.toLanguageTag();
         }
         reservation.setRequestLocale(requestLocale);
-
         return parkingReservationRepository.save(reservation);
     }
 
