@@ -434,7 +434,8 @@ public class ParkingReservationService {
                 reservation.getDay(),
                 reservation.getBegin(),
                 reservation.getEnd(),
-                effectiveStatus(reservation).name()
+                effectiveStatus(reservation).name(),
+                reservation.getCreatedAt()
             ))
             .toList();
     }

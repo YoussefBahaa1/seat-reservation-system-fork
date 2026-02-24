@@ -19,8 +19,7 @@ public interface ParkingReservationRepository extends JpaRepository<ParkingReser
             + "WHERE day = :day AND spot_label IN (:spotLabels) "
             + "AND (reservation_status IS NULL OR reservation_status IN ('APPROVED','PENDING')) "
             + "AND "
-            + "((:startTime BETWEEN begin AND end) OR (:endTime BETWEEN begin AND end) OR "
-            + "(begin >= :startTime AND begin < :endTime) OR (end > :startTime AND end <= :endTime))",
+            + "(:startTime < ADDTIME(end, '00:30:00') AND :endTime > SUBTIME(begin, '00:30:00'))",
             nativeQuery = true)
     List<String> findOccupiedSpotLabels(
         @Param("day") Date day,
@@ -33,8 +32,7 @@ public interface ParkingReservationRepository extends JpaRepository<ParkingReser
             + "WHERE day = :day AND spot_label = :spotLabel "
             + "AND (reservation_status IS NULL OR reservation_status IN ('APPROVED','PENDING')) "
             + "AND "
-            + "((:startTime BETWEEN begin AND end) OR (:endTime BETWEEN begin AND end) OR "
-            + "(begin >= :startTime AND begin < :endTime) OR (end > :startTime AND end <= :endTime))",
+            + "(:startTime < ADDTIME(end, '00:30:00') AND :endTime > SUBTIME(begin, '00:30:00'))",
             nativeQuery = true)
     List<ParkingReservation> findOverlapsForSpot(
         @Param("day") Date day,
@@ -47,8 +45,7 @@ public interface ParkingReservationRepository extends JpaRepository<ParkingReser
             + "WHERE day = :day AND spot_label = :spotLabel "
             + "AND (reservation_status IS NULL OR reservation_status = 'APPROVED') "
             + "AND "
-            + "((:startTime BETWEEN begin AND end) OR (:endTime BETWEEN begin AND end) OR "
-            + "(begin >= :startTime AND begin < :endTime) OR (end > :startTime AND end <= :endTime))",
+            + "(:startTime < ADDTIME(end, '00:30:00') AND :endTime > SUBTIME(begin, '00:30:00'))",
             nativeQuery = true)
     List<ParkingReservation> findApprovedOverlapsForSpot(
         @Param("day") Date day,
@@ -61,8 +58,7 @@ public interface ParkingReservationRepository extends JpaRepository<ParkingReser
             + "WHERE user_id = :userId AND day = :day AND spot_label IN (:spotLabels) "
             + "AND reservation_status = 'REJECTED' "
             + "AND "
-            + "((:startTime BETWEEN begin AND end) OR (:endTime BETWEEN begin AND end) OR "
-            + "(begin >= :startTime AND begin < :endTime) OR (end > :startTime AND end <= :endTime))",
+            + "(:startTime < ADDTIME(end, '00:30:00') AND :endTime > SUBTIME(begin, '00:30:00'))",
             nativeQuery = true)
     List<ParkingReservation> findRejectedOverlapsForUser(
         @Param("day") Date day,

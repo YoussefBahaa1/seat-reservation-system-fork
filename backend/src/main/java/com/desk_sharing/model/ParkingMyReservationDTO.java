@@ -2,6 +2,7 @@ package com.desk_sharing.model;
 
 import java.sql.Date;
 import java.sql.Time;
+import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,4 +18,5 @@ public class ParkingMyReservationDTO {
     private Time begin;
     private Time end;
     private String status; // PENDING | APPROVED | REJECTED
+    private LocalDateTime createdAt;
 }

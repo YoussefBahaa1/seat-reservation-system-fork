@@ -335,6 +335,7 @@
     ,"carparkLegendPending":"In review"
     ,"carparkLegendOccupied":"Occupied"
     ,"carparkLegendBlocked":"Blocked"
+    ,"carparkBufferHint":"Includes {{minutes}} min buffer before and after each booking for overlap checks."
     ,"carparkEnterEditMode":"Enter Edit Mode"
     ,"carparkExitEditMode":"Exit Edit Mode"
     ,"carparkNotifications":"Parking notifications"
