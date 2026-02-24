@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
@@ -84,7 +84,8 @@ const Home = () => {
   });
   const [rooms, setRooms] = useState([]);
   const [desks, setDesks] = useState([]);
-  const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
+  // Derive auth headers per request from storage (handled inside RequestFunctions).
+  const headers = null;
   const lastRoomIdRef = useRef(null);
   const currentUserId = localStorage.getItem('userId');
   const showMaxFiltersSelectedError = useCallback(() => {
@@ -134,10 +135,7 @@ const Home = () => {
 
       postRequest(
         endpoint,
-        {
-          ...headers.current,
-          'Content-Type': 'application/json'
-        },
+        headers,
         (data) => {
           for (const day in data) {
             const newEvent = {
@@ -189,7 +187,7 @@ const Home = () => {
     const dayString = moment(selectedDate).format('DD.MM.YYYY');
     getRequest(
       `${process.env.REACT_APP_BACKEND_URL}/bookings/day/${dayString}`,
-      headers.current,
+      headers,
       (data) => setDayDeskEvents(Array.isArray(data) ? data : []),
       (errorCode) => {
         console.log('Error fetching day desk bookings:', errorCode);
@@ -201,7 +199,7 @@ const Home = () => {
     );
     getRequest(
       `${process.env.REACT_APP_BACKEND_URL}/parking/day/${dayString}`,
-      headers.current,
+      headers,
       (data) => setDayParkingEvents(Array.isArray(data) ? data : []),
       (errorCode) => {
         console.log('Error fetching day parking bookings:', errorCode);
@@ -213,7 +211,7 @@ const Home = () => {
     );
     getRequest(
       `${process.env.REACT_APP_BACKEND_URL}/parking/reservations/mine`,
-      headers.current,
+      headers,
       (data) => {
         const statuses = {};
         (Array.isArray(data) ? data : []).forEach((reservation) => {
