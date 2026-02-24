@@ -67,6 +67,25 @@ async function request(type, url, headers, successFunction, failFunction, body =
       data: body, // bei GET wird data ignoriert von Axios
     };
 
+    // Default content type for non-GET requests when none provided
+    if (type.toUpperCase() !== 'GET') {
+      const hasContentType = Object.keys(config.headers || {}).some(
+        (k) => k.toLowerCase() === 'content-type'
+      );
+      if (!hasContentType) {
+        config.headers = { ...(config.headers || {}), 'Content-Type': 'application/json' };
+      }
+
+      // Ensure JSON bodies are actually serialized as JSON; avoids axios falling back to urlencoded
+      const contentType = Object.entries(config.headers || {}).find(
+        ([k]) => k.toLowerCase() === 'content-type'
+      )?.[1] || '';
+      const isJson = contentType.toLowerCase().includes('application/json');
+      if (isJson && typeof config.data !== 'string') {
+        config.data = JSON.stringify(config.data ?? {});
+      }
+    }
+
     const response = await axios(config);
     successFunction(response.data ?? null);
   } catch (error) {
