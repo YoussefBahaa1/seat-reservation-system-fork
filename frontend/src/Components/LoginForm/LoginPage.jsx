@@ -57,10 +57,12 @@ const LoginPage = () => {
 
   // Complete login - store credentials and navigate
   function completeLogin(data) {
-    sessionStorage.setItem('headers', JSON.stringify({
+    const authHeaders = {
       'Authorization': 'Bearer ' + String(data['accessToken']),
       'Content-Type': 'application/json',
-    }));
+    };
+    sessionStorage.setItem('headers', JSON.stringify(authHeaders));
+    localStorage.setItem('headers', JSON.stringify(authHeaders));
     localStorage.setItem('email', String(data.email));
     localStorage.setItem('userId', String(data.id));
     localStorage.setItem('name', String(data.name));
@@ -71,6 +73,7 @@ const LoginPage = () => {
     const userLang = localStorage.getItem(`language_${data.id}`) || 'en';
     i18n.changeLanguage(userLang);
     sessionStorage.setItem('accessToken', String(data['accessToken']));
+    localStorage.setItem('accessToken', String(data['accessToken']));
     navigate('/home', { replace: true });
   }
 

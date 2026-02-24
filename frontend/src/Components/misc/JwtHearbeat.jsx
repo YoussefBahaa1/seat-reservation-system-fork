@@ -7,18 +7,37 @@ const HEARTBEAT_INTERVAL_MINUTES = 10;
 
 const JwtHeartbeat = () => {
     const navigate = useNavigate();
-    const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
+    const headers = useRef((() => {
+        try {
+            const rawSession = sessionStorage.getItem('headers');
+            if (rawSession) return JSON.parse(rawSession);
+            const rawLocal = localStorage.getItem('headers');
+            if (rawLocal) return JSON.parse(rawLocal);
+        } catch {
+            // ignore parse errors
+        }
+        return null;
+    })());
     const { t } = useTranslation();
     useEffect(() => {
+        const clearAuth = () => {
+            sessionStorage.removeItem('headers');
+            sessionStorage.removeItem('accessToken');
+            localStorage.removeItem('headers');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('userId');
+        };
+
         const checkJwtValidity = async () => {
-            //console.log(localStorage.getItem('userId'), typeof localStorage.getItem('userId'));
-            if (!localStorage.getItem('userId')) return;
+            const hasToken = sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken');
+            if (!hasToken) return;
             getRequest(
                 `${process.env.REACT_APP_BACKEND_URL}/hearbeat`,
                 headers.current,
                 () => { },
                 (errCode) => { 
                     if (errCode===401) {
+                        clearAuth();
                         navigate('/', { replace: true });
                         toast.error(t('tokenInvalid'));
                     }
