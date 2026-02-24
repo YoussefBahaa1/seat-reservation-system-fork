@@ -10,6 +10,7 @@ import CreateTimePicker from '../misc/CreateTimePicker';
 
 const CARPARK_SVG_URL = '/Assets/carpark_overview_ready.svg';
 const CARPARK_SELECTED_DATE_KEY = 'carparkSelectedDate';
+const CARPARK_OVERLAP_BUFFER_MINUTES = 30;
 
 const parseFloatAttr = (el, name, fallback = 0) => {
   const raw = el.getAttribute(name);
@@ -41,17 +42,50 @@ const getClosestNumericLabel = (labels, x, y) => {
   return bestDistSq <= maxDistSq ? best : null;
 };
 
+const defaultSpotCategory = (spotLabel, isSpecial, isAccessible) => {
+  if (isSpecial || spotLabel === '23') return 'SPECIAL_CASE';
+  if (isAccessible || spotLabel === '30') return 'ACCESSIBLE';
+  return 'STANDARD';
+};
+
+const formatSpotCategory = (spotCategory) => {
+  const value = String(spotCategory || 'STANDARD').toUpperCase();
+  if (value === 'SPECIAL_CASE') return 'special case';
+  if (value === 'ACCESSIBLE') return 'accessible';
+  if (value === 'E_CHARGING_STATION') return 'e-charging station';
+  return 'standard';
+};
+
 const getSpotMetaFromDataset = (rect) => ({
   label: rect.dataset.spotLabel ?? '?',
   type: rect.dataset.spotType ?? 'unknown',
+  spotCategory: rect.dataset.spotCategory ?? 'STANDARD',
   lit: rect.dataset.spotLit === 'true',
   accessible: rect.dataset.spotAccessible === 'true',
   special: rect.dataset.spotSpecial === 'true',
+  covered: rect.dataset.spotCovered === 'true',
+  manuallyBlocked: rect.dataset.spotManuallyBlocked === 'true',
+  chargingKw: rect.dataset.spotChargingKw ? Number(rect.dataset.spotChargingKw) : null,
   selectable: rect.dataset.spotSelectable !== 'false',
   status: rect.dataset.spotStatus ?? 'UNKNOWN',
   reservedByMe: rect.dataset.spotReservedByMe === 'true',
   reservationId: rect.dataset.spotReservationId ? Number(rect.dataset.spotReservationId) : null,
+  reservedBegin: rect.dataset.spotReservedBegin || null,
+  reservedEnd: rect.dataset.spotReservedEnd || null,
+  reservedByUser: rect.dataset.spotReservedByUser || null,
 });
+
+const isSpotSelectableForCurrentUser = (rect) => {
+  const isSelectable = rect?.dataset?.spotSelectable !== 'false';
+  if (!isSelectable) return false;
+
+  const status = rect?.dataset?.spotStatus ?? 'UNKNOWN';
+  const reservedByMe = rect?.dataset?.spotReservedByMe === 'true';
+
+  if (status === 'AVAILABLE') return true;
+  if ((status === 'PENDING' || status === 'OCCUPIED' || status === 'BLOCKED') && reservedByMe) return true;
+  return false;
+};
 
 const CarparkView = ({
   selectedDate: controlledSelectedDate,
@@ -61,7 +95,7 @@ const CarparkView = ({
   headerAction = null,
   onReservationsChanged = null,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const containerRef = useRef(null);
   const cleanupRef = useRef([]);
@@ -96,6 +130,7 @@ const CarparkView = ({
   const selectedDate = controlledSelectedDate ?? internalDate;
   const setSelectedDate = onSelectedDateChange ?? setInternalDate;
   const allowSelectUnavailable = detailsVariant === 'modal';
+  const isAdminUser = localStorage.getItem('admin') === 'true';
 
   const clearSelection = useCallback(() => {
     if (selectedRectRef.current) {
@@ -154,6 +189,7 @@ const CarparkView = ({
         .carpark-spot.carpark-selected { fill: #1976d2 !important; }
         .carpark-spot:focus { outline: none; }
         .carpark-status-available { fill: #2e7d32 !important; }
+        .carpark-status-pending { fill: #f9a825 !important; }
         .carpark-status-occupied { fill: #c62828 !important; }
         .carpark-status-blocked { fill: #9e9e9e !important; }
       `;
@@ -205,11 +241,18 @@ const CarparkView = ({
         rect.dataset.spotLit = isLit ? 'true' : 'false';
         rect.dataset.spotAccessible = isAccessible ? 'true' : 'false';
         rect.dataset.spotSpecial = isSpecial ? 'true' : 'false';
+        rect.dataset.spotCategory = defaultSpotCategory(spotLabel, isSpecial, isAccessible);
+        rect.dataset.spotCovered = 'false';
+        rect.dataset.spotManuallyBlocked = 'false';
+        rect.dataset.spotChargingKw = '';
         rect.dataset.spotSelectable = isSelectable ? 'true' : 'false';
         // Default to AVAILABLE so the UI is usable even before the first availability refresh completes.
         rect.dataset.spotStatus = isSpecial ? 'BLOCKED' : 'AVAILABLE';
         rect.dataset.spotReservedByMe = 'false';
         rect.dataset.spotReservationId = '';
+        rect.dataset.spotReservedBegin = '';
+        rect.dataset.spotReservedEnd = '';
+        rect.dataset.spotReservedByUser = '';
         spotRectsByLabelRef.current.set(spotLabel, rect);
         rect.classList.add(isSpecial ? 'carpark-status-blocked' : 'carpark-status-available');
 
@@ -224,7 +267,7 @@ const CarparkView = ({
         );
 
         const setSelectedRect = () => {
-          if (!isSelectable) return;
+          if (!isSpotSelectableForCurrentUser(rect)) return;
           const status = rect.dataset.spotStatus;
           if (!allowSelectUnavailable && status && status !== 'AVAILABLE') return;
           if (status === 'BLOCKED') return;
@@ -329,6 +372,7 @@ const CarparkView = ({
   const spotForPanel = effectiveShowHover ? (selectedSpot ?? hoveredSpot) : selectedSpot;
   const isSpecialSpot = spotForPanel?.special === true;
   const isBlocked = spotForPanel?.status === 'BLOCKED' || isSpecialSpot;
+  const isPending = spotForPanel?.status === 'PENDING';
   const isOccupied = spotForPanel?.status === 'OCCUPIED';
   const isAvailable = spotForPanel?.status === 'AVAILABLE';
 
@@ -370,15 +414,28 @@ const CarparkView = ({
         }
 
         for (const [label, rect] of spotRectsByLabelRef.current.entries()) {
-          rect.classList.remove('carpark-status-available', 'carpark-status-occupied', 'carpark-status-blocked');
+          rect.classList.remove('carpark-status-available', 'carpark-status-pending', 'carpark-status-occupied', 'carpark-status-blocked');
 
           const row = statusByLabel.get(label);
           const status = row?.status ?? (label === '23' ? 'BLOCKED' : 'AVAILABLE');
+          const spotCategory = String(
+            row?.spotType ?? rect.dataset.spotCategory ?? defaultSpotCategory(label, label === '23', label === '30')
+          ).toUpperCase();
           rect.dataset.spotStatus = status;
+          rect.dataset.spotCategory = spotCategory;
+          rect.dataset.spotSpecial = spotCategory === 'SPECIAL_CASE' ? 'true' : 'false';
+          rect.dataset.spotAccessible = spotCategory === 'ACCESSIBLE' ? 'true' : 'false';
+          rect.dataset.spotCovered = row?.covered === true ? 'true' : 'false';
+          rect.dataset.spotManuallyBlocked = row?.manuallyBlocked === true ? 'true' : 'false';
+          rect.dataset.spotChargingKw = row?.chargingKw == null ? '' : String(row.chargingKw);
           rect.dataset.spotReservedByMe = row?.reservedByMe ? 'true' : 'false';
           rect.dataset.spotReservationId = row?.reservationId ? String(row.reservationId) : '';
+          rect.dataset.spotReservedBegin = row?.reservedBegin || '';
+          rect.dataset.spotReservedEnd = row?.reservedEnd || '';
+          rect.dataset.spotReservedByUser = row?.reservedByUser || '';
 
           if (status === 'AVAILABLE') rect.classList.add('carpark-status-available');
+          if (status === 'PENDING') rect.classList.add('carpark-status-pending');
           if (status === 'OCCUPIED') rect.classList.add('carpark-status-occupied');
           if (status === 'BLOCKED') rect.classList.add('carpark-status-blocked');
         }
@@ -415,8 +472,9 @@ const CarparkView = ({
     postRequest(
       `${process.env.REACT_APP_BACKEND_URL}/parking/reservations`,
       headersRef.current,
-      () => {
-        toast.success(t('booked'));
+      (data) => {
+        if (String(data?.status || '') === 'PENDING') toast.success(t('carparkReviewSubmitted'));
+        else toast.success(t('booked'));
         refreshAvailability();
         if (onReservationsChanged) {
           onReservationsChanged();
@@ -431,6 +489,7 @@ const CarparkView = ({
         day,
         begin: startTime,
         end: endTime,
+        locale: i18n.language,
       }
     );
   };
@@ -468,19 +527,30 @@ const CarparkView = ({
             {t(`carparkStatus_${spotForPanel.status}`)}
             {spotForPanel.reservedByMe ? ` (${t('carparkReservedByMe')})` : ''}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t(spotForPanel.type === 'stall' ? 'carparkTypeStall' : 'carparkTypeEmpty')}
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {t('carparkType')}: {formatSpotCategory(spotForPanel.spotCategory)}
           </Typography>
-          <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {isSpecialSpot ? (
-              <Typography variant="body2">{t('carparkSpecialCase')}</Typography>
-            ) : spotForPanel.accessible ? (
-              <Typography variant="body2">♿</Typography>
-            ) : (
-              <Typography variant="body2">{t('carparkStandard')}</Typography>
-            )}
-            {spotForPanel.lit && <Typography variant="body2">LIT</Typography>}
-          </Box>
+          <Typography variant="body2" color="text.secondary">
+            {t('carparkCovered')}: {spotForPanel.covered ? t('carparkYes') : t('carparkNo')}
+          </Typography>
+          {isAdminUser && (
+            <Typography variant="body2" color="text.secondary">
+              {t('carparkAdminBlocked')}: {spotForPanel.manuallyBlocked ? t('carparkYes') : t('carparkNo')}
+            </Typography>
+          )}
+          <Typography variant="body2" color="text.secondary">
+            {t('carparkChargingKw')}: {spotForPanel.chargingKw == null ? '—' : spotForPanel.chargingKw}
+          </Typography>
+          {(spotForPanel.reservedBegin || spotForPanel.reservedEnd) && (
+            <Typography variant="body2" color="text.secondary">
+              {t('carparkReservedTime')}: {spotForPanel.reservedBegin || '-'} - {spotForPanel.reservedEnd || '-'}
+            </Typography>
+          )}
+          {spotForPanel.reservedByUser && (
+            <Typography variant="body2" color="text.secondary">
+              {t('carparkReservedByUser')}: {spotForPanel.reservedByUser}
+            </Typography>
+          )}
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             {selectedSpot ? t('carparkSelected') : t('carparkHover')}
           </Typography>
@@ -489,7 +559,7 @@ const CarparkView = ({
               {t('carparkReserve')}
             </Button>
           )}
-          {isOccupied && spotForPanel.reservedByMe && spotForPanel.reservationId && (
+          {(isPending || isOccupied || isBlocked) && spotForPanel.reservedByMe && spotForPanel.reservationId && (
             <Button sx={{ mt: 2 }} color="error" variant="outlined" onClick={cancelMyReservation}>
               {t('delete')}
             </Button>
@@ -504,6 +574,8 @@ const CarparkView = ({
               ? t('carparkContactStaff')
               : isBlocked
                 ? t('carparkBlocked')
+                : isPending
+                  ? t('carparkReviewPending')
                 : isOccupied
                   ? t('carparkOccupied')
                   : isAvailable
@@ -533,6 +605,7 @@ const CarparkView = ({
           </Button>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip size="small" label={t('carparkLegendAvailable')} sx={{ bgcolor: '#2e7d32', color: '#fff' }} />
+            <Chip size="small" label={t('carparkLegendPending')} sx={{ bgcolor: '#f9a825', color: '#000' }} />
             <Chip size="small" label={t('carparkLegendOccupied')} sx={{ bgcolor: '#c62828', color: '#fff' }} />
             <Chip size="small" label={t('carparkLegendBlocked')} sx={{ bgcolor: '#9e9e9e', color: '#fff' }} />
           </Box>
@@ -542,6 +615,9 @@ const CarparkView = ({
             </Box>
           )}
         </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          {t('carparkBufferHint', { minutes: CARPARK_OVERLAP_BUFFER_MINUTES })}
+        </Typography>
       </Paper>
 
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
