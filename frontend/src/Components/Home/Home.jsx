@@ -202,7 +202,7 @@ const Home = () => {
   useEffect(() => {
     getRequest(
       `${process.env.REACT_APP_BACKEND_URL}/rooms`,
-      headers.current,
+      headers,
       (data) => setRooms(Array.isArray(data) ? data : []),
       (errorCode) => {
         console.log('Error fetching rooms:', errorCode);
@@ -210,7 +210,7 @@ const Home = () => {
     );
     getRequest(
       `${process.env.REACT_APP_BACKEND_URL}/equipments`,
-      headers.current,
+      headers,
       (data) => setEquipments(Array.isArray(data) ? data : []),
       (errorCode) => {
         console.log('Error fetching equipments:', errorCode);
