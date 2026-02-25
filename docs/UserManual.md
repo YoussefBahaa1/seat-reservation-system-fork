@@ -192,6 +192,14 @@ Often you want to sit next to your colleagues. To do so you must know the rooms 
 7. Click `SEARCH`.
 8. In the lower part of the page a list of all colleagues will appear with all their bookings on the given date.
 
+### Search of Service contacts
+If you need to find contact details of admins or service personel (ie. phone numbers or emails), you complete these steps.
+1. Login
+2. On the left side menu you will see the row called `Search`. Click on it.
+3. Click on 'Service Contacts'
+4. View or copy-and-paste contact details of the admins or service personel
+5. OR Use the mssaging form (placeholder in Sprint 2)
+
 ## Settings
 
 ### Change language
@@ -282,16 +290,18 @@ For this we assume that an admin already include at least a building with a floo
 11. You will be asked if you like to commit this booking. Click either yes or no. If you clicked yes a message will appear, informing you the the booking was successfull.
 
 ## Create a parking spot booking
-This tool allows any logged-in user to book a parking spot.
+This tool allows any logged-in user to reserve and book a parking spot.
 
 1. Login
 2. Navigate thorough the sidebar to the Search tab.
 3. Select Parking
 4. Above the parking street plan you can select a valid date and time for your booking.
 5. In the parking street plan you hover over any spot to view it's details and select (press on) any available spot (highlighted green).
-6. After selecting an available spot you can press the Reserve button to book it for the selected time.
-7. Your parking spot is now booked, now after un-selecting that spot or refreshing the page you'll see that spot is turned red.
-8. For any spot highlighted red, you can hover over it to see who has booked it (does show yourself as well).
+6. After selecting an available spot you can press the Reserve button to request to book it for the selected time.
+7. The spot will be highlighted as yellow, meaining it's now in review.
+8. An admin now has to accept or decline your request. If they decline, the spot will be highlghted as gray (blocked) only for you for that specific time window.
+9. If an admin accepts the request, your parking spot is now booked, now after un-selecting that spot or refreshing the page you'll see that spot is turned red.
+10. For any spot highlighted red, you can hover over it to see who has booked it and for which time window (a 30-min buffer is implemented to prevent overlaps).
 
 ## Create and manage series bookings
 A series allows the user to create bookings in fixed intervals on a choosen desk between an start date and end date.
