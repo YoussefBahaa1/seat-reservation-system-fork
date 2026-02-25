@@ -141,6 +141,19 @@ A desk/workstation is a concrete place that a user can book. For the following g
 7. Below you will see the attributes of the choosen desk. You can change them. If you are sure, click on `UPDATE`.
 8. A small window will appear with the information that the desk was updated.
 
+## Booking settings
+Configure global booking rules that apply to every booking.
+
+1. Login with ADMIN role.
+2. Go to `Admin` → `Booking Settings`.
+3. Set:
+   - **Lead time**: 0–12 hours in 0.5h steps (minimum time before a booking may start).
+   - **Max duration**: Unrestricted or 2–12 hours (0.5h steps).
+   - **Max advance**: Unrestricted or 7/14/30/60/90/180 days (how far into the future users can book).
+4. Click **Submit**. **Reset to defaults** restores 30 min lead time, 6h max duration, 30 days max advance.
+
+The backend enforces these rules for all users and booking flows and the UI blocks invalid choices and shows explanatory messages to users.
+
 ## Search options
 ### Search for free rooms
 If a group wants to meet it is useful to quickly find a room with at least n desks in it. This search option helps the user with this task.
@@ -199,6 +212,25 @@ A user can change the default floor, which is displayed first when a booking is 
 7. Click in `SUBMIT`.
 8. A small window will appear with the information that the settings was successful updated.
 
+### Visibility
+Choose how your name is shown to other users (admins still see full names).
+
+1. Login
+2. Click `Settings` -> `Visibility`.
+3. Pick one option: `Name`, `Abbreviation`, or `Anonymous`.
+4. Click `SUBMIT`. Your preference is saved per user and persists through logout/login.
+
+### Notifications
+Choose which events should send you an Outlook email (with calendar invite) via Mail.
+
+1. Login
+2. On the left side click `Settings` → `Notifications`.
+3. In the modal, toggle the events you want:
+   - Booking created
+   - Booking cancelled
+   - Parking request decision (approve/reject of your request)
+4. Click `SUBMIT` to save and close. `CANCEL` closes without changes.
+
 ### Password
 Follow the next steps to change your password.
 
@@ -221,15 +253,7 @@ Admins can optionally enable Multi-Factor Authentication (MFA) using a TOTP auth
 5. Enter the 6-digit code from the app to confirm setup.
 6. To disable MFA later, click `Disable MFA` and confirm using either your password or a current 6-digit code.
 
-### Visibility
-Choose how your name is shown to other users (admins still see full names).
-
-1. Login
-2. Click `Settings` -> `Visibility`.
-3. Pick one option: `Name`, `Abbreviation`, or `Anonymous`.
-4. Click `SUBMIT`. Your preference is saved per user and persists through logout/login.
-
-### Favourites
+## Favourites
 Save rooms you book often and jump back to them quickly.
 
 On the room booking screen: click the star in the top-right. Empty = not a favourite; filled = favourite. Click to toggle.

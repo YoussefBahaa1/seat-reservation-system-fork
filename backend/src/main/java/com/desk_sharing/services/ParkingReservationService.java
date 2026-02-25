@@ -495,6 +495,7 @@ public class ParkingReservationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Reservation is not pending");
         }
         reservation.setStatus(ParkingReservationStatus.REJECTED);
-        parkingReservationRepository.save(reservation);
+        final ParkingReservation saved = parkingReservationRepository.save(reservation);
+        parkingNotificationService.notifyDecision(saved, false);
     }
 }
