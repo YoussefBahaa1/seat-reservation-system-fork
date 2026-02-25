@@ -162,7 +162,7 @@ The test files are located in cypress/cypress/integration/.
 
 If you freshly cloned this project most of the tests will fail, since the test files use some hard coded things. For example: some tests assume that a specific building is stored in the database, and therefore the images of the floor belonging to the building must be stored in `$PROJECT_PATH/frontend/public/Assets/...` . If these are not present in your project the test will fail.
 
-## Running unit tests - Sprint 1
+## Running unit tests
 Start by setting the JAVA_HOME environment varible inside your environment running:
 export JAVA_HOME="(path to your JDK)" 
 export PATH="$JAVA_HOME/bin:$PATH"
