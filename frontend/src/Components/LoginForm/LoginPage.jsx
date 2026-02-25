@@ -55,6 +55,18 @@ const LoginPage = () => {
 
   const [state, dispatch] = useReducer(reducer, initState);
 
+  function syncLanguagePreference(accessToken, language) {
+    fetch(`${process.env.REACT_APP_BACKEND_URL}/users/me/language`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${String(accessToken)}`,
+        'Content-Type': 'application/json',
+        'Accept-Language': language,
+      },
+      body: JSON.stringify({ language }),
+    }).catch(() => {});
+  }
+
   // Complete login - store credentials and navigate
   function completeLogin(data) {
     sessionStorage.setItem('headers', JSON.stringify({
@@ -71,6 +83,7 @@ const LoginPage = () => {
     const userLang = localStorage.getItem(`language_${data.id}`) || 'en';
     i18n.changeLanguage(userLang);
     sessionStorage.setItem('accessToken', String(data['accessToken']));
+    syncLanguagePreference(data['accessToken'], userLang);
     navigate('/home', { replace: true });
   }
 

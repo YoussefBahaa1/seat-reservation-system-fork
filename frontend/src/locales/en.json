@@ -495,6 +495,7 @@
     ,"defectNoteDeleted":"Note deleted"
     ,"defectNoteDeleteFailed":"Failed to delete note"
     ,"defectNoteAuthorOnly":"Only the note author can edit or delete this note"
+    ,"defectNoteEdited":"Edited"
     ,"defectStatusUpdated":"Status updated"
     ,"defectStatusUpdateFailed":"Failed to update status"
     ,"defectBlockDesk":"Block Workstation"

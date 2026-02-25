@@ -494,6 +494,7 @@
     ,"defectNoteDeleted":"Notiz gelöscht"
     ,"defectNoteDeleteFailed":"Notiz konnte nicht gelöscht werden"
     ,"defectNoteAuthorOnly":"Nur die Autorin oder der Autor kann diese Notiz bearbeiten oder löschen"
+    ,"defectNoteEdited":"Bearbeitet"
     ,"defectStatusUpdated":"Status aktualisiert"
     ,"defectStatusUpdateFailed":"Status konnte nicht aktualisiert werden"
     ,"defectBlockDesk":"Arbeitsplatz sperren"

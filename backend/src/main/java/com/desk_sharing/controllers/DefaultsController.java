@@ -1,4 +1,5 @@
 package com.desk_sharing.controllers;
+import org.slf4j.Logger;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -6,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.slf4j.LoggerFactory;
 
 import com.desk_sharing.entities.Floor;
 import com.desk_sharing.entities.ViewMode;
@@ -20,6 +22,7 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/defaults")
 @AllArgsConstructor
 public class DefaultsController {
+    private static final Logger logger = LoggerFactory.getLogger(DefaultsController.class);
     private final ViewModeService viewModeService;
     private final UserService userService;
 
@@ -36,7 +39,7 @@ public class DefaultsController {
         @PathVariable("viewModeId") long viewModeId, 
         @PathVariable("floorId") long floorId) 
     {
-        userService.logging("setDefaults( " + userId + ", " + viewModeId + ", " + floorId +")");
+        logger.info("setDefaults( {}, {}, {})", userId, viewModeId, floorId);
         final boolean setDefaultViewModeSuccess = viewModeService.setDefaultViewModeForUserId(userId, viewModeId);
         final boolean setDefaultFloorSuccess = userService.setDefaulFloorForUserId(userId, floorId);
         return setDefaultViewModeSuccess && setDefaultFloorSuccess;
@@ -44,15 +47,15 @@ public class DefaultsController {
 
     @GetMapping("getDefaultFloorForUserId/{id}")
     public ResponseEntity<Floor> getDefaultFloorForUserId(@PathVariable("id") int id) {
-        userService.logging("getDefaultFloorForUserId( " + id + " )");
+        logger.info("getDefaultFloorForUserId( {} )", id);
         try {
             final Floor floor = userService.getDefaultFloorForUserId(id);
             return new ResponseEntity<>(floor, HttpStatus.OK);
         } catch (IndexOutOfBoundsException e) {
-            userService.logging("\tgetDefaultFloorForUserId( " + id + " ) Was not able to find default floor for user. Send empty floor.");
+            logger.info("\\tgetDefaultFloorForUserId( {} ) Was not able to find default floor for user. Send empty floor.", id);
             return new ResponseEntity<>(new Floor(), HttpStatus.OK);
         } catch (EntityNotFoundException e) {
-            userService.logging("\tgetDefaultFloorForUserId( " + id + " ) " + e.getMessage());
+            logger.info("\\tgetDefaultFloorForUserId( {} ) {}", id, e.getMessage());
             return new ResponseEntity<>(new Floor(), HttpStatus.NOT_FOUND);
         }
     }
@@ -66,7 +69,7 @@ public class DefaultsController {
      */
     @GetMapping("getDefaultViewForUserId/{id}")
     public ResponseEntity<ViewMode> getDefaultViewForUserId(@PathVariable("id") int id) {
-        userService.logging("getDefaultViewForUserId( " + id + " )");
+        logger.info("getDefaultViewForUserId( {} )", id);
         return new ResponseEntity<>(viewModeService.getDefaultViewModeForUserId(id), HttpStatus.OK);
     }
 
@@ -76,7 +79,7 @@ public class DefaultsController {
      */
     @GetMapping("getViewModes")
     public ResponseEntity<List<ViewMode>> getViewModes() {
-        userService.logging("getViewModes()");
+        logger.info("getViewModes()");
         return new ResponseEntity<>(viewModeService.getViewModes(), HttpStatus.OK);
     }
 }

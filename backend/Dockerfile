@@ -38,5 +38,6 @@ WORKDIR /usr/src/app
 COPY --from=build /usr/src/app/target/backend-0.0.1-SNAPSHOT.jar backend-0.0.1-SNAPSHOT.jar
 
 COPY start.sh /app/start.sh
-RUN sed -i 's/\r$//' /app/start.sh && chmod +x /app/start.sh
+RUN sed -i 's/\r$//' /app/start.sh
+RUN chmod +x /app/start.sh
 CMD ["/app/start.sh"]
