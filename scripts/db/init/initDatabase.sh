@@ -3,15 +3,20 @@
 # Please run this script from the project root.
 
 . ./.env
-container=${DATABASE_CONTAINER}
+. ./scripts/db/common.sh
+container="$(resolve_database_container)"
+if [ -z "${container}" ]; then
+    echo "Could not resolve database container. Start containers first (e.g. ./scripts/build_and_run.sh)."
+    exit 1
+fi
 echo "Connect to ${container}"
-PW_DB=$(cat ${PATH_TO_TLS}/pws/pw_db.txt)
+PW_DB=$(cat "${PATH_TO_TLS}/pws/pw_db.txt")
 read -p "Push 'y' if you want to init the database in ${container}" answer
 if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
     # Create dumps/ dir if not existing.
     mkdir -p dumps/
     # Create new database
-    docker exec -i ${container} mariadb -p${PW_DB} < scripts/db/init/createDatabase.sql
+    docker exec -i "${container}" mariadb -p"${PW_DB}" < scripts/db/init/createDatabase.sql
     # Load schema definitions.
     scripts/db/import_db.sh schema.sql
     # Apply compatible migrations (curated list)
@@ -24,7 +29,8 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
         scripts/db/migration/parking_reservation_status.sql \
         scripts/db/migration/parking_spot_features.sql \
         scripts/db/migration/workstation_equipment_fields.sql \
-        scripts/db/migration/defect_management.sql; do
+        scripts/db/migration/defect_management.sql \
+        scripts/db/migration/user_language_preference.sql; do
         if [ -f "$migration" ]; then
             rel_path="${migration#scripts/db/}"
             scripts/db/exec_db.sh "$rel_path"

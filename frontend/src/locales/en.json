@@ -141,6 +141,7 @@
     "booked": "Booking saved successfully",
     "selectDeskMessage": "Please first select a desk",
     "blank": "Please choose a desk and time before booking.",
+    "bookingTimeAlignmentError": "Please choose start and end times on 30-minute boundaries (for example 08:00 or 08:30).",
     "deskUpdate": "Desk updated successfully",
     "deskUpdateFailed": "Desk updated was not successfully",
     "deskDelete": "Desk deleted successfully",
@@ -495,6 +496,7 @@
     ,"defectNoteDeleted":"Note deleted"
     ,"defectNoteDeleteFailed":"Failed to delete note"
     ,"defectNoteAuthorOnly":"Only the note author can edit or delete this note"
+    ,"defectNoteEdited":"Edited"
     ,"defectStatusUpdated":"Status updated"
     ,"defectStatusUpdateFailed":"Failed to update status"
     ,"defectBlockDesk":"Block Workstation"

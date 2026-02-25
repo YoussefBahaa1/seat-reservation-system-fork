@@ -1,4 +1,5 @@
 package com.desk_sharing.controllers;
+import org.slf4j.Logger;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -7,8 +8,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.desk_sharing.entities.ViewMode;
-import com.desk_sharing.services.UserService;
 import com.desk_sharing.services.ViewModeService;
+import org.slf4j.LoggerFactory;
 
 import lombok.AllArgsConstructor;
 
@@ -17,8 +18,8 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/viewmodes")
 @AllArgsConstructor
 public class ViewModeController {
+    private static final Logger logger = LoggerFactory.getLogger(ViewModeController.class);
     private final ViewModeService viewModeService;
-    private final UserService userService;
 
     /**
      * Returns a ResponseEntity with default viewmode for the user identified by id.
@@ -29,7 +30,7 @@ public class ViewModeController {
      */
     @GetMapping("getDefaultViewForUserId/{id}")
     public ResponseEntity<ViewMode> getDefaultViewForUserId(@PathVariable("id") int id) {
-        userService.logging("getDefaultViewForUserId( " + id + " )");
+        logger.info("getDefaultViewForUserId( {} )", id);
         return new ResponseEntity<>(viewModeService.getDefaultViewModeForUserId(id), HttpStatus.OK);
     }
 
@@ -41,7 +42,7 @@ public class ViewModeController {
      */
     @GetMapping("setDefaultViewModeForUserId/{id}/{view_mode_id}")
     public boolean setDefaultViewModeForUserId(@PathVariable("id") int id, @PathVariable("view_mode_id") Long viewModeId) {
-        userService.logging("setDefaultViewModeForUserId( " + id + ", " + viewModeId + " )");
+        logger.info("setDefaultViewModeForUserId( {}, {} )", id, viewModeId);
         return viewModeService.setDefaultViewModeForUserId(id, viewModeId);
     }
 
@@ -51,7 +52,7 @@ public class ViewModeController {
      */
     @GetMapping("getViewModes")
     public ResponseEntity<List<ViewMode>> getViewModes() {
-        userService.logging("getViewModes()");
+        logger.info("getViewModes()");
         return new ResponseEntity<>(viewModeService.getViewModes(), HttpStatus.OK);
     }
 }

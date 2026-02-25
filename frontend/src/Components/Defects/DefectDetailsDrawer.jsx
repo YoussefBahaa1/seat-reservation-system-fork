@@ -324,7 +324,7 @@ const DefectDetailsDrawer = ({ defect, open, onClose, onUpdate }) => {
                       {note.author ? `${note.author.name || ''} ${note.author.surname || ''}`.trim() : ''}
                       {' • '}
                       {note.createdAt ? new Date(note.createdAt).toLocaleString() : ''}
-                      {note.updatedAt ? ` (${t('edit')}: ${new Date(note.updatedAt).toLocaleString()})` : ''}
+                      {note.updatedAt ? ` (${t('defectNoteEdited')}: ${new Date(note.updatedAt).toLocaleString()})` : ''}
                     </Typography>
                     {ownNote && (
                       <Box sx={{ display: 'flex', gap: 1 }}>
