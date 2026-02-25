@@ -141,6 +141,7 @@
     "booked": "Buchung erfolgreich",
     "selectDeskMessage": "Bitte wählen Sie zuerst einen Arbeitsplatz",
     "blank": "Bitte wählen Sie zuerst einen Arbeitsplatz und Zeitraum vor der Buchung",
+    "bookingTimeAlignmentError": "Bitte wählen Sie Start- und Endzeit im 30-Minuten-Raster (z. B. 08:00 oder 08:30).",
     "deskUpdate": "Arbeitsplatz erfolgreich aktualisiert",
     "deskUpdateFailed": "Arbeitsplatz konnte nicht aktualisiert werden",
     "deskDelete": "Arbeitsplatz erfolgreich gelöscht",

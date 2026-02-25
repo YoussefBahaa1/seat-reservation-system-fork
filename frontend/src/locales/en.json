@@ -141,6 +141,7 @@
     "booked": "Booking saved successfully",
     "selectDeskMessage": "Please first select a desk",
     "blank": "Please choose a desk and time before booking.",
+    "bookingTimeAlignmentError": "Please choose start and end times on 30-minute boundaries (for example 08:00 or 08:30).",
     "deskUpdate": "Desk updated successfully",
     "deskUpdateFailed": "Desk updated was not successfully",
     "deskDelete": "Desk deleted successfully",

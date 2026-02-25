@@ -318,6 +318,111 @@ To create a series, and therefore the bookings on the calculated dates, click `S
 10. If you want to delete a series, and therefore all bookings that belongs to this series, click on `Delete`. You will be asked if you really want to delete this series. 
 11. A small window will appear with the information that the series was deleted.
 
+## Defect management system
+
+### Roles and access
+- Every logged-in user can report defects from booking-related pages.
+- Users with `SERVICE_PERSONNEL` or `ADMIN` role can open and use the Defect Dashboard.
+- Admin users inherit service personnel permissions.
+
+### Report a defect
+Defects can be reported from:
+- `Home` (calendar/room desk booking view) via the `Report Defect` button for the selected workstation.
+- `Search` -> `Workstations` via the `Report Defect` button in the free-desk result table.
+- `Series Booking` -> `Create` via the `Report Defect` button in the desk result table.
+
+Reporting flow:
+1. Click `Report Defect`.
+2. Select a `Category`:
+   - `Technical Defect`
+   - `Missing Equipment`
+   - `Incorrect Description`
+3. Select an `Urgency`:
+   - `Low`, `Medium`, `High`, or `Critical`
+4. Enter a `Description` (minimum 20 characters).
+5. Submit the form.
+
+Notes:
+- Only one active defect is allowed per workstation. If an unresolved defect already exists, reporting is rejected.
+- On successful creation, a ticket number is generated in format `DEF-000001`.
+- New defects start with status `NEW`.
+
+### Defect dashboard (service personnel and admins)
+1. Open `Defects` from the left sidebar.
+2. Select the section:
+   - `All Defects`: all tickets.
+   - `My Assignments`: defects assigned to the current user.
+   - `Defect History`: all defects for one selected workstation.
+3. Select the visual mode:
+   - `List`
+   - `Kanban`
+
+Filtering:
+- In `All Defects` and `My Assignments`, filter by urgency, category, status, room, and age range in days.
+- In `Defect History`, first select a workstation, then all defects for that workstation are shown.
+
+### Work with a defect ticket
+Open a ticket from list or kanban to see details:
+- Ticket ID
+- Location (building/floor/room/workstation)
+- Status, urgency, category
+- Reporter
+- Reported timestamp
+- Description
+- Assigned service person
+
+Status changes:
+- `NEW` -> `IN_PROGRESS`
+- `IN_PROGRESS` -> `RESOLVED`
+
+When a ticket is set to `RESOLVED`, the workstation is automatically unblocked if it was blocked by that ticket.
+
+### Block and unblock workstations from a defect
+1. Open a defect ticket.
+2. Enter `Estimated End Date`.
+3. Click `Block Workstation`.
+
+If future bookings exist for that workstation, the system asks whether to:
+- `Cancel Bookings` (future bookings are removed and cancellation notifications are sent), or
+- `Retain Bookings` (future bookings remain as-is).
+
+While blocked, the workstation shows:
+- Blocked reason (defect category)
+- Estimated end date
+
+You can:
+- Update the end date.
+- Unblock using `Unblock Workstation`.
+
+### Internal notes on defects
+Service personnel/admin users can add internal notes to a ticket.
+
+Rules:
+- Note content cannot be empty.
+- Only the original note author can edit or delete their note.
+- Edited notes display an updated timestamp.
+
+### Notifications and automatic assignment
+When a defect is created:
+- The reporter receives a confirmation email.
+- The system tries to auto-assign the ticket to a random active service personnel user (non-admin account).
+- If assigned, the assignee receives an assignment email.
+- If no active service personnel user is available, the defect remains unassigned.
+
+When defect status changes:
+- The reporter receives a status update email.
+
+Notification details:
+- Language follows each recipient's preferred language (`English`/`Deutsch`).
+- Assignment emails can include a direct `/defects` dashboard link when `FRONTEND_BASE_URL` is configured.
+- Emails are sent only when `ICS_NOTIFICATIONS_ENABLED=true` and mail settings are configured.
+
+### Blocked workstation behavior in booking flows
+- Blocked desks are visibly marked as blocked in booking views.
+- Users cannot book blocked desks from the UI.
+- Backend validation also rejects booking creation/confirmation for blocked desks.
+- Free desk and series search results return only unblocked desks.
+
 ## Add new floor images
 Every room is associated with an floor in a building.
 This tool helps to visualize the position of the rooms with a floor plan of every floor. Every room is associated with a x- and a y-coordinate. The user see the room on the floor plan according to the x- and y-coordinate.

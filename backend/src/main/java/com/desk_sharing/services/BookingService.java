@@ -221,7 +221,7 @@ public class BookingService {
             newBooking.setBookingInProgress(true);
             return addBooking(newBooking);
         } else {
-            throw new RuntimeException("Already someone booked the desk");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This workstation is currently being booked by another user. Please try again shortly.");
         }
     }
 

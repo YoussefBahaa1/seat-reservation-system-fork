@@ -10,10 +10,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Dictionary;
+import java.util.HashMap;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,12 +50,16 @@ public class BookingController {
     }
 
     @PostMapping
-    public ResponseEntity<BookingDTO> addBooking(@RequestBody BookingDTO bookingData) {
+    public ResponseEntity<?> addBooking(@RequestBody BookingDTO bookingData) {
         logger.info("addBooking( {} )", bookingData.toString());
         try {
             final Booking savedBooking = bookingService.createBooking(bookingData);
             final BookingDTO bookingDTO = new BookingDTO(savedBooking);
             return new ResponseEntity<>(bookingDTO, HttpStatus.CREATED);
+        } catch (ResponseStatusException e) {
+            Map<String, String> body = new HashMap<>();
+            body.put("error", e.getReason() == null ? "Booking failed" : e.getReason());
+            return new ResponseEntity<>(body, e.getStatusCode());
         } catch (NumberFormatException | DateTimeParseException e) {
             // Handle parsing errors
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
