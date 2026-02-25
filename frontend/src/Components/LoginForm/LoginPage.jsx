@@ -112,7 +112,7 @@ const LoginPage = () => {
   // Complete login - store credentials and navigate
   async function completeLogin(data) {
     const accessToken = String(data['accessToken']);
-    sessionStorage.setItem('headers', JSON.stringify({
+    const authHeaders = {
       'Authorization': 'Bearer ' + accessToken,
       'Content-Type': 'application/json',
     };
