@@ -1,6 +1,8 @@
 package com.desk_sharing.services;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.desk_sharing.repositories.UserRepository;
 import com.desk_sharing.security.JWTGenerator;
@@ -28,8 +31,8 @@ import com.desk_sharing.misc.DaoUserNotFoundException;
 import com.desk_sharing.misc.LdapUserNotFoundException;
 import com.desk_sharing.model.AuthResponseDTO;
 import com.desk_sharing.model.FloorDTO;
+import com.desk_sharing.model.NotificationPreferencesDTO;
 import com.desk_sharing.model.UserDto;
-import com.desk_sharing.controllers.BookingController;
 import com.desk_sharing.entities.Booking;
 import com.desk_sharing.entities.Floor;
 import com.desk_sharing.entities.Role;
@@ -38,11 +41,12 @@ import com.desk_sharing.entities.VisibilityMode;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MessageFormatter;
 
 @Service
 @RequiredArgsConstructor
 public class UserService  {
-    private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     // The url of the ldap/AD server.
     @Value("${LDAP_DIR_CONTEXT_URL:}")  
     private String LDAP_DIR_CONTEXT_URL;
@@ -56,6 +60,53 @@ public class UserService  {
     private final AuthenticationManager authenticationManager;
     private final LdapService ldapService;
 
+    private UserEntity getCurrentUserOrThrow() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null) {
+            throw new UsernameNotFoundException("No authenticated user found.");
+        }
+        UserEntity user = userRepository.findByEmail(authentication.getName());
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found: " + authentication.getName());
+        }
+        return user;
+    }
+
+    public UserEntity getCurrentUser() {
+        return getCurrentUserOrThrow();
+    }
+
+    public void updateNotificationPreferences(boolean bookingCreate, boolean bookingUpdate, boolean bookingCancel) {
+        UserEntity user = getCurrentUserOrThrow();
+        user.setNotifyBookingCreate(bookingCreate);
+        user.setNotifyBookingUpdate(bookingUpdate);
+        user.setNotifyBookingCancel(bookingCancel);
+        user.setNotifyParkingDecision(user.isNotifyParkingDecision()); // unchanged if not provided
+        userRepository.save(user);
+    }
+
+    public void updateNotificationPreferences(NotificationPreferencesDTO dto) {
+        UserEntity user = getCurrentUserOrThrow();
+        user.setNotifyBookingCreate(dto.isBookingCreate());
+        user.setNotifyBookingUpdate(dto.isBookingUpdate());
+        user.setNotifyBookingCancel(dto.isBookingCancel());
+        user.setNotifyParkingDecision(dto.isParkingDecision());
+        userRepository.save(user);
+    }
+
+    public String getCurrentUserPreferredLanguage() {
+        UserEntity user = getCurrentUserOrThrow();
+        return normalizeLanguage(user.getPreferredLanguage());
+    }
+
+    public String updateCurrentUserPreferredLanguage(String language) {
+        UserEntity user = getCurrentUserOrThrow();
+        String normalizedLanguage = normalizeLanguage(language);
+        user.setPreferredLanguage(normalizedLanguage);
+        userRepository.save(user);
+        return normalizedLanguage;
+    }
+
     public AuthResponseDTO login(final String email, final String password) throws LdapUserNotFoundException, DaoUserNotFoundException, BadCredentialsException {
         // True if a user with the provided email is known to ldap.
         // But if LDAP_DIR_CONTEXT_URL is empty we dont even try.
@@ -66,7 +117,7 @@ public class UserService  {
         // If the user is not found in ldap and in the database we signal an error.
         // Returning null would lead to a 200 OK with an empty body, which the frontend treats as "login failed".
         if (!ldapUserExists && !daoUserExists) {
-            logging("User with email " + email + "tried to login. But user is not known." );
+            logging("User with email {} tried to login. But user is not known.", email);
             throw new DaoUserNotFoundException("User not found.");
         }       
 
@@ -86,7 +137,7 @@ public class UserService  {
         
         // Check if user account is deactivated
         if (!user.isActive()) {
-            logging("Login attempt rejected for deactivated user: " + email);
+            logging("Login attempt rejected for deactivated user: {}", email);
             throw new BadCredentialsException("Account is deactivated. Please contact an administrator.");
         }
 
@@ -95,13 +146,14 @@ public class UserService  {
         if (user.isMfaEnabled()) {
             // Generate an MFA-pending token instead of a full access token
             final String mfaToken = jwtGenerator.generateMfaPendingToken(email);
-            logging("MFA required for user: " + email);
+            logging("MFA required for user: {}", email);
             return AuthResponseDTO.MfaRequiredResponse(
                 user.getEmail(),
                 user.getId(),
                 user.getName(),
                 user.getSurname(),
                 user.isAdmin(),
+                user.isServicePersonnel(),
                 user.isVisibility(),
                 mode.name(),
                 mfaToken
@@ -118,6 +170,7 @@ public class UserService  {
             user.getName(),
             user.getSurname(),
             user.isAdmin(),
+            user.isServicePersonnel(),
             user.isVisibility(),
             mode.name(),
             "SUCCESS",
@@ -126,29 +179,31 @@ public class UserService  {
         );
     }
 
-    public void logging(final String msg) {
+    public void logging(final String msg, final Object... args) {
+        final String resolvedMsg = MessageFormatter.arrayFormat(msg, args).getMessage();
         SecurityContext securityContext = SecurityContextHolder.getContext();
         
             Authentication authentication = securityContext.getAuthentication();
             if (authentication != null && authentication.isAuthenticated()) {
                 String name = authentication.getName(); // Gibt den Benutzernamen zurück
-                logger.info("Name: " + name + " Msg: " + msg + ".");
+                logger.info("Name: {} Msg: {}.", name, resolvedMsg);
             }
             else {
-                logger.info("Cant find name Msg: " + msg + ".");
+                logger.info("Cant find name Msg: {}.", resolvedMsg);
             }
     }
 
-    public void loggingErr(final String msg) {
+    public void loggingErr(final String msg, final Object... args) {
+        final String resolvedMsg = MessageFormatter.arrayFormat(msg, args).getMessage();
         SecurityContext securityContext = SecurityContextHolder.getContext();
         
             Authentication authentication = securityContext.getAuthentication();
             if (authentication != null && authentication.isAuthenticated()) {
                 String name = authentication.getName(); // Gibt den Benutzernamen zurück
-                logger.error("Name: " + name + " Msg: " + msg + ".");
+                logger.error("Name: {} Msg: {}.", name, resolvedMsg);
             }
             else {
-                logger.info("Cant find name Msg: " + msg + ".");
+                logger.info("Cant find name Msg: {}.", resolvedMsg);
             }
     }
 
@@ -190,7 +245,7 @@ public class UserService  {
             userRepository.save(user);
             return true;
         } catch (Exception e) {
-            loggingErr("Failed setVisibilityMode for user " + userId + ": " + e.getMessage());
+            loggingErr("Failed setVisibilityMode for user {}: {}", userId, e.getMessage());
             return false;
         }
     }
@@ -277,15 +332,59 @@ public class UserService  {
             try {
                 userFromDB.setVisibilityMode(VisibilityMode.valueOf(userDto.getVisibilityMode()));
             } catch (IllegalArgumentException ex) {
-                loggingErr("Invalid visibilityMode: " + userDto.getVisibilityMode());
+                loggingErr("Invalid visibilityMode: {}", userDto.getVisibilityMode());
             }
         }
 
-        setAdmin(userFromDB, userDto.isAdmin());
-        setEmployee(userFromDB, userDto.isEmployee());
-        setServicePersonnel(userFromDB, userDto.isServicePersonnel());
+        int selectedRoles = (userDto.isAdmin() ? 1 : 0)
+            + (userDto.isEmployee() ? 1 : 0)
+            + (userDto.isServicePersonnel() ? 1 : 0);
+        if (selectedRoles != 1) {
+            throw new ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST,
+                "Exactly one role must be selected"
+            );
+        }
+
+        boolean roleApplied = applySingleRole(
+            userFromDB,
+            userDto.isAdmin(),
+            userDto.isEmployee(),
+            userDto.isServicePersonnel()
+        );
+        if (!roleApplied) {
+            throw new ResponseStatusException(
+                org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
+                "Selected role is not configured in the system"
+            );
+        }
 
         return userRepository.save(userFromDB);
+    }
+
+    private boolean applySingleRole(
+        final UserEntity userFromDB,
+        final boolean admin,
+        final boolean employee,
+        final boolean servicePersonnel
+    ) {
+        int selectedRoles = (admin ? 1 : 0) + (employee ? 1 : 0) + (servicePersonnel ? 1 : 0);
+        if (selectedRoles != 1) {
+            return false;
+        }
+
+        String selectedRoleName = admin
+            ? "ROLE_ADMIN"
+            : (servicePersonnel ? "ROLE_SERVICE_PERSONNEL" : "ROLE_EMPLOYEE");
+        Role selectedRole = roleRepository.findByName(selectedRoleName).orElse(null);
+        if (selectedRole == null) {
+            return false;
+        }
+
+        List<Role> newRoles = new ArrayList<>();
+        newRoles.add(selectedRole);
+        userFromDB.setRoles(newRoles);
+        return true;
     }
 
     public boolean setAdmin(final UserEntity userFromDB, boolean shallAdmin) {
@@ -334,6 +433,20 @@ public class UserService  {
             userRoles.remove(servicePersonnelRole);
         }
         return true;
+    }
+
+    private String normalizeLanguage(String language) {
+        if (language == null || language.isBlank()) {
+            return "en";
+        }
+        String normalized = Locale.forLanguageTag(language.trim()).getLanguage();
+        if (normalized == null || normalized.isBlank()) {
+            normalized = language.trim().toLowerCase(Locale.ROOT);
+        }
+        if (normalized.startsWith("de")) {
+            return "de";
+        }
+        return "en";
     }
     
     public boolean changePassword(int id, String oldPassword, String newPassword) {

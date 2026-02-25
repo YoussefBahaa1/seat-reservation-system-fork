@@ -7,11 +7,13 @@ import 'react-confirm-alert/src/react-confirm-alert.css';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { confirmAlert } from 'react-confirm-alert';
 import { FaStar, FaRegStar } from 'react-icons/fa';
 
 import LayoutPage from '../../Templates/LayoutPage.jsx';
-import { getRequest, postRequest, deleteRequest } from '../../RequestFunctions/RequestFunctions';
+import { getRequest, postRequest, putRequest, deleteRequest } from '../../RequestFunctions/RequestFunctions';
 import bookingPostRequest from '../../misc/bookingPostRequest.js';
+import ReportDefectModal from '../../Defects/ReportDefectModal';
 //import { buildFullDaySlots } from './buildFullDaySlots.js';
 
 const Booking = () => {
@@ -20,7 +22,16 @@ const Booking = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const localizer = momentLocalizer(moment);
-  const { roomId, date } = location.state;
+  const calendarFormats = {
+    timeGutterFormat: (date, culture, loc) => loc.format(date, 'HH:mm', culture),
+    eventTimeRangeFormat: ({ start, end }, culture, loc) =>
+      `${loc.format(start, 'HH:mm', culture)} – ${loc.format(end, 'HH:mm', culture)}`,
+    agendaTimeRangeFormat: ({ start, end }, culture, loc) =>
+      `${loc.format(start, 'HH:mm', culture)} – ${loc.format(end, 'HH:mm', culture)}`,
+  };
+  const { roomId, date, editBooking } = location.state || {};
+  const isEditMode = Boolean(editBooking && editBooking.bookingId);
+  const initialDate = date ? new Date(date) : new Date();
 
   //Safe selection of desks
   const selectionKey = `bookingSelection:${roomId}:${date ? moment(date).format('YYYY-MM-DD') : ''}`;
@@ -30,12 +41,25 @@ const Booking = () => {
   const [desks, setDesks] = useState([]);
   const [events, setEvents] = useState([]);
   const [event, setEvent] = useState({});
+  const [isBookingPending, setIsBookingPending] = useState(false);
   const [clickedDeskId, setClickedDeskId] = useState(null);
   const [clickedDeskRemark, setClickedDeskRemark] = useState('');
   const [isFavourite, setIsFavourite] = useState(false);
+  const [bookingSettings, setBookingSettings] = useState({
+    leadTimeMinutes: 30,
+    maxDurationMinutes: 360,
+    maxAdvanceDays: 30,
+  });
+  const [isReportDefectOpen, setIsReportDefectOpen] = useState(false);
 
   const eventRef = useRef(event);
   const eventsRef = useRef(events);
+  const bookingPendingRef = useRef(false);
+
+  const setBookingPending = useCallback((value) => {
+    bookingPendingRef.current = value;
+    setIsBookingPending(value);
+  }, []);
 
   const minStartTime = 6;
   const maxEndTime = 22;
@@ -60,6 +84,15 @@ const Booking = () => {
     );
   }, [roomId]);
 
+  const fetchBookingSettings = useCallback(() => {
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/booking-settings`,
+      headers.current,
+      (data) => setBookingSettings(data),
+      () => console.error('Failed to fetch booking settings')
+    );
+  }, []);
+
   const loadBookings = useCallback(() => {
     if (!clickedDeskId) return;
 
@@ -67,7 +100,10 @@ const Booking = () => {
       `${process.env.REACT_APP_BACKEND_URL}/bookings/bookingsForDesk/${clickedDeskId}`,
       headers.current,
       (bookings) => {
-        const bookingEvents = bookings.map((b) => ({
+        const filteredBookings = isEditMode && editBooking?.bookingId
+          ? bookings.filter((b) => b.booking_id !== editBooking.bookingId)
+          : bookings;
+        const bookingEvents = filteredBookings.map((b) => ({
           start: new Date(`${b.day}T${b.begin}`),
           end: new Date(`${b.day}T${b.end}`),
           title:
@@ -79,11 +115,19 @@ const Booking = () => {
           id: b.booking_id,
         }));
         //setDeskEvents(bookingEvents);
-        setEvents(bookingEvents);
+        if (isEditMode && editBooking?.deskId === clickedDeskId) {
+          const editStart = new Date(`${editBooking.day}T${editBooking.begin}`);
+          const editEnd = new Date(`${editBooking.day}T${editBooking.end}`);
+          const editSelection = { start: editStart, end: editEnd, id: 1 };
+          setEvents([...bookingEvents, editSelection]);
+          setEvent(editSelection);
+        } else {
+          setEvents(bookingEvents);
+        }
       },
       () => console.error('Failed to fetch bookings')
     );
-  }, [clickedDeskId, t]);
+  }, [clickedDeskId, editBooking, isEditMode, t]);
 
   const selectSlot = useCallback((slotData, currentEventId) => {
     if (!slotData) return;
@@ -94,32 +138,55 @@ const Booking = () => {
 
     // Block bookings in the past
     const now = new Date();
-    // Compare only by date
     const startDay = new Date(startTime);
     startDay.setHours(0, 0, 0, 0);
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
-    // Past day → hard block
     if (startDay < today) {
-      toast.warning(t('datePassed')); // "This date has already passed."
+      toast.warning(t('datePassed'));
       return;
     }
 
-// Today → start must be >= next 30-min slot boundary
-if (startDay.getTime() === today.getTime()) {
-  const earliestStart = roundUpToNextHalfHour(now);
-  if (startTime < earliestStart) {
-    toast.warning(t('timePassed')); // "This time has already passed."
-    return;
-  }
-}
+    // Lead time: earliest allowed start is rounded(now + leadTime)
+    const leadMinutes = bookingSettings?.leadTimeMinutes ?? 0;
+    const earliestAllowed = roundUpToNextHalfHour(new Date(now.getTime() + leadMinutes * 60000));
+    if (startTime < earliestAllowed) {
+      toast.warning(
+        t('leadTimeExceeded', {
+          value: leadMinutes,
+          next: moment(earliestAllowed).format('HH:mm'),
+        })
+      );
+      return;
+    }
 
     if (duration < 2 * 60 * 60 * 1000) {
       toast.warning(t('minimum'));
       return;
     }
 
-    const updatedEvents = eventsRef.current.filter((e) => e.id !== currentEventId);
+    if (bookingSettings?.maxDurationMinutes !== null && bookingSettings?.maxDurationMinutes !== undefined) {
+      if (duration > bookingSettings.maxDurationMinutes * 60 * 1000) {
+        toast.warning(t('maxDurationExceeded', { value: bookingSettings.maxDurationMinutes / 60 }));
+        return;
+      }
+    }
+
+    if (bookingSettings?.maxAdvanceDays !== null && bookingSettings?.maxAdvanceDays !== undefined) {
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + bookingSettings.maxAdvanceDays);
+      if (startDay > maxDate) {
+        toast.warning(t('maxAdvanceExceeded', { value: bookingSettings.maxAdvanceDays }));
+        return;
+      }
+    }
+
+    const updatedEvents = eventsRef.current.filter((e) => {
+      if (e.id === currentEventId) return false;
+      if (isEditMode && editBooking?.bookingId && e.id === editBooking.bookingId) return false;
+      return true;
+    });
+
     const isOverlap = updatedEvents.some(
       (e) =>
         (e.start <= startTime && startTime < e.end) ||
@@ -139,10 +206,12 @@ if (startDay.getTime() === today.getTime()) {
 
     setEvent(newEvent);
 
-  }, [t]);
+  }, [editBooking, isEditMode, t, bookingSettings]);
 
   /** ----- EVENT FUNCTIONS ----- */
   const booking = async () => {
+    if (bookingPendingRef.current) return;
+
     if (!clickedDeskId || !event.start || !event.end) {
       toast.error(t('blank'));
       return;
@@ -151,28 +220,175 @@ if (startDay.getTime() === today.getTime()) {
     const userId = localStorage.getItem('userId');
     if (!userId) return console.error('userId is null');
 
+    const startMoment = moment(event.start).seconds(0).milliseconds(0);
+    const endMoment = moment(event.end).seconds(0).milliseconds(0);
+    if (startMoment.minute() % 30 !== 0 || endMoment.minute() % 30 !== 0) {
+      toast.warning(t('bookingTimeAlignmentError'));
+      return;
+    }
+
     const bookingDTO = {
       userId: userId,
       roomId: roomId,
       deskId: clickedDeskId,
-      day: moment(event.start).format('YYYY-MM-DD'),
-      begin: moment(event.start).format('HH:mm:ss'),
-      end: moment(event.end).format('HH:mm:ss'),
+      day: startMoment.format('YYYY-MM-DD'),
+      begin: startMoment.format('HH:mm:ss'),
+      end: endMoment.format('HH:mm:ss'),
     };
 
-    bookingPostRequest(
-      'Booking.jsx',
-      bookingDTO,
-      clickedDeskRemark,
-      headers,
-      t,
-      (booking) => navigate('/home', { state: { booking }, replace: true })
-    );
-  };
+    if (!isEditMode) {
+      setBookingPending(true);
+      bookingPostRequest(
+        'Booking.jsx',
+        bookingDTO,
+        clickedDeskRemark,
+        headers,
+        t,
+        (booking) => navigate('/home', { state: { booking }, replace: true }),
+        {
+          onFinish: () => {
+            setBookingPending(false);
+          },
+        }
+      );
+      return;
+    }
 
+    const originalDay = editBooking.day;
+    const originalBegin = editBooking.begin;
+    const originalEnd = editBooking.end;
+    const originalDeskId = editBooking.deskId;
+    const newDay = bookingDTO.day;
+    const newBegin = bookingDTO.begin;
+    const newEnd = bookingDTO.end;
+
+    if (
+      originalDeskId === clickedDeskId &&
+      originalDay === newDay &&
+      originalBegin === newBegin &&
+      originalEnd === newEnd
+    ) {
+      navigate('/mybookings', { replace: true });
+      return;
+    }
+
+    const oldBookingDTO = {
+      userId: userId,
+      roomId: roomId,
+      deskId: originalDeskId,
+      day: originalDay,
+      begin: originalBegin,
+      end: originalEnd,
+    };
+
+    const createAndConfirm = (dto, onSuccess, onFail) => {
+      postRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/bookings`,
+        headers.current,
+        (data) => {
+          putRequest(
+            `${process.env.REACT_APP_BACKEND_URL}/bookings/confirm/${data.id}`,
+            headers.current,
+            (dat) => onSuccess(dat),
+            () => onFail()
+          );
+        },
+        () => onFail(),
+        JSON.stringify(dto)
+      );
+    };
+
+    const tryRestoreOld = () => {
+      createAndConfirm(
+        oldBookingDTO,
+        () => {},
+        () => {}
+      );
+    };
+
+    const handleCreateThenDelete = () => {
+      createAndConfirm(
+        bookingDTO,
+        () => {
+          deleteRequest(
+            `${process.env.REACT_APP_BACKEND_URL}/bookings/${editBooking.bookingId}`,
+            headers.current,
+            () => {
+              setBookingPending(false);
+              navigate('/mybookings', { replace: true });
+            },
+            () => {
+              toast.error(t('httpOther'));
+              setBookingPending(false);
+              navigate('/mybookings', { replace: true });
+            }
+          );
+        },
+        () => {
+          toast.error(t('httpOther'));
+          setBookingPending(false);
+        }
+      );
+    };
+
+    const handleDeleteThenCreate = () => {
+      deleteRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/bookings/${editBooking.bookingId}`,
+        headers.current,
+        () => {
+          createAndConfirm(
+            bookingDTO,
+            () => {
+              setBookingPending(false);
+              navigate('/mybookings', { replace: true });
+            },
+            () => {
+              tryRestoreOld();
+              toast.error(t('httpOther'));
+              setBookingPending(false);
+            }
+          );
+        },
+        () => {
+          toast.error(t('httpOther'));
+          setBookingPending(false);
+        }
+      );
+    };
+
+    const overlapsOld =
+      originalDeskId === clickedDeskId &&
+      originalDay === newDay &&
+      (moment(newBegin, 'HH:mm:ss').isSameOrBefore(moment(originalEnd, 'HH:mm:ss')) &&
+        moment(newEnd, 'HH:mm:ss').isSameOrAfter(moment(originalBegin, 'HH:mm:ss')));
+
+    confirmAlert({
+      title: t('editBooking'),
+      message: `${t('date')} ${newDay} ${t('from')} ${newBegin} ${t('to')} ${newEnd}`,
+      buttons: [
+        {
+          label: t('yes'),
+          onClick: () => {
+            if (bookingPendingRef.current) return;
+            setBookingPending(true);
+            if (overlapsOld) {
+              handleDeleteThenCreate();
+            } else {
+              handleCreateThenDelete();
+            }
+          },
+        },
+        {
+          label: t('no'),
+          onClick: () => {},
+        },
+      ],
+    });
+  };
   /** ----- EFFECTS ----- */
   // Fetch room once
   useEffect(() => { fetchRoom(); }, [fetchRoom]);
+  useEffect(() => { fetchBookingSettings(); }, [fetchBookingSettings]);
 
   useEffect(()=>{eventRef.current=event},[event])
 
@@ -185,6 +401,15 @@ if (startDay.getTime() === today.getTime()) {
   useEffect(() => {
     if (!desks.length) return;
     try {
+      if (isEditMode && editBooking?.deskId) {
+        const match = desks.find((desk) => desk.id === editBooking.deskId);
+        if (match) {
+          setClickedDeskId(match.id);
+          setClickedDeskRemark(match.remark || '');
+          sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: match.id }));
+          return;
+        }
+      }
       const saved = JSON.parse(sessionStorage.getItem(selectionKey));
       if (saved?.deskId) {
         const match = desks.find((desk) => desk.id === saved.deskId);
@@ -196,7 +421,7 @@ if (startDay.getTime() === today.getTime()) {
     } catch {
       // ignore invalid stored value
     }
-  }, [desks, selectionKey]);
+  }, [desks, editBooking, isEditMode, selectionKey]);
 
   const refreshFavouriteStatus = useCallback(() => {
     const userId = localStorage.getItem('userId');
@@ -218,7 +443,7 @@ if (startDay.getTime() === today.getTime()) {
   useEffect(() => { if (clickedDeskId) loadBookings(); }, [clickedDeskId, loadBookings]);
 
   // Set locale for calendar
-  useEffect(() => { moment.locale(i18n.language); }, [i18n.language]);
+  useEffect(() => { moment.locale(i18n.language === 'en' ? 'en-gb' : i18n.language); }, [i18n.language]);
 
   const toggleFavourite = () => {
     const userId = localStorage.getItem('userId');
@@ -252,6 +477,39 @@ if (startDay.getTime() === today.getTime()) {
 
   /** ----- HELPER ----- */
   const getHeadline = () => t('availableDesks') + (room ? ` in ${room.remark}` : '');
+  const FALLBACK_PLACEHOLDER = '—';
+
+  const showOrPlaceholder = (value) => {
+    if (value === null || value === undefined) return FALLBACK_PLACEHOLDER;
+    const str = String(value).trim();
+    return str ? str : FALLBACK_PLACEHOLDER;
+  };
+
+  const monitorSummary = (desk) => {
+    const quantity = desk?.monitorsQuantity;
+    const size = desk?.monitorsSize;
+    if (quantity == null && (size == null || String(size).trim() === '')) {
+      return FALLBACK_PLACEHOLDER;
+    }
+    if (quantity != null && size != null && String(size).trim() !== '') {
+      return `${quantity} x ${String(size).trim()}`;
+    }
+    return showOrPlaceholder(quantity ?? size);
+  };
+
+  const deskTypeSummary = (desk) => {
+    if (desk?.deskHeightAdjustable === true) return 'yes';
+    if (desk?.deskHeightAdjustable === false) return 'no';
+    return FALLBACK_PLACEHOLDER;
+  };
+
+  const technologySummary = (desk) => {
+    const items = [];
+    if (desk?.technologyDockingStation === true) items.push('docking station');
+    if (desk?.technologyWebcam === true) items.push('webcam');
+    if (desk?.technologyHeadset === true) items.push('headset');
+    return items.length ? items.join(', ') : FALLBACK_PLACEHOLDER;
+  };
 
   function roundUpToNextHalfHour(d) {
     const rounded = new Date(d);
@@ -285,29 +543,71 @@ if (startDay.getTime() === today.getTime()) {
             desks.map((desk) => (
               <Box key={desk.id} sx={{ display: 'flex', margin: '25px', justifyContent: 'space-between', width: '210px' }}>
                 <Box>{desk.deskNumberInRoom}.</Box>
-                <Box
-                  sx={{
-                    backgroundColor: desk.id === clickedDeskId ? '#ffdd00' : 'yellowgreen',
-                    height: '125px',
-                    width: '140px',
-                    borderRadius: '7px',
-                    padding: '5px',
-                    cursor: 'pointer',
-                    boxShadow: '0px 0px 5px rgba(0,0,0,0.2)',
-                    transition: desk.id === clickedDeskId ? '0.25s' : 'box-shadow 0.3s',
-                    '&:hover': { boxShadow: '0px 0px 10px rgba(0,0,0,0.4)' },
-                  }}
-                  onClick={() => {
-                    setClickedDeskId(desk.id);
-                    setClickedDeskRemark(desk.remark);
-
-                    // Save selection to sessionStorage 
-                    sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: desk.id }));
-                  }}
+                <Tooltip
+                  arrow
+                  placement="right"
+                  title={
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                      {desk.blocked && (
+                        <>
+                          <Typography variant="caption" sx={{ fontWeight: 700, color: '#ff9800' }}>
+                            {t('defectBlocked')}
+                          </Typography>
+                          {desk.blockedReasonCategory && (
+                            <Typography variant="caption">
+                              {t('defectBlockedReason', { reason: desk.blockedReasonCategory.replace(/_/g, ' ') })}
+                            </Typography>
+                          )}
+                          {desk.blockedEstimatedEndDate && (
+                            <Typography variant="caption">
+                              {t('defectBlockedUntil', { date: desk.blockedEstimatedEndDate })}
+                            </Typography>
+                          )}
+                        </>
+                      )}
+                      <Typography variant="caption">{t('booking.tooltip.identifier')}: {showOrPlaceholder(desk?.workstationIdentifier)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.type')}: {showOrPlaceholder(desk?.workstationType)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.monitors')}: {monitorSummary(desk)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.deskTypeHeightAdjustable')}: {deskTypeSummary(desk)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.technology')}: {technologySummary(desk)}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.specialFeatures')}: {showOrPlaceholder(desk?.specialFeatures)}</Typography>
+                    </Box>
+                  }
                 >
-                  <Typography sx={typography_sx}>{desk.remark}</Typography>
-                  <Typography sx={typography_sx}>{t(desk.equipment.equipmentName)}</Typography>
-                </Box>
+                  <Box
+                    sx={{
+                      backgroundColor: desk.blocked
+                        ? '#bdbdbd'
+                        : desk.id === clickedDeskId ? '#ffdd00' : 'yellowgreen',
+                      height: '125px',
+                      width: '140px',
+                      borderRadius: '7px',
+                      padding: '5px',
+                      cursor: desk.blocked ? 'not-allowed' : 'pointer',
+                      opacity: desk.blocked ? 0.6 : 1,
+                      boxShadow: '0px 0px 5px rgba(0,0,0,0.2)',
+                      transition: desk.id === clickedDeskId ? '0.25s' : 'box-shadow 0.3s',
+                      '&:hover': { boxShadow: desk.blocked ? undefined : '0px 0px 10px rgba(0,0,0,0.4)' },
+                    }}
+                    onClick={() => {
+                      if (desk.blocked) {
+                        toast.warning(t('defectAlreadyOpen'));
+                        return;
+                      }
+                      setClickedDeskId(desk.id);
+                      setClickedDeskRemark(desk.remark);
+                      sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: desk.id }));
+                    }}
+                  >
+                    <Typography sx={typography_sx}>{desk.remark}</Typography>
+                    <Typography sx={typography_sx}>{t(desk.equipment.equipmentName)}</Typography>
+                    {desk.blocked && (
+                      <Typography sx={{ ...typography_sx, fontSize: '0.7rem', color: '#d32f2f', fontWeight: 600 }}>
+                        {t('defectBlocked')}
+                      </Typography>
+                    )}
+                  </Box>
+                </Tooltip>
               </Box>
             ))
           ) : (
@@ -358,11 +658,12 @@ if (startDay.getTime() === today.getTime()) {
             endAccessor="end"
             views={['day', 'week']}
             defaultView="day"
-            defaultDate={date}
+            defaultDate={initialDate}
             onSelectSlot={(data) => (clickedDeskId ? selectSlot(data, event.id) : toast.warning(t('selectDeskMessage')))}
             selectable
             min={new Date(0, 0, 0, minStartTime, 0, 0)}
             max={new Date(0, 0, 0, maxEndTime, 0, 0)}
+            formats={calendarFormats}
             eventPropGetter={(event) => ({
               style: {
                 backgroundColor: events.some((e) => e.id === event.id) ? 'grey' : '#008444',
@@ -380,24 +681,76 @@ if (startDay.getTime() === today.getTime()) {
             }}
           />
 
-          <Button
-            id="submit_booking_btn"
-            sx={{
-              margin: '10px',
-              padding: '15px',
-              backgroundColor: '#008444',
-              borderRadius: '8px',
-              color: '#fff',
-              fontSize: '16px',
-              textAlign: 'center',
-              transition: 'all 0.5s',
-            }}
-            onClick={booking}
-          >
-            {t('book')}
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+            <Button
+              id="submit_booking_btn"
+              sx={{
+                margin: '10px',
+                padding: '15px',
+                backgroundColor: '#008444',
+                borderRadius: '8px',
+                color: '#fff',
+                fontSize: '16px',
+                textAlign: 'center',
+                transition: 'all 0.5s',
+                '&.Mui-disabled': {
+                  backgroundColor: '#7a7a7a',
+                  color: '#fff',
+                  opacity: 0.8,
+                },
+              }}
+              onClick={booking}
+              disabled={isBookingPending}
+              aria-busy={isBookingPending ? 'true' : 'false'}
+            >
+              {t('book')}
+            </Button>
+            {clickedDeskId && (
+              <Button
+                id="report_defect_btn"
+                sx={{
+                  margin: '10px',
+                  padding: '15px',
+                  backgroundColor: '#d32f2f',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  fontSize: '16px',
+                  textAlign: 'center',
+                  transition: 'all 0.5s',
+                  '&:hover': { backgroundColor: '#b71c1c' },
+                }}
+                onClick={() => {
+                  const desk = desks.find(d => d.id === clickedDeskId);
+                  if (desk && desk.blocked) {
+                    toast.warning(t('defectAlreadyOpen'));
+                    return;
+                  }
+                  getRequest(
+                    `${process.env.REACT_APP_BACKEND_URL}/defects/active?deskId=${clickedDeskId}`,
+                    headers.current,
+                    () => toast.warning(t('defectAlreadyOpen')),
+                    (status) => {
+                      if (status === 404) {
+                        setIsReportDefectOpen(true);
+                      } else {
+                        toast.error(t('defectReportFailed'));
+                      }
+                    }
+                  );
+                }}
+              >
+                {t('reportDefect')}
+              </Button>
+            )}
+          </Box>
         </Box>
       </Box>
+
+      <ReportDefectModal
+        isOpen={isReportDefectOpen}
+        onClose={() => setIsReportDefectOpen(false)}
+        deskId={clickedDeskId}
+      />
     </LayoutPage>
   );
 };

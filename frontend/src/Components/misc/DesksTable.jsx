@@ -10,13 +10,13 @@ import {
     Paper,
 } from '@mui/material';
 
-const DeskTable = ({name, desks, submit_function}) =>{
+const DeskTable = ({name, desks, submit_function, onReportDefect}) =>{
     const { t } = useTranslation();
     
     return (
         <TableContainer component={Paper} sx={{
-            maxHeight: 400, // Set max height
-            overflowY: 'auto', // Enable vertical scroll
+            maxHeight: 400,
+            overflowY: 'auto',
         }}>
             <Table stickyHeader id='room_table'>
                 <TableHead>
@@ -27,6 +27,7 @@ const DeskTable = ({name, desks, submit_function}) =>{
                         <TableCell>{t('building')}</TableCell>
                         <TableCell>{t('floor')}</TableCell>
                         <TableCell></TableCell>
+                        {onReportDefect && <TableCell></TableCell>}
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -44,6 +45,18 @@ const DeskTable = ({name, desks, submit_function}) =>{
                                         {t('submit')}
                                     </Button>
                                 </TableCell>
+                                {onReportDefect && (
+                                    <TableCell>
+                                        <Button
+                                            variant='outlined'
+                                            color='error'
+                                            size='small'
+                                            onClick={() => onReportDefect(desk)}
+                                        >
+                                            {t('reportDefect')}
+                                        </Button>
+                                    </TableCell>
+                                )}
                             </TableRow>
                         )
                     )}

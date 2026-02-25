@@ -10,14 +10,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.desk_sharing.entities.ParkingReservation;
+import com.desk_sharing.entities.ParkingReservationStatus;
 
 @Repository
 public interface ParkingReservationRepository extends JpaRepository<ParkingReservation, Long> {
 
     @Query(value = "SELECT DISTINCT spot_label FROM parking_reservations "
-            + "WHERE day = :day AND spot_label IN (:spotLabels) AND "
-            + "((:startTime BETWEEN begin AND end) OR (:endTime BETWEEN begin AND end) OR "
-            + "(begin >= :startTime AND begin < :endTime) OR (end > :startTime AND end <= :endTime))",
+            + "WHERE day = :day AND spot_label IN (:spotLabels) "
+            + "AND (reservation_status IS NULL OR reservation_status IN ('APPROVED','PENDING')) "
+            + "AND "
+            + "(:startTime < ADDTIME(end, '00:30:00') AND :endTime > SUBTIME(begin, '00:30:00'))",
             nativeQuery = true)
     List<String> findOccupiedSpotLabels(
         @Param("day") Date day,
@@ -27,9 +29,10 @@ public interface ParkingReservationRepository extends JpaRepository<ParkingReser
     );
 
     @Query(value = "SELECT * FROM parking_reservations "
-            + "WHERE day = :day AND spot_label = :spotLabel AND "
-            + "((:startTime BETWEEN begin AND end) OR (:endTime BETWEEN begin AND end) OR "
-            + "(begin >= :startTime AND begin < :endTime) OR (end > :startTime AND end <= :endTime))",
+            + "WHERE day = :day AND spot_label = :spotLabel "
+            + "AND (reservation_status IS NULL OR reservation_status IN ('APPROVED','PENDING')) "
+            + "AND "
+            + "(:startTime < ADDTIME(end, '00:30:00') AND :endTime > SUBTIME(begin, '00:30:00'))",
             nativeQuery = true)
     List<ParkingReservation> findOverlapsForSpot(
         @Param("day") Date day,
@@ -38,6 +41,42 @@ public interface ParkingReservationRepository extends JpaRepository<ParkingReser
         @Param("endTime") Time endTime
     );
 
-    List<ParkingReservation> findByUserId(int userId);
-}
+    @Query(value = "SELECT * FROM parking_reservations "
+            + "WHERE day = :day AND spot_label = :spotLabel "
+            + "AND (reservation_status IS NULL OR reservation_status = 'APPROVED') "
+            + "AND "
+            + "(:startTime < ADDTIME(end, '00:30:00') AND :endTime > SUBTIME(begin, '00:30:00'))",
+            nativeQuery = true)
+    List<ParkingReservation> findApprovedOverlapsForSpot(
+        @Param("day") Date day,
+        @Param("spotLabel") String spotLabel,
+        @Param("startTime") Time startTime,
+        @Param("endTime") Time endTime
+    );
 
+    @Query(value = "SELECT * FROM parking_reservations "
+            + "WHERE user_id = :userId AND day = :day AND spot_label IN (:spotLabels) "
+            + "AND reservation_status = 'REJECTED' "
+            + "AND "
+            + "(:startTime < ADDTIME(end, '00:30:00') AND :endTime > SUBTIME(begin, '00:30:00'))",
+            nativeQuery = true)
+    List<ParkingReservation> findRejectedOverlapsForUser(
+        @Param("day") Date day,
+        @Param("spotLabels") List<String> spotLabels,
+        @Param("startTime") Time startTime,
+            @Param("endTime") Time endTime,
+            @Param("userId") int userId
+    );
+
+    List<ParkingReservation> findByStatusOrderByCreatedAtAsc(ParkingReservationStatus status);
+
+    long countByStatus(ParkingReservationStatus status);
+
+    List<ParkingReservation> findByUserId(int userId);
+
+    List<ParkingReservation> findByUserIdOrderByDayAscBeginAsc(int userId);
+
+    List<ParkingReservation> findByDay(Date day);
+
+    long countByDay(Date day);
+}

@@ -1,4 +1,6 @@
 package com.desk_sharing.controllers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +23,6 @@ import com.desk_sharing.model.MfaVerifyRequestDTO;
 import com.desk_sharing.repositories.UserRepository;
 import com.desk_sharing.security.JWTGenerator;
 import com.desk_sharing.services.MfaService;
-import com.desk_sharing.services.UserService;
 
 import lombok.AllArgsConstructor;
 
@@ -32,12 +33,12 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/users/mfa")
 @AllArgsConstructor
 public class MfaController {
+    private static final Logger logger = LoggerFactory.getLogger(MfaController.class);
     
     private final MfaService mfaService;
     private final UserRepository userRepository;
     private final JWTGenerator jwtGenerator;
     private final PasswordEncoder passwordEncoder;
-    private final UserService userService;
     
     /**
      * Verify MFA code during login (second step).
@@ -81,7 +82,7 @@ public class MfaController {
             ? user.getVisibilityMode().name()
             : com.desk_sharing.entities.VisibilityMode.FULL_NAME.name();
         
-        userService.logging("MFA verification successful for user: " + email);
+        logger.info("MFA verification successful for user: {}", email);
         
         return ResponseEntity.ok(
             new AuthResponseDTO(
@@ -91,6 +92,7 @@ public class MfaController {
                 user.getName(),
                 user.getSurname(),
                 user.isAdmin(),
+                user.isServicePersonnel(),
                 user.isVisibility(),
                 visibilityMode,
                 "SUCCESS",
@@ -119,7 +121,7 @@ public class MfaController {
         String secret = mfaService.generateSecret();
         String qrCodeUrl = mfaService.generateQrCodeUrl(email, secret);
         
-        userService.logging("MFA setup initiated for user: " + email);
+        logger.info("MFA setup initiated for user: {}", email);
         
         return new ResponseEntity<>(
             new MfaSetupResponseDTO(secret, qrCodeUrl),
@@ -153,7 +155,7 @@ public class MfaController {
         user.setMfaEnabled(true);
         userRepository.save(user);
         
-        userService.logging("MFA enabled for user: " + email);
+        logger.info("MFA enabled for user: {}", email);
         
         return new ResponseEntity<>("MFA enabled successfully", HttpStatus.OK);
     }
@@ -198,7 +200,7 @@ public class MfaController {
         user.setMfaSecret(null);
         userRepository.save(user);
         
-        userService.logging("MFA disabled for user: " + email);
+        logger.info("MFA disabled for user: {}", email);
         
         return new ResponseEntity<>("MFA disabled successfully", HttpStatus.OK);
     }

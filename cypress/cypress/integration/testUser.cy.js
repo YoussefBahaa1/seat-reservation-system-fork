@@ -90,7 +90,8 @@ describe('', ()=>{
 	        // Set user with mail to admin
 	        .then(() => {
 	          cy.get(`[id="${mail}"]`).find('button').click();
-	          cy.get('#radioAdmin_true').click({ force: true });
+	          // Role checkboxes order: Admin, Service Personnel, Employee.
+	          cy.get('#editUser-roles input[type="checkbox"]').eq(0).click({ force: true });
 	          cy.get('button#modal_submit').click();
 	          cy.assertToastOneOf(['User updated successfully', 'Nutzer wurde erfolgreich geändert']);
 	        })
@@ -105,12 +106,13 @@ describe('', ()=>{
 	            .then(() => cy.clickFirst(['button#editUser', 'button#editEmployee']))
 	            .then(() => cy.filterUsersByEmail(mail))
 	            // Reset user with mail to non admin
-	            .then(() => {
-	              cy.get(`[id="${mail}"]`).find('button').click();
-	              cy.get('#radioAdmin_false').click({ force: true });
-	              cy.get('button#modal_submit').click();
-	              cy.assertToastOneOf(['User updated successfully', 'Nutzer wurde erfolgreich geändert']);
-	            })
+		            .then(() => {
+		              cy.get(`[id="${mail}"]`).find('button').click();
+		              // Switch back to Employee role.
+		              cy.get('#editUser-roles input[type="checkbox"]').eq(2).click({ force: true });
+		              cy.get('button#modal_submit').click();
+		              cy.assertToastOneOf(['User updated successfully', 'Nutzer wurde erfolgreich geändert']);
+		            })
 	            .logout()
 	            .login(mail, pw1).then(()=>{
 	                // No admin

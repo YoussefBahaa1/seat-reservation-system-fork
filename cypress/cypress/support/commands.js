@@ -270,7 +270,7 @@ Cypress.Commands.add('login', (mail = Cypress.env('TEST_ADMIN_MAIL'), pw = Cypre
 });
 
 Cypress.Commands.add('addUser', (mail, pw, vorname, nachname, opts = {})=>{
-  const { department = '' } = opts;
+  const { department = '', role = 'EMPLOYEE' } = opts;
   cy.visit('/admin').then(()=>{
       cy.url().should('contains', '/admin').then(()=> {
           cy.get('button#userManagement').click().then(()=>{
@@ -292,6 +292,14 @@ Cypress.Commands.add('addUser', (mail, pw, vorname, nachname, opts = {})=>{
                               cy.setStr(surnameId, nachname),
                               department !== '' && departmentId ? cy.setStr(departmentId, department) : cy.wrap('1'),
                             ]).then(() => {
+                              if (isNew) {
+                                // Role checkboxes order: Admin, Service Personnel, Employee.
+                                const targetIndex =
+                                  role === 'ADMIN' ? 0 :
+                                  role === 'SERVICE_PERSONNEL' ? 1 :
+                                  2;
+                                cy.get('#addUser-roles input[type="checkbox"]').eq(targetIndex).click({ force: true });
+                              }
                               cy.get('button#modal_submit').click().then(()=>{ //cy.contains('button', /SUBMIT/).click().then(()=>{
                                 cy.assertToastOneOf([
                                   'User created successfully',

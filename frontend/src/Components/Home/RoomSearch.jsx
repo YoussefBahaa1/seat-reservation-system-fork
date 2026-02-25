@@ -11,10 +11,11 @@ const RoomSearch = () => {
     const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
     const { t, i18n } = useTranslation();
     const [date, setDate] = useState(new Date());
-    const defaultStartTime = date.toLocaleTimeString();
+    const formatTime24 = (d) => d.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const defaultStartTime = formatTime24(date);
     const [startTime, setStartTime] = useState(defaultStartTime);
     // Default endTime is 2 hours ahead.
-    const defaultEndTime = date.toLocaleTimeString();
+    const defaultEndTime = formatTime24(date);
     const [endTime, setEndTime] = useState(defaultEndTime);
     const [onDate, setOnDate] = useState(false);
     const [minimalAmountOfWorkstations, setminimalAmountOfWorkstations] = useState(2);
