@@ -2,6 +2,46 @@
 import axios from 'axios';
 import i18n from '../../i18n';
 
+function clearAuthStorage() {
+  try {
+    sessionStorage.removeItem('headers');
+    sessionStorage.removeItem('accessToken');
+  } catch {
+    // ignore storage access issues
+  }
+
+  try {
+    localStorage.removeItem('userId');
+    localStorage.removeItem('email');
+    localStorage.removeItem('name');
+    localStorage.removeItem('surname');
+    localStorage.removeItem('admin');
+    localStorage.removeItem('servicePersonnel');
+    localStorage.removeItem('visibility');
+  } catch {
+    // ignore storage access issues
+  }
+}
+
+function handleUnauthorized(url) {
+  // Do not force-logout on unauthenticated endpoints used during login flow.
+  const ignoredPaths = ['/users/login', '/users/mfa/verify'];
+  let path = '';
+  try {
+    path = new URL(url, window.location.origin).pathname;
+  } catch {
+    path = String(url || '');
+  }
+  if (ignoredPaths.some((p) => path.endsWith(p))) {
+    return;
+  }
+
+  clearAuthStorage();
+  if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+    window.location.replace('/');
+  }
+}
+
 function resolveHeaders(headers) {
   const resolved = (headers && typeof headers === 'object') ? { ...headers } : {};
 
@@ -92,6 +132,9 @@ async function request(type, url, headers, successFunction, failFunction, body =
     if (axios.isAxiosError(error)) {
       if (error.response) {
         // Server antwortete mit einem Statuscode außerhalb von 2xx
+        if (error.response.status === 401) {
+          handleUnauthorized(url);
+        }
         failFunction(error.response.status, error.response.data ?? null);
       } else {
         console.error(`Netzwerk- oder Serverfehler bei ${type} ${url}:`, error.message);

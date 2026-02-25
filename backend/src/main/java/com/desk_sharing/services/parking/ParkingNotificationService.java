@@ -4,8 +4,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.lang.NonNull;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -48,7 +46,7 @@ public class ParkingNotificationService {
         if (user.getEmail() == null || user.getEmail().isBlank()) return;
 
         try {
-            final boolean german = resolveGermanPreference(res, user);
+            final boolean german = isGerman(user);
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(mailFrom);
@@ -61,16 +59,11 @@ public class ParkingNotificationService {
         }
     }
 
-    private boolean resolveGermanPreference(ParkingReservation res, UserEntity user) {
-        String tag = res.getRequestLocale();
-        if (tag != null && !tag.isBlank()) {
-            return Locale.forLanguageTag(tag).getLanguage().equalsIgnoreCase("de");
-        }
-        Locale lc = LocaleContextHolder.getLocale();
-        if (lc != null) {
-            return "de".equalsIgnoreCase(lc.getLanguage());
-        }
-        return true; // default German
+    private boolean isGerman(UserEntity user) {
+        if (user == null) return false;
+        String preferred = user.getPreferredLanguage();
+        if (preferred == null || preferred.isBlank()) return false;
+        return preferred.toLowerCase(Locale.ROOT).startsWith("de");
     }
 
     private String buildSubject(ParkingReservation res, boolean approved, boolean de) {

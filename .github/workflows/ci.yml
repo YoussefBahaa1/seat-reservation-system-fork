@@ -5,10 +5,11 @@ on:
     branches:
       - main
       - develop
-      - feature/ci.yml 
+      - feature/ci.yml
     paths:
       - backend/**
       - .github/workflows/ci.yml
+
   pull_request:
     branches:
       - main

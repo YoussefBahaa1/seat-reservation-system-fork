@@ -55,10 +55,65 @@ const LoginPage = () => {
 
   const [state, dispatch] = useReducer(reducer, initState);
 
+  function syncLanguagePreference(accessToken, language) {
+    fetch(`${process.env.REACT_APP_BACKEND_URL}/users/me/language`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${String(accessToken)}`,
+        'Content-Type': 'application/json',
+        'Accept-Language': language,
+      },
+      body: JSON.stringify({ language }),
+    }).catch(() => {});
+  }
+
+  function normalizeLanguage(language) {
+    if (typeof language !== 'string') return null;
+    const normalized = language.trim().toLowerCase();
+    if (normalized.startsWith('de')) return 'de';
+    if (normalized.startsWith('en')) return 'en';
+    return null;
+  }
+
+  async function fetchServerLanguagePreference(accessToken) {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/users/me/language`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${String(accessToken)}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      return normalizeLanguage(data?.language);
+    } catch {
+      return null;
+    }
+  }
+
+  async function applyLanguagePreference(accessToken, userId) {
+    const storageKey = `language_${userId}`;
+    const localLanguage = normalizeLanguage(localStorage.getItem(storageKey));
+
+    if (localLanguage) {
+      i18n.changeLanguage(localLanguage);
+      syncLanguagePreference(accessToken, localLanguage);
+      return;
+    }
+
+    const serverLanguage = await fetchServerLanguagePreference(accessToken);
+    if (serverLanguage) {
+      i18n.changeLanguage(serverLanguage);
+      localStorage.setItem(storageKey, serverLanguage);
+    }
+  }
+
   // Complete login - store credentials and navigate
-  function completeLogin(data) {
-    const authHeaders = {
-      'Authorization': 'Bearer ' + String(data['accessToken']),
+  async function completeLogin(data) {
+    const accessToken = String(data['accessToken']);
+    sessionStorage.setItem('headers', JSON.stringify({
+      'Authorization': 'Bearer ' + accessToken,
       'Content-Type': 'application/json',
     };
     sessionStorage.setItem('headers', JSON.stringify(authHeaders));
@@ -70,10 +125,8 @@ const LoginPage = () => {
     localStorage.setItem('admin', String(data.admin));
     localStorage.setItem('servicePersonnel', String(data.servicePersonnel));
     localStorage.setItem('visibility', String(data.visibility));
-    const userLang = localStorage.getItem(`language_${data.id}`) || 'en';
-    i18n.changeLanguage(userLang);
-    sessionStorage.setItem('accessToken', String(data['accessToken']));
-    localStorage.setItem('accessToken', String(data['accessToken']));
+    sessionStorage.setItem('accessToken', accessToken);
+    await applyLanguagePreference(accessToken, data.id);
     navigate('/home', { replace: true });
   }
 
@@ -99,7 +152,7 @@ const LoginPage = () => {
         throw new Error('Response is null');
 
       if (data.message === String('SUCCESS')) {
-        completeLogin(data);
+        await completeLogin(data);
       } else if (data.message === 'MFA_REQUIRED' && data.requiresMfa) {
         // MFA is required - show MFA verification step
         dispatch({ 
@@ -149,7 +202,7 @@ const LoginPage = () => {
       const data = await response.json();
       
       if (response.ok && data.message === 'SUCCESS') {
-        completeLogin(data);
+        await completeLogin(data);
       } else if (data.message === 'INVALID_MFA_TOKEN') {
         toast.error(t('mfaTokenExpired'));
         dispatch({ type: 'clearMfa' });

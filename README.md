@@ -62,10 +62,8 @@ There are some variables that can change (but the default values from `.env_temp
 * BACKEND_LOGS must be set to an directory where we like to store the logging messages. Choose a folder you like. E.g.: `${PROJECT_PATH}/backend/logs_dev_backend/`.
 * VOLUME must set either to mariadb_data_dev or mariadb_data. Both are defined in docker-compose.yml.
 
-In the next step we find the names of our containers and add them to .env.
-Execute `docker ps`. You will se all running containers. Hopefully among them you see our three project containers. With docker `ps --format "table {{.ID}}}\t{{.Names}}"` you only get the the id and the name of the containers. 
-
-First search for a container namend something with frontend. This is the container name of our frontend container. Copy the name and add it in .env as FRONTEND_CONTAINER. Do similiar with backend and database.
+Container names are fixed by `COMPOSE_PROJECT_NAME=seat-reservation-system` (default in `.env_template`) and `docker-compose.yml`.  
+So the defaults `seat-reservation-system-frontend-1`, `seat-reservation-system-backend-1`, and `seat-reservation-system-database-1` remain stable even if the repository folder name changes (for example in forks).
 
 Now we add the needed tls informations to .env.
 Earlier we put our pfx TLS file in `PATH_TO_TLS/backend/`. Now we add the full name (with extension) of this .pfx file and write it in .env as BACKEND_PFX_FILENAME. Attention: you only need to do this if you you want to use TLS. 
@@ -74,66 +72,76 @@ Now we do a similiar thing regarding the frontend. Do a `ls $PATH_TO_TLS/fronten
 
 Check if the default values for FRONTEND_PORT, BACKEND_PORT and DATABASE_PORT matches your needs.
 
-A list of most of the params is in the following table:
+A list of all parameters from `.env_template` is in the following table:
 
-| Parametername      | Use | Example        | Remarks |
+| Parametername | Use | Example | Remarks |
 |-----------|-------|--------------|--------------|
-| PROJECT_PATH      | The path to the project on the host | /home/r/DesksharingTool_Dev  | Needed |
-|PATH_TO_TLS       | The path to the directory with the TLS certs    | /home/r/tls     | Needed |
-| IP   | The ip or name of the host machine    | my-srv     | Needed |
-| NETWORK | The name of the docker network used for this project | mynetwork_dev | Needed.  One of the two defined networks in docker-compose.yml |
-| USE_TLS | True if tls shall be used | false | Needed |
-| LDAP_DIR_CONTEXT_URL | The url of the ldap/AD server | ldaps://srv.de | Empty if no ldap is needed.
-| LDAP_DIR_CONTEXT_PRINCIPAL | The username of the member of AD | ldap_service_user,OU=Funktion,OU=AD-Management,DC=foo,DC=bar,DC=baz | Needed if LDAP_DIR_CONTEXT_PRINCIPAL is not empty | 
-| LDAP_USER_BASE | The base ou if we look for users. | OU=org | Needed if LDAP_DIR_CONTEXT_PRINCIPAL is not empty |
-| LDAP_USER_FILTER | The filter if we look for users. | "(&(objectClass=user)(mail={0}))" | Needed if LDAP_DIR_CONTEXT_PRINCIPAL is not empty |
-| LDAP_GROUP_BASE | The base ou if we look for groups. | Groups,OU=org | Needed if LDAP_DIR_CONTEXT_PRINCIPAL is not empty |
-| LDAP_GROUP_FILTER | The filter if we look for groups. | (distinguishedName={0}) | Needed if LDAP_DIR_CONTEXT_PRINCIPAL is not empty |
-| LDAP_BASE |  The default dc (domain component). | DC=org,DC=fs,DC=de | 
-| ERROR_USER_NOT_FOUND_IN_AD | Error if a user was not found in ad. This value is an key in frontend/src/locales | "ERROR_USER_NOT_FOUND_IN_AD" | Needed |
-| ERROR_USER_NOT_FOUND_IN_DAO | Error if a user was not found in our db. This value is an key in frontend/src/locales | "ERROR_USER_NOT_FOUND_IN_DAO" | Needed |
-| ERROR_WRONG_PW | Error if the password is wrong. This value is an key in frontend/src/locales | "ERROR_WRONG_PW" | Needed |
-| http_proxy | The proxy server for http | http://proxy.de:3128 | Not needed |
-| https_proxy | The proxy server for https | http://proxy.de:3128 | Not needed |
-| TEST_EMPLOYEE_MAIL | Mail for a test employee | test.employee@mail.de | Needed for tests |
-| TEST_ADMIN_MAIL | Mail for a test admin | test.admin@mail.de | Needed for tests |
-| TEST_SERVICE_PERSONNEL_MAIL | Mail for a test employee | test.employee@mail.de | Needed for tests |
-| TEST_EMPLOYEE_PW | PW for test employee | test | Needed for tests |
-| TEST_ADMIN_PW | PW for test admin | test | Needed for tests |
-| TEST_SERVICE_PERSONNEL_PW | PW for test admin | test | Needed for tests |
-| FRONTEND_TARGET | Set build to production | "production_runtime" | Needed. Dont change | 
-| FRONTEND_KEY_FILE | Name of the frontend tls key file (unencrypted) | frontend.key | Needed. Must be in $PATH_TO_TLS/frontend/. |
-| FRONTEND_CRT_FILE | Name of the frontend tls crt file | frontend.crt | Needed.  Must be in $PATH_TO_TLS/frontend/. | 
-| CREATE_SERIES_DEFAULT_STARTTIME | Default start time for series creation | 12:00:00 | Needed |
-| CREATE_SERIES_DEFAULT_ENDTIME | Default end time for series creation | 14:00:00 | Needed |
-| CREATE_SERIES_DEFAULT_FREQUENCY=daily | Default frequency for series creation | daily | Needed |
-| FRONTEND_PORT | The exposed port where the frontend container accepts connections | 3000 | Needed |
-| FRONTEND_CONTAINER | Name of the frontend container | seat-reservation-system-frontend-1 | Needed. Depending on the project name. Since my project is called seat-reservation-system the container is named seat-reservation-system-frontend-1. | 
-| FRONTEND_BASE | Frontend base path (prod: /frontend-main, local dev: /) | /frontend-main | Needed |
+| PROJECT_PATH | The absolute path to the project on the host | /home/r/DesksharingTool_Dev | Needed |
+| PATH_TO_TLS | The absolute path to the TLS/password folder | /home/r/tls | Needed |
+| IP | The IP or hostname of the host machine | my-srv | Needed |
+| COMPOSE_PROJECT_NAME | Docker Compose project name prefix | seat-reservation-system | Needed for stable container/network names across clones/forks |
+| NETWORK | Docker network name used by this project | mynetwork_dev | Needed. One of the networks defined in `docker-compose.yml` |
+| USE_TLS | Enable TLS mode | false | Needed |
+| PROTOCOLL | Protocol used for generated backend URLs | http | Usually set by `scripts/build_and_run.sh` based on `USE_TLS` |
+| LDAP_DIR_CONTEXT_URL | URL of the LDAP/AD server | ldaps://srv.de | Empty if LDAP is not used |
+| LDAP_DIR_CONTEXT_PRINCIPAL | LDAP bind user | ldap_service_user,OU=Funktion,OU=AD-Management,DC=foo,DC=bar,DC=baz | Needed if LDAP is used |
+| LDAP_USER_BASE | Base OU for user lookup | OU=org | Needed if LDAP is used |
+| LDAP_USER_FILTER | LDAP filter for users | (&(objectClass=user)(mail={0})) | Needed if LDAP is used |
+| LDAP_GROUP_BASE | Base OU for group lookup | Groups,OU=org | Needed if LDAP is used |
+| LDAP_GROUP_FILTER | LDAP filter for groups | (distinguishedName={0}) | Needed if LDAP is used |
+| LDAP_BASE | Base domain components | DC=org,DC=fs,DC=de | Needed if LDAP is used |
+| ERROR_USER_NOT_FOUND_IN_AD | Frontend translation key for unknown AD user | ERROR_USER_NOT_FOUND_IN_AD | Needed |
+| ERROR_USER_NOT_FOUND_IN_DAO | Frontend translation key for unknown DB user | ERROR_USER_NOT_FOUND_IN_DAO | Needed |
+| ERROR_WRONG_PW | Frontend translation key for wrong password | ERROR_WRONG_PW | Needed |
+| ERROR_USER_DEACTIVATED | Frontend translation key for deactivated user | ERROR_USER_DEACTIVATED | Needed |
+| http_proxy | Proxy URL for HTTP | http://proxy.de:3128 | Optional |
+| https_proxy | Proxy URL for HTTPS | http://proxy.de:3128 | Optional |
+| TEST_USER_MAIL | Test employee email | test.employee@mail.de | Needed for tests |
+| TEST_ADMIN_MAIL | Test admin email | test.admin@mail.de | Needed for tests |
+| TEST_SERVICE_PERSONNEL_MAIL | Test service personnel email | test.servicepersonnel@mail.de | Needed for tests |
+| TEST_USER_PW | Test employee password | test | Needed for tests |
+| TEST_ADMIN_PW | Test admin password | test | Needed for tests |
+| TEST_SERVICE_PERSONNEL_PW | Test service personnel password | test | Needed for tests |
+| FRONTEND_TARGET | Frontend build target | production_runtime | Needed. Do not change unless you know why |
+| FRONTEND_KEY_FILE | Frontend TLS key filename | frontend.key | Needed when TLS is enabled; file must exist in `$PATH_TO_TLS/frontend/` |
+| FRONTEND_CRT_FILE | Frontend TLS cert filename | frontend.crt | Needed when TLS is enabled; file must exist in `$PATH_TO_TLS/frontend/` |
+| CREATE_SERIES_DEFAULT_STARTTIME | Default series start time | 12:00:00 | Needed |
+| CREATE_SERIES_DEFAULT_ENDTIME | Default series end time | 14:00:00 | Needed |
+| CREATE_SERIES_DEFAULT_FREQUENCY | Default series frequency | daily | Needed |
+| FRONTEND_PORT | Exposed frontend host port | 3001 | Needed |
+| FRONTEND_CONTAINER_PORT | Internal frontend container port | 80 | Set by script: 80 for HTTP, 443 for TLS |
+| FRONTEND_CONTAINER | Frontend container name | seat-reservation-system-frontend-1 | Stable by default via `COMPOSE_PROJECT_NAME` |
+| REACT_APP_SUPPORT_ADMIN_EMAIL | Admin contact shown in frontend | test.admin@mail.de | Optional override |
+| REACT_APP_SUPPORT_ADMIN_PHONE | Admin phone shown in frontend | 000000000 | Optional override |
+| REACT_APP_SUPPORT_SERVICE_EMAIL | Service contact shown in frontend | test.servicepersonnel@mail.de | Optional override |
+| REACT_APP_SUPPORT_SERVICE_PHONE | Service phone shown in frontend | 111111111 | Optional override |
+| FRONTEND_BASE | Frontend base path (prod) | /frontend-main | Needed |
 | BACKEND_PATH | Backend path prefix used by frontend | /backend-main | Needed |
 | REACT_APP_BASENAME | React Router basename (local dev) | / | Needed |
 | PUBLIC_URL | CRA public URL (local dev) | / | Needed |
 | REACT_APP_BACKEND_URL | Backend URL used by frontend (local dev) | http://localhost:8082 | Needed |
-| BACKEND_PORT | The exposed port where the backend container accepts connections | 8082 | Needed |
-| BACKEND_LOGS | Path to the backend log dir on the host machine | /home/usr/logs_dev_backend | Needed |
-| BACKEND_CONTAINER | Name of the backend container | seat-reservation-system-backend-1 | Needed. Depending on the project name. Since my project is called seat-reservation-system the container is named seat-reservation-system-backend-1 |
-| BACKEND_PFX_FILENAME | Name of pfx file for the backend crt. | backend.pfx | Needed. Must be in $PATH_TO_TLS/backend/. |
-| STRICT_CORS | If true only strictly defined urls are allowed to received data from etc.. | false | If all urls shall be allowed keep it false |
-| CORS_ALLOWED_ORIGINS | A list of allowed origins. Only evaluated if STRICT_CORS=true. | https://my-serv:3000,http://my-serv:3000 |
-| MAIL_HOST | SMTP host (MailHog default) | mailhog | Needed for notifications |
+| BACKEND_PORT | Exposed backend host port | 8082 | Needed |
+| BACKEND_LOGS | Host path for backend logs | ${PROJECT_PATH}/backend/logs_dev_backend/ | Needed |
+| BACKEND_CONTAINER | Backend container name | seat-reservation-system-backend-1 | Stable by default via `COMPOSE_PROJECT_NAME` |
+| BACKEND_PFX_FILENAME | Backend TLS keystore filename | backend.p12 | Needed when TLS is enabled; file must exist in `$PATH_TO_TLS/backend/` |
+| STRICT_CORS | Enforce strict CORS allow-list | false | Set `true` only if `CORS_ALLOWED_ORIGINS` is configured |
+| CORS_ALLOWED_ORIGINS | Comma-separated list of allowed origins | https://my-serv:3000,http://my-serv:3000 | Used when `STRICT_CORS=true` |
+| MAIL_HOST | SMTP host | mailhog | Needed for notifications |
 | MAIL_PORT | SMTP port | 1025 | Needed for notifications |
 | MAIL_USERNAME | SMTP username |  | Set if SMTP requires auth |
 | MAIL_PASSWORD | SMTP password |  | Set if SMTP requires auth |
 | MAIL_PROTOCOL | SMTP protocol | smtp | Needed |
-| MAIL_TLS_ENABLED | Enable STARTTLS | false (for MailHog) | Set true for real SMTP |
-| MAIL_SMTP_AUTH | Enable SMTP auth | false | Set true for real SMTP |
-| MAIL_FROM | From address for invites | deskshare@test.local | Needed |
-| BOOKING_TIMEZONE_ID | Timezone for ICS | Europe/Berlin | Needed |
-| ICS_NOTIFICATIONS_ENABLED | Toggle calendar emails | true | Needed |
-| FRONTEND_BASE_URL | Frontend URL for links in emails | http://localhost:3001 | Needed |
-| DATABASE_PORT | The exposed port where the db container accepts connections | 3307 | Needed |
-| DATABASE_CONTAINER | Name of the db container | seat-reservation-system-database-1 | Needed. Depending on the project name. Since my project is called seat-reservation-system the container is named seat-reservation-system-database-1 |
-| VOLUME | Name of the volume of the db | mariadb_data |Needed. One of the two defined volumes in docker-compose.yml |
+| MAIL_TLS_ENABLED | Enable STARTTLS | false | Set `true` for real SMTP setups as needed |
+| MAIL_SMTP_AUTH | Enable SMTP authentication | false | Set `true` for real SMTP setups as needed |
+| MAIL_FROM | Sender address for emails | no-reply@example.com | Needed |
+| BOOKING_TIMEZONE_ID | Timezone used for calendar notifications | Europe/Berlin | Needed |
+| ICS_NOTIFICATIONS_ENABLED | Toggle ICS/calendar notifications | true | Needed |
+| FRONTEND_BASE_URL | Frontend base URL used in email links | http://localhost:3001 | Needed |
+| MFA_SECRET_ENCRYPTION_KEY | Encryption key for stored MFA secrets | strong-random-key | Needed; use a strong secret in production |
+| DATABASE_PORT | Exposed database host port | 3307 | Needed |
+| VOLUME | Docker volume name for MariaDB data | mariadb_data_dev | Needed. One of the volumes defined in `docker-compose.yml` |
+| DATABASE_CONTAINER | Database container name | seat-reservation-system-database-1 | Stable by default via `COMPOSE_PROJECT_NAME` |
+| PW_DB | Database password override variable | mysecret | Usually loaded from `$PATH_TO_TLS/pws/pw_db.txt` by scripts |
 
 ### Outlook / ICS notifications
 - Features:
@@ -142,7 +150,7 @@ A list of most of the params is in the following table:
   - Timezone Europe/Berlin; localized to the requester’s UI language (en/de).
 - Local testing with MailHog:
   1) Start MailHog on the same Docker network as backend (default compose network works):  
-     `docker run -d --name mailhog --network seat-reservation-system-fork_mynetwork_dev -p 1025:1025 -p 8025:8025 mailhog/mailhog`  
+     `docker run -d --name mailhog --network seat-reservation-system_mynetwork_dev -p 1025:1025 -p 8025:8025 mailhog/mailhog`  
      (If backend already runs on that network, no extra `docker network connect` step is needed.)
   2) Ensure backend env matches the values above, then restart backend (`docker compose up -d backend`).
   3) Trigger a booking action and check http://localhost:8025 for an email with `booking-<id>.ics`.
@@ -154,7 +162,7 @@ The test files are located in cypress/cypress/integration/.
 
 If you freshly cloned this project most of the tests will fail, since the test files use some hard coded things. For example: some tests assume that a specific building is stored in the database, and therefore the images of the floor belonging to the building must be stored in `$PROJECT_PATH/frontend/public/Assets/...` . If these are not present in your project the test will fail.
 
-## Running unit tests - Sprint 1
+## Running unit tests
 Start by setting the JAVA_HOME environment varible inside your environment running:
 export JAVA_HOME="(path to your JDK)" 
 export PATH="$JAVA_HOME/bin:$PATH"

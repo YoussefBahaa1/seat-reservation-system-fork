@@ -1,7 +1,8 @@
 package com.desk_sharing.services;
 
+import java.util.Locale;
+
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -33,9 +34,10 @@ public class DefectNotificationService {
         if (!notificationsEnabled) return;
         UserEntity reporter = defect.getReporter();
         if (reporter == null || isBlank(reporter.getEmail())) return;
+        boolean german = isGerman(reporter);
 
-        String subject = buildSubject(defect, isGerman() ? "gemeldet" : "reported");
-        String body = buildCreatedBody(defect);
+        String subject = buildSubject(defect, german ? "gemeldet" : "reported", german);
+        String body = buildCreatedBody(defect, german);
         sendPlainEmail(reporter.getEmail(), subject, body);
     }
 
@@ -43,13 +45,14 @@ public class DefectNotificationService {
         if (!notificationsEnabled) return;
         UserEntity reporter = defect.getReporter();
         if (reporter == null || isBlank(reporter.getEmail())) return;
+        boolean german = isGerman(reporter);
 
         String statusLabel = defect.getStatus().name().replace("_", " ");
-        String action = isGerman()
+        String action = german
             ? "Status aktualisiert: " + statusLabel
             : "status updated: " + statusLabel;
-        String subject = buildSubject(defect, action);
-        String body = buildStatusUpdateBody(defect);
+        String subject = buildSubject(defect, action, german);
+        String body = buildStatusUpdateBody(defect, german);
         sendPlainEmail(reporter.getEmail(), subject, body);
     }
 
@@ -57,23 +60,24 @@ public class DefectNotificationService {
         if (!notificationsEnabled) return;
         UserEntity assignee = defect.getAssignedTo();
         if (assignee == null || isBlank(assignee.getEmail())) return;
+        boolean german = isGerman(assignee);
 
-        String action = isGerman() ? "zugewiesen" : "assigned to you";
-        String subject = buildSubject(defect, action);
-        String body = buildAssignedBody(defect);
+        String action = german ? "zugewiesen" : "assigned to you";
+        String subject = buildSubject(defect, action, german);
+        String body = buildAssignedBody(defect, german);
         sendPlainEmail(assignee.getEmail(), subject, body);
     }
 
-    private String buildSubject(Defect defect, String action) {
+    private String buildSubject(Defect defect, String action, boolean german) {
         return String.format("[%s] %s %s",
             defect.getTicketNumber(),
-            isGerman() ? "Defekt" : "Defect",
+            german ? "Defekt" : "Defect",
             action);
     }
 
-    private String buildCreatedBody(Defect defect) {
+    private String buildCreatedBody(Defect defect, boolean german) {
         StringBuilder sb = new StringBuilder();
-        if (isGerman()) {
+        if (german) {
             sb.append("Ihr Defekt wurde erfolgreich gemeldet.\n\n");
             sb.append("Ticket: ").append(defect.getTicketNumber()).append("\n");
             sb.append("Kategorie: ").append(defect.getCategory().name()).append("\n");
@@ -90,14 +94,13 @@ public class DefectNotificationService {
             sb.append("Workstation: ").append(deskLabel(defect)).append("\n");
             sb.append("Room: ").append(roomLabel(defect)).append("\n");
         }
-        appendLink(sb);
         return sb.toString();
     }
 
-    private String buildStatusUpdateBody(Defect defect) {
+    private String buildStatusUpdateBody(Defect defect, boolean german) {
         StringBuilder sb = new StringBuilder();
         String statusLabel = defect.getStatus().name().replace("_", " ");
-        if (isGerman()) {
+        if (german) {
             sb.append("Der Status Ihres Defekts wurde aktualisiert.\n\n");
             sb.append("Ticket: ").append(defect.getTicketNumber()).append("\n");
             sb.append("Neuer Status: ").append(statusLabel).append("\n");
@@ -110,13 +113,12 @@ public class DefectNotificationService {
             sb.append("Workstation: ").append(deskLabel(defect)).append("\n");
             sb.append("Room: ").append(roomLabel(defect)).append("\n");
         }
-        appendLink(sb);
         return sb.toString();
     }
 
-    private String buildAssignedBody(Defect defect) {
+    private String buildAssignedBody(Defect defect, boolean german) {
         StringBuilder sb = new StringBuilder();
-        if (isGerman()) {
+        if (german) {
             sb.append("Ihnen wurde ein Defekt zugewiesen.\n\n");
             sb.append("Ticket: ").append(defect.getTicketNumber()).append("\n");
             sb.append("Kategorie: ").append(defect.getCategory().name()).append("\n");
@@ -135,7 +137,7 @@ public class DefectNotificationService {
             sb.append("Room: ").append(roomLabel(defect)).append("\n");
             sb.append("Reported by: ").append(reporterName(defect)).append("\n");
         }
-        appendLink(sb);
+        appendLink(sb, german);
         return sb.toString();
     }
 
@@ -160,10 +162,10 @@ public class DefectNotificationService {
                 (r.getSurname() != null ? r.getSurname() : "")).trim();
     }
 
-    private void appendLink(StringBuilder sb) {
+    private void appendLink(StringBuilder sb, boolean german) {
         if (!isBlank(frontendBaseUrl)) {
             sb.append("\n");
-            sb.append(isGerman() ? "Verwalten: " : "Manage: ");
+            sb.append(german ? "Verwalten: " : "Manage: ");
             sb.append(frontendBaseUrl).append("/defects");
         }
     }
@@ -186,7 +188,10 @@ public class DefectNotificationService {
         return s == null || s.isBlank();
     }
 
-    private boolean isGerman() {
-        return "de".equalsIgnoreCase(LocaleContextHolder.getLocale().getLanguage());
+    private boolean isGerman(UserEntity user) {
+        if (user == null || isBlank(user.getPreferredLanguage())) {
+            return false;
+        }
+        return user.getPreferredLanguage().toLowerCase(Locale.ROOT).startsWith("de");
     }
 }

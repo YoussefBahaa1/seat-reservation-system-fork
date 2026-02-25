@@ -97,7 +97,8 @@ COPY nginx.tls.conf /etc/nginx/nginx.tls.conf
 COPY nginx.notls.conf /etc/nginx/nginx.notls.conf
 
 COPY myentrypoint.sh /myentrypoint.sh
-RUN sed -i 's/\r$//' /myentrypoint.sh && chmod +x /myentrypoint.sh
+RUN sed -i 's/\r$//' /myentrypoint.sh
+RUN chmod +x /myentrypoint.sh
 
 # Builded react file will be served as static site by nginx.
 COPY --from=builder /usr/src/app/build /usr/share/nginx/html

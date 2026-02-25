@@ -1,4 +1,6 @@
 package com.desk_sharing.controllers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.desk_sharing.entities.Desk;
 import com.desk_sharing.services.DeskService;
-import com.desk_sharing.services.UserService;
 
 import lombok.AllArgsConstructor;
 
@@ -21,19 +22,19 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/desks")
 @AllArgsConstructor
 public class DeskController {
+    private static final Logger logger = LoggerFactory.getLogger(DeskController.class);
     private final DeskService deskService;
-    private final UserService userService;
 
     @GetMapping
     public ResponseEntity<List<Desk>> getAllDesks() {
-        userService.logging("getAllDesks()");
+        logger.info("getAllDesks()");
         List<Desk> desks = deskService.getAllDesks();
         return new ResponseEntity<>(desks, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Desk> getDeskById(@NonNull @PathVariable("id") final Long id) {
-        userService.logging("getDeskById( " + id + " )");
+        logger.info("getDeskById( {} )", id);
         Optional<Desk> desk = deskService.getDeskById(id);
         return desk.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
@@ -42,7 +43,7 @@ public class DeskController {
     
     @GetMapping("/room/{id}")
     public ResponseEntity<List<Desk>> getDeskByRoomId(@PathVariable("id") Long roomId) {
-        userService.logging("getDeskByRoomId( " + roomId + " )");
+        logger.info("getDeskByRoomId( {} )", roomId);
         List<Desk> desks = deskService.getDeskByRoomId(roomId);
         return new ResponseEntity<>(desks, HttpStatus.OK);
     }

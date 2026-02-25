@@ -27,16 +27,28 @@ import './i18n';
 
 function AppRoutes() {
   const location = useLocation();
-  const token = sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken');
-  const isAuthenticated = Boolean(token && localStorage.getItem('userId'));
-
   const isLoginPage = location.pathname === "/" || location.pathname === "/frontend-main";
+
+  // token detection (new + legacy headers)
+  const token = sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken');
+  let isAuthenticated = Boolean(token && localStorage.getItem('userId'));
+  if (!isAuthenticated) {
+    try {
+      const legacyHeaders = JSON.parse(sessionStorage.getItem('headers') || 'null');
+      isAuthenticated = Boolean(legacyHeaders && (legacyHeaders.Authorization || legacyHeaders.authorization));
+    } catch {
+      isAuthenticated = false;
+    }
+  }
+
+  const canAccessAdmin = localStorage.getItem('admin') === 'true';
+  const canAccessDefects = canAccessAdmin || localStorage.getItem('servicePersonnel') === 'true';
 
   // If someone opens a double-prefixed URL (/frontend-main/frontend-main/...), normalize it.
   const normalizeDoublePrefix = () => {
     const doublePrefix = "/frontend-main/frontend-main";
     if (location.pathname.startsWith(doublePrefix)) {
-      const fixed = location.pathname.replace("/frontend-main/frontend-main", "/frontend-main");
+      const fixed = location.pathname.replace(doublePrefix, "/frontend-main");
       return <Navigate to={fixed + location.search + location.hash} replace />;
     }
     return null;
@@ -45,6 +57,14 @@ function AppRoutes() {
   // Require authentication for protected screens
   const RequireAuth = ({ children }) => (
     isAuthenticated ? children : <Navigate to="/" replace />
+  );
+
+  const RequireAdmin = ({ children }) => (
+    isAuthenticated && canAccessAdmin ? children : <Navigate to={isAuthenticated ? "/home" : "/"} replace />
+  );
+
+  const RequireDefects = ({ children }) => (
+    isAuthenticated && canAccessDefects ? children : <Navigate to={isAuthenticated ? "/home" : "/"} replace />
   );
 
   // Keep users out of login when already authenticated
@@ -69,15 +89,17 @@ function AppRoutes() {
         <Route path="/home" element={<RequireAuth><Home /></RequireAuth>} />
         <Route path="/floor" element={<RequireAuth><Floor /></RequireAuth>} />
         <Route path="/desks" element={<RequireAuth><Booking /></RequireAuth>} />
-        <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
+        <Route path="/admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
         <Route path="/mybookings" element={<RequireAuth><MyBookings /></RequireAuth>} />
         <Route path="/manageseries" element={<RequireAuth><ManageSeries /></RequireAuth>} />
         <Route path="/createseries" element={<RequireAuth><CreateSeries /></RequireAuth>} />
         <Route path='/freedesks' element={<RequireAuth><FreeDesks /></RequireAuth>} />
         <Route path='/roomSearch' element={<RequireAuth><RoomSearch /></RequireAuth>} />
         <Route path='/colleagues' element={<RequireAuth><Colleagues /></RequireAuth>} />
+        <Route path='/supportContacts' element={<RequireAuth><SupportContacts /></RequireAuth>} />
         <Route path="/carpark" element={<RequireAuth><CarparkOverview /></RequireAuth>} />
         <Route path="/favourites" element={<RequireAuth><Favourites /></RequireAuth>} />
+        <Route path="/defects" element={<RequireDefects><DefectDashboard /></RequireDefects>} />
         <Route
           path="*"
           element={<Navigate to={isAuthenticated ? "/home" : "/"} replace />}
