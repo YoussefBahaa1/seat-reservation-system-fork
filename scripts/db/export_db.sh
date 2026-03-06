@@ -8,6 +8,12 @@ fi
 outputfile="$1"
 
 . .env
-PW_DB=$(cat ${PATH_TO_TLS}/pws/pw_db.txt)
-echo "Connect to ${DATABASE_CONTAINER}"
-docker exec $DATABASE_CONTAINER mariadb-dump -u root -p${PW_DB} --databases mydatabase >>  dumps/$outputfile
+. ./scripts/db/common.sh
+container="$(resolve_database_container)"
+if [ -z "${container}" ]; then
+    echo "Could not resolve database container. Start containers first."
+    exit 1
+fi
+PW_DB=$(cat "${PATH_TO_TLS}/pws/pw_db.txt")
+echo "Connect to ${container}"
+docker exec "${container}" mariadb-dump -u root -p"${PW_DB}" --databases mydatabase >> "dumps/$outputfile"

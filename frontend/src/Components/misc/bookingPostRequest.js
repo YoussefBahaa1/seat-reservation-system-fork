@@ -16,6 +16,15 @@ function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBooki
         }
     };
 
+    const getErrorMessage = (status, data) => {
+        if (status === 400 && data?.error) return data.error;
+        if (status === 400 && data?.message) return data.message;
+        if (status === 401) return t('tokenInvalid');
+        if (status === 409 && data?.error) return data.error;
+        if (status === 409) return t('overlap');
+        return t('httpOther');
+    };
+
     const startAction = () => {
         if (actionInFlight) return false;
         actionInFlight = true;
@@ -160,8 +169,9 @@ function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBooki
             })
 
         },
-        () => {
-            console.log('Failed to post booking in Booking.jsx.');
+        (status, data) => {
+            console.log('Failed to post booking in Booking.jsx.', status, data);
+            toast.error(getErrorMessage(status, data));
             finishOnce();
         },
         JSON.stringify(bookingData)

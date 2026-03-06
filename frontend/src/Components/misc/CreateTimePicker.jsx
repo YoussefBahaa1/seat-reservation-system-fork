@@ -1,6 +1,6 @@
 import { FormControl, TextField } from '@mui/material';
 
-const CreateTimePicker = ({time, setter, label, disabledFunc=()=>{return false}}) => {
+const CreateTimePicker = ({time, setter, label, disabledFunc=()=>{return false}, stepSeconds=1}) => {
     return (
         <FormControl id='createTimePicker_textField' required fullWidth>
         <TextField
@@ -12,11 +12,8 @@ const CreateTimePicker = ({time, setter, label, disabledFunc=()=>{return false}}
             InputLabelProps={{
                 shrink: true,             // Keeps label in place when time is selected
             }}
-/*             inputProps={{
-                step: 300,                // 5-minute intervals
-            }} */
             inputProps={{
-                step: 1, // Setting step to 1 allows seconds precision (if supported)
+                step: stepSeconds,
             }}
             variant="outlined"
             fullWidth

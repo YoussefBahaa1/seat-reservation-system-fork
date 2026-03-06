@@ -28,6 +28,19 @@ import './i18n';
 function AppRoutes() {
   const location = useLocation();
   const isLoginPage = location.pathname === "/";
+  let hasSessionToken = Boolean(sessionStorage.getItem('accessToken'));
+  if (!hasSessionToken) {
+    try {
+      const legacyHeaders = JSON.parse(sessionStorage.getItem('headers') || 'null');
+      hasSessionToken = Boolean(
+        legacyHeaders &&
+        (legacyHeaders.Authorization || legacyHeaders.authorization)
+      );
+    } catch {
+      hasSessionToken = false;
+    }
+  }
+  const isAuthenticated = hasSessionToken;
   const canAccessAdmin = localStorage.getItem('admin') === 'true';
   const canAccessDefects =
     localStorage.getItem('admin') === 'true' ||
@@ -38,27 +51,27 @@ function AppRoutes() {
       {!isLoginPage && <JwtHeartbeat />}
       <Routes>
         <Route exact path="/" element={<LoginPage />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/floor" element={<Floor />} />
-        <Route path="/desks" element={<Booking />} />
+        <Route path="/home" element={isAuthenticated ? <Home /> : <Navigate to="/" replace />} />
+        <Route path="/floor" element={isAuthenticated ? <Floor /> : <Navigate to="/" replace />} />
+        <Route path="/desks" element={isAuthenticated ? <Booking /> : <Navigate to="/" replace />} />
         <Route
           path="/admin"
-          element={canAccessAdmin ? <AdminPage /> : <Navigate to="/home" replace />}
+          element={isAuthenticated && canAccessAdmin ? <AdminPage /> : <Navigate to={isAuthenticated ? "/home" : "/"} replace />}
         />
-        <Route path="/mybookings" element={<MyBookings />} />
-        <Route path="/manageseries" element={<ManageSeries />} />
-        <Route path="/createseries" element={<CreateSeries />} />
-        <Route path='/freedesks' element={<FreeDesks />} />
-        <Route path='/roomSearch' element={<RoomSearch />} />
-        <Route path='/colleagues' element={<Colleagues />} />
-        <Route path='/supportContacts' element={<SupportContacts />} />
-        <Route path="/carpark" element={<CarparkOverview />} />
-        <Route path="/favourites" element={<Favourites />} />
+        <Route path="/mybookings" element={isAuthenticated ? <MyBookings /> : <Navigate to="/" replace />} />
+        <Route path="/manageseries" element={isAuthenticated ? <ManageSeries /> : <Navigate to="/" replace />} />
+        <Route path="/createseries" element={isAuthenticated ? <CreateSeries /> : <Navigate to="/" replace />} />
+        <Route path='/freedesks' element={isAuthenticated ? <FreeDesks /> : <Navigate to="/" replace />} />
+        <Route path='/roomSearch' element={isAuthenticated ? <RoomSearch /> : <Navigate to="/" replace />} />
+        <Route path='/colleagues' element={isAuthenticated ? <Colleagues /> : <Navigate to="/" replace />} />
+        <Route path='/supportContacts' element={isAuthenticated ? <SupportContacts /> : <Navigate to="/" replace />} />
+        <Route path="/carpark" element={isAuthenticated ? <CarparkOverview /> : <Navigate to="/" replace />} />
+        <Route path="/favourites" element={isAuthenticated ? <Favourites /> : <Navigate to="/" replace />} />
         <Route
           path="/defects"
-          element={canAccessDefects ? <DefectDashboard /> : <Navigate to="/home" replace />}
+          element={isAuthenticated && canAccessDefects ? <DefectDashboard /> : <Navigate to={isAuthenticated ? "/home" : "/"} replace />}
         />
-        <Route path="*" element={<Navigate to="/home" />} />
+        <Route path="*" element={<Navigate to={isAuthenticated ? "/home" : "/"} replace />} />
       </Routes>
     </>
   );

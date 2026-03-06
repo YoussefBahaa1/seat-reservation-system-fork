@@ -51,6 +51,9 @@ public class UserEntity {
     // Parking notifications
     @Column(name = "notify_parking_decision", nullable = false, columnDefinition = "bit(1) default 1")
     private boolean notifyParkingDecision = true;
+
+    @Column(name = "preferred_language", nullable = false, length = 10, columnDefinition = "varchar(10) default 'en'")
+    private String preferredLanguage = "en";
     
     // Department field (free-text)
     @Column(name = "department", nullable = true)
@@ -104,10 +107,12 @@ public class UserEntity {
         // Do not copy mfaSecret for security reasons
         this.department = other.getDepartment();
         this.active = other.isActive();
+        this.preferredLanguage = other.getPreferredLanguage();
     }
 
     @PrePersist
     public void ensureDefaults() {
         if (visibilityMode == null) visibilityMode = VisibilityMode.FULL_NAME;
+        if (preferredLanguage == null || preferredLanguage.isBlank()) preferredLanguage = "en";
     }
 }

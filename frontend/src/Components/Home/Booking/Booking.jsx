@@ -220,13 +220,20 @@ const Booking = () => {
     const userId = localStorage.getItem('userId');
     if (!userId) return console.error('userId is null');
 
+    const startMoment = moment(event.start).seconds(0).milliseconds(0);
+    const endMoment = moment(event.end).seconds(0).milliseconds(0);
+    if (startMoment.minute() % 30 !== 0 || endMoment.minute() % 30 !== 0) {
+      toast.warning(t('bookingTimeAlignmentError'));
+      return;
+    }
+
     const bookingDTO = {
       userId: userId,
       roomId: roomId,
       deskId: clickedDeskId,
-      day: moment(event.start).format('YYYY-MM-DD'),
-      begin: moment(event.start).format('HH:mm:ss'),
-      end: moment(event.end).format('HH:mm:ss'),
+      day: startMoment.format('YYYY-MM-DD'),
+      begin: startMoment.format('HH:mm:ss'),
+      end: endMoment.format('HH:mm:ss'),
     };
 
     if (!isEditMode) {

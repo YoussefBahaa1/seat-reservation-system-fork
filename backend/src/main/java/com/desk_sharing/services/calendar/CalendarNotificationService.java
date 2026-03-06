@@ -4,10 +4,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.lang.NonNull;
 import org.springframework.mail.MailException;
@@ -57,7 +57,8 @@ public class CalendarNotificationService {
         if (action == NotificationAction.CREATE && !user.isNotifyBookingCreate()) return;
 
         ensureUidAndSequence(booking);
-        sendRequest(booking, false);
+        final boolean german = isGerman(user);
+        sendRequest(booking, false, german);
     }
 
     public void sendBookingCancelled(@NonNull Booking booking) {
@@ -69,7 +70,8 @@ public class CalendarNotificationService {
         ensureUidAndSequence(booking);
         booking.setCalendarSequence(booking.getCalendarSequence() + 1);
         bookingRepository.save(booking);
-        sendCancel(booking);
+        final boolean german = isGerman(user);
+        sendCancel(booking, german);
     }
 
     private void ensureUidAndSequence(Booking booking) {
@@ -82,29 +84,32 @@ public class CalendarNotificationService {
         bookingRepository.save(booking);
     }
 
-    private void sendRequest(Booking booking, boolean isUpdate) {
-        IcsEventBuilder.IcsPayload payload = buildPayload(booking);
+    private void sendRequest(Booking booking, boolean isUpdate, boolean german) {
+        IcsEventBuilder.IcsPayload payload = buildPayload(booking, german);
         String ics = builder().buildRequest(payload);
-        sendEmail(booking, ics, isUpdate ? "updated" : "confirmed", "REQUEST");
+        final String actionWord = german
+            ? (isUpdate ? "aktualisiert" : "bestätigt")
+            : (isUpdate ? "updated" : "confirmed");
+        sendEmail(booking, ics, actionWord, "REQUEST", german);
     }
 
-    private void sendCancel(Booking booking) {
-        IcsEventBuilder.IcsPayload payload = buildPayload(booking);
+    private void sendCancel(Booking booking, boolean german) {
+        IcsEventBuilder.IcsPayload payload = buildPayload(booking, german);
         String ics = builder().buildCancel(payload);
-        sendEmail(booking, ics, "cancelled", "CANCEL");
+        sendEmail(booking, ics, german ? "storniert" : "cancelled", "CANCEL", german);
     }
 
-    private IcsEventBuilder.IcsPayload buildPayload(Booking booking) {
+    private IcsEventBuilder.IcsPayload buildPayload(Booking booking, boolean german) {
         ZoneId zoneId = ZoneId.of(bookingTimezoneId);
         LocalDateTime start = LocalDateTime.of(booking.getDay().toLocalDate(), booking.getBegin().toLocalTime());
         LocalDateTime end = LocalDateTime.of(booking.getDay().toLocalDate(), booking.getEnd().toLocalTime());
         ZonedDateTime startZ = start.atZone(zoneId);
         ZonedDateTime endZ = end.atZone(zoneId);
-        String summary = isGerman()
-            ? "Schreibtisch-Buchung " + getDeskLabel(booking)
-            : "Desk booking " + getDeskLabel(booking);
+        String summary = german
+            ? "Schreibtisch-Buchung " + getDeskLabel(booking, true)
+            : "Desk booking " + getDeskLabel(booking, false);
         String location = buildLocation(booking.getRoom());
-        String description = buildDescription(booking);
+        String description = buildDescription(booking, german);
 
         return new IcsEventBuilder.IcsPayload(
             booking.getCalendarUid(),
@@ -121,10 +126,10 @@ public class CalendarNotificationService {
         );
     }
 
-    private String getDeskLabel(Booking booking) {
+    private String getDeskLabel(Booking booking, boolean german) {
         return booking.getDesk() != null && booking.getDesk().getRemark() != null
             ? booking.getDesk().getRemark()
-            : "desk";
+            : (german ? "Schreibtisch" : "desk");
     }
 
     private String buildLocation(Room room) {
@@ -144,27 +149,34 @@ public class CalendarNotificationService {
         return sb.toString();
     }
 
-    private String buildDescription(Booking booking) {
+    private String buildDescription(Booking booking, boolean german) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Desk: ").append(booking.getDesk() != null ? booking.getDesk().getRemark() : "").append("\\n");
-        sb.append("Room: ").append(booking.getRoom() != null ? booking.getRoom().getRemark() : "").append("\\n");
+        sb.append(german ? "Schreibtisch: " : "Desk: ")
+            .append(booking.getDesk() != null ? booking.getDesk().getRemark() : "")
+            .append("\\n");
+        sb.append(german ? "Raum: " : "Room: ")
+            .append(booking.getRoom() != null ? booking.getRoom().getRemark() : "")
+            .append("\\n");
         if (booking.getDesk() != null && booking.getDesk().getEquipment() != null) {
-            sb.append("Workspace type: ").append(booking.getDesk().getEquipment().getEquipmentName()).append("\\n");
+            sb.append(german ? "Arbeitsplatztyp: " : "Workspace type: ")
+                .append(booking.getDesk().getEquipment().getEquipmentName())
+                .append("\\n");
         }
         if (!isBlank(frontendBaseUrl)) {
-            sb.append("Manage booking: ").append(frontendBaseUrl).append("/home");
+            sb.append(german ? "Buchung verwalten: " : "Manage booking: ")
+                .append(frontendBaseUrl).append("/home");
         }
         return sb.toString();
     }
 
-    private void sendEmail(Booking booking, String icsContent, String actionWord, String method) {
+    private void sendEmail(Booking booking, String icsContent, String actionWord, String method, boolean german) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
             helper.setFrom(mailFrom);
             helper.setTo(booking.getUser().getEmail());
-            helper.setSubject(buildSubject(booking, actionWord));
-            helper.setText(buildTextBody(booking, actionWord), false);
+            helper.setSubject(buildSubject(booking, actionWord, german));
+            helper.setText(buildTextBody(booking, actionWord, german), false);
 
             mimeMessage.addHeader("Content-Class", "urn:content-classes:calendarmessage");
             mimeMessage.addHeader("Method", method);
@@ -179,10 +191,10 @@ public class CalendarNotificationService {
         }
     }
 
-    private String buildSubject(Booking booking, String action) {
-        String roomName = booking.getRoom() != null ? booking.getRoom().getRemark() : isGerman() ? "Raum" : "room";
-        String deskName = booking.getDesk() != null ? booking.getDesk().getRemark() : isGerman() ? "Schreibtisch" : "desk";
-        if (isGerman()) {
+    private String buildSubject(Booking booking, String action, boolean german) {
+        String roomName = booking.getRoom() != null ? booking.getRoom().getRemark() : german ? "Raum" : "room";
+        String deskName = booking.getDesk() != null ? booking.getDesk().getRemark() : german ? "Schreibtisch" : "desk";
+        if (german) {
             return String.format("Buchung %s: %s / %s am %s %s", action, roomName, deskName,
                 booking.getDay().toString(), booking.getBegin().toString());
         }
@@ -190,9 +202,9 @@ public class CalendarNotificationService {
             booking.getDay().toString(), booking.getBegin().toString());
     }
 
-    private String buildTextBody(Booking booking, String action) {
+    private String buildTextBody(Booking booking, String action, boolean german) {
         StringBuilder sb = new StringBuilder();
-        if (isGerman()) {
+        if (german) {
             sb.append("Ihre Schreibtischbuchung wurde ").append(action).append(".").append("\n");
             sb.append("Schreibtisch: ").append(booking.getDesk() != null ? booking.getDesk().getRemark() : "").append("\n");
             sb.append("Raum: ").append(booking.getRoom() != null ? booking.getRoom().getRemark() : "").append("\n");
@@ -206,7 +218,7 @@ public class CalendarNotificationService {
             sb.append("Time: ").append(booking.getBegin()).append(" - ").append(booking.getEnd()).append("\n");
         }
         if (!isBlank(frontendBaseUrl)) {
-            sb.append(isGerman() ? "Verwalten oder anzeigen in der App: " : "Manage or view in app: ");
+            sb.append(german ? "Verwalten oder anzeigen in der App: " : "Manage or view in app: ");
             sb.append(frontendBaseUrl).append("/home");
         }
         return sb.toString();
@@ -216,7 +228,10 @@ public class CalendarNotificationService {
         return s == null || s.isBlank();
     }
 
-    private boolean isGerman() {
-        return "de".equalsIgnoreCase(LocaleContextHolder.getLocale().getLanguage());
+    private boolean isGerman(UserEntity user) {
+        if (user == null || isBlank(user.getPreferredLanguage())) {
+            return false;
+        }
+        return user.getPreferredLanguage().toLowerCase(Locale.ROOT).startsWith("de");
     }
 }

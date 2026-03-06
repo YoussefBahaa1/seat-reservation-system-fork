@@ -141,6 +141,7 @@
     "booked": "Buchung erfolgreich",
     "selectDeskMessage": "Bitte wählen Sie zuerst einen Arbeitsplatz",
     "blank": "Bitte wählen Sie zuerst einen Arbeitsplatz und Zeitraum vor der Buchung",
+    "bookingTimeAlignmentError": "Bitte wählen Sie Start- und Endzeit im 30-Minuten-Raster (z. B. 08:00 oder 08:30).",
     "deskUpdate": "Arbeitsplatz erfolgreich aktualisiert",
     "deskUpdateFailed": "Arbeitsplatz konnte nicht aktualisiert werden",
     "deskDelete": "Arbeitsplatz erfolgreich gelöscht",
@@ -494,6 +495,7 @@
     ,"defectNoteDeleted":"Notiz gelöscht"
     ,"defectNoteDeleteFailed":"Notiz konnte nicht gelöscht werden"
     ,"defectNoteAuthorOnly":"Nur die Autorin oder der Autor kann diese Notiz bearbeiten oder löschen"
+    ,"defectNoteEdited":"Bearbeitet"
     ,"defectStatusUpdated":"Status aktualisiert"
     ,"defectStatusUpdateFailed":"Status konnte nicht aktualisiert werden"
     ,"defectBlockDesk":"Arbeitsplatz sperren"

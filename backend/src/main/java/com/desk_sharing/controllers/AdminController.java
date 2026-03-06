@@ -1,5 +1,7 @@
 package com.desk_sharing.controllers;
+import org.slf4j.Logger;
 import java.util.List;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +50,7 @@ import java.util.Map;
 @RequestMapping("/admin")
 @AllArgsConstructor
 public class AdminController {
+    private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
@@ -62,21 +65,21 @@ public class AdminController {
 
     @GetMapping("/status")
     public ResponseEntity<List<Room>> getAllRoomsByActiveStatus() {
-        userService.logging("getAllRoomsByActiveStatus()");
+        logger.info("getAllRoomsByActiveStatus()");
         List<Room> rooms = roomService.getAllRoomsByActiveStatus();
         return new ResponseEntity<>(rooms, HttpStatus.OK);
     }
 
     @DeleteMapping("/deleteBooking/{id}")
     public ResponseEntity<Void> deleteBooking(@NonNull @PathVariable("id") Long id) {
-        userService.logging("deleteBooking( " + id  +" )");
+        logger.info("deleteBooking( {} )", id);
         bookingService.deleteBooking(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @GetMapping("/room/date/{id}")
     public ResponseEntity<List<Booking>> getRoomBookingsByDayAndRoomId(@PathVariable("id") Long roomId, @RequestParam("day") String day) {
-        userService.logging("getRoomBookingsByDayAndRoomId( " + roomId + ", " + day + " )");
+        logger.info("getRoomBookingsByDayAndRoomId( {}, {} )", roomId, day);
         List<Booking> bookings = bookingService.findByRoomIdAndDay(roomId, Date.valueOf(day));
         return new ResponseEntity<>(bookings, HttpStatus.OK);
     }
@@ -88,7 +91,7 @@ public class AdminController {
      */
     @GetMapping("/bookingFor")
     public ResponseEntity<List<BookingProjectionDTO>> getEveryBooking() {
-        userService.logging("getEveryBooking()");
+        logger.info("getEveryBooking()");
         try {
             final List<BookingProjectionDTO> bookingProjectionDtos = bookingRepository.getEveryBooking().stream().map(BookingProjectionDTO::new).toList();//objectsToBookingProjectionDTOs(bookingRepository.getEveryBooking());
             return new ResponseEntity<>(bookingProjectionDtos, HttpStatus.OK);
@@ -107,7 +110,7 @@ public class AdminController {
      */
     @GetMapping("bookingFor/email/{email}")
     public ResponseEntity<List<BookingProjectionDTO>> getEveryBookingForEmail(@PathVariable("email") String email) {
-        userService.logging("getEveryBookingForEmail()");
+        logger.info("getEveryBookingForEmail()");
         final List<BookingProjectionDTO> bookingProjectionDtos = bookingRepository.getEveryBookingForEmail("%" + email + "%").stream().map(BookingProjectionDTO::new).toList();
         return new ResponseEntity<>(bookingProjectionDtos, HttpStatus.OK);
     }
@@ -120,21 +123,21 @@ public class AdminController {
      */
     @GetMapping("bookingFor/singledate/{date}")
     public ResponseEntity<List<BookingProjectionDTO>> getEveryBookingForDate(@PathVariable("date") String date) {
-        userService.logging("getEveryBookingForDate(" + date + ")");
+        logger.info("getEveryBookingForDate({})", date);
         final List<BookingProjectionDTO> bookingProjectionDtos = bookingRepository.getEveryBookingForDate("%" + date + "%").stream().map(BookingProjectionDTO::new).toList();
         return new ResponseEntity<>(bookingProjectionDtos, HttpStatus.OK);
     }
 
     @GetMapping("desks/room/{id}")
     public ResponseEntity<List<Desk>> getDeskByRoomId(@PathVariable("id") Long roomId) {
-        userService.logging("getDeskByRoomId( " + roomId + " )");
+        logger.info("getDeskByRoomId( {} )", roomId);
         List<Desk> desks = deskService.getDeskByRoomId(roomId);
         return new ResponseEntity<>(desks, HttpStatus.OK);
     }
 
     @PutMapping("desks/updateDesk")
     public ResponseEntity<Desk> updateDesk(@RequestBody final DeskDTO desk) {
-        userService.logging("updateDesk( " + desk + " )");
+        logger.info("updateDesk( {} )", desk);
         final Long deskId = desk.getDeskId();
         if (deskId == null) {
             System.err.println("deskId is null in AdminController.updateDesk()");
@@ -146,14 +149,14 @@ public class AdminController {
 
     @DeleteMapping("desks/{id}")
     public ResponseEntity<Integer> deleteDesk(@NonNull @PathVariable("id") final Long id) {
-        userService.logging("deleteDesk( " + id + " )");
+        logger.info("deleteDesk( {} )", id);
         int ret = deskService.deleteDesk(id);
         return ResponseEntity.status(HttpStatus.OK).body(ret);
     }
 
     @DeleteMapping("desks/ff/{id}")
     public ResponseEntity<Integer> deleteDeskFf(@NonNull @PathVariable("id") final Long id) {
-        userService.logging("deleteDeskFf( " + id + " )");
+        logger.info("deleteDeskFf( {} )", id);
         deskService.deleteDeskFf(id);
         // The return value 0 means everything was done right.
         return ResponseEntity.status(HttpStatus.OK).body(0);
@@ -161,42 +164,42 @@ public class AdminController {
 
     @PostMapping("desks")
     public ResponseEntity<Desk> createDesk(@RequestBody DeskDTO desk) {
-        userService.logging("createDesk( " + desk + " )");
+        logger.info("createDesk( {} )", desk);
         Desk savedDesk = deskService.saveDesk(desk);
         return new ResponseEntity<>(savedDesk, HttpStatus.CREATED);
     }
     
     @PutMapping("rooms")
     public ResponseEntity<Room> updateRoom(@RequestBody RoomDTO roomDTO) {
-        userService.logging("updateRoom( " + roomDTO + " )");
+        logger.info("updateRoom( {} )", roomDTO);
         final Room updatedRoom = roomService.updateRoom(roomDTO);
         return new ResponseEntity<>(updatedRoom, updatedRoom == null ? HttpStatus.NOT_FOUND : HttpStatus.OK);
     }
 
     @DeleteMapping("rooms/{id}")
     public ResponseEntity<Integer> deleteRoom(@NonNull @PathVariable("id") final Long id) {
-        userService.logging("deleteRoom( + " + id + " )");
+        logger.info("deleteRoom({})", id);
         final int ret = roomService.deleteRoom(id);
         return ResponseEntity.status(HttpStatus.OK).body(ret);
     } 
     
     @DeleteMapping("rooms/ff/{id}")
     public boolean deleteRoomFf(@NonNull @PathVariable("id") Long id) {
-        userService.logging("deleteRoomFf( + " + id + " )");
+        logger.info("deleteRoomFf({})", id);
         return roomService.deleteRoomFf(id);
     }
     
 
     @PostMapping("rooms/create")
     public ResponseEntity<Room> createRoom(@RequestBody RoomDTO roomDTO) {
-        userService.logging("createRoom(): " + roomDTO.getRemark() + " " + roomDTO.getFloor_id() + " " + roomDTO.getStatus());
+        logger.info("createRoom(): {} {} {}", roomDTO.getRemark(), roomDTO.getFloor_id(), roomDTO.getStatus());
         final Room savedRoom = roomService.saveRoom(roomDTO);
         return new ResponseEntity<>(savedRoom, HttpStatus.CREATED);
     }
 
     @GetMapping("users/get")
     public List<UserEntity> getAllUsers() {
-        userService.logging("getAllUsers()");
+        logger.info("getAllUsers()");
         // Rm the hashed pw.
         return userService.getAllUsers().stream().map(UserEntity::new).toList();
     }
@@ -209,7 +212,7 @@ public class AdminController {
      */
     @PutMapping("users")
     public ResponseEntity<?> updateUser(@RequestBody UserDto userDto) {
-        userService.logging("updateUser( " + userDto.toString() + " )");
+        logger.info("updateUser( {} )", userDto.toString());
         try {
             final UserEntity updatedUser = userService.updateUser(userDto);
             return ResponseEntity.status(HttpStatus.OK).body(updatedUser);
@@ -222,20 +225,20 @@ public class AdminController {
 
     @DeleteMapping("users/ff/{id}")
     public boolean deleteUserFf(@PathVariable("id") int id) {
-        userService.logging("deleteUserFf( " + id + " )");
+        logger.info("deleteUserFf( {} )", id);
         return userService.deleteUserFf(id);
     }
 
     @DeleteMapping("users/{id}")
     public ResponseEntity<Integer> deleteUser(@PathVariable("id") int id) {
-        userService.logging("deleteUser( " + id + " )");
+        logger.info("deleteUser( {} )", id);
         int ret = userService.deleteUser(id);
         return ResponseEntity.status(HttpStatus.OK).body(ret);
     }
 
     @PostMapping("users")
     public ResponseEntity<String> register(@RequestBody RegisterDto registerDto) {
-        userService.logging("register( " + registerDto.getEmail() + ", " + registerDto.getName() + ", " + registerDto.getSurname() + ", " + registerDto.getName() + " )");
+        logger.info("register( {}, {}, {}, {} )", registerDto.getEmail(), registerDto.getName(), registerDto.getSurname(), registerDto.getName());
         
         // Validate email format
         if (registerDto.getEmail() == null || !isValidEmail(registerDto.getEmail())) {
@@ -296,7 +299,7 @@ public class AdminController {
      */
     @GetMapping("bookingFor/deskRemark/{deskRemark}")
     public ResponseEntity<List<BookingProjectionDTO>> getEveryBookingForDeskRemark(@PathVariable("deskRemark") String deskRemark) {
-        userService.logging("getEveryBookingForDeskRemark()");
+        logger.info("getEveryBookingForDeskRemark()");
         final List<BookingProjectionDTO> bookingProjectionDtos =  bookingRepository.getEveryBookingForDeskRemark("%" + deskRemark + "%").stream().map(BookingProjectionDTO::new).toList();
         return new ResponseEntity<>(bookingProjectionDtos, HttpStatus.OK);
     }
@@ -309,7 +312,7 @@ public class AdminController {
      */
     @GetMapping("bookingFor/roomRemark/{roomRemark}")
     public ResponseEntity<List<BookingProjectionDTO>> getEveryBookingForRoomRemark(@PathVariable("roomRemark") String roomRemark) {
-        userService.logging("getEveryBookingForRoomRemark()");
+        logger.info("getEveryBookingForRoomRemark()");
         final List<BookingProjectionDTO> bookingProjectionDtos = bookingRepository.getEveryBookingForRoomRemark("%" + roomRemark + "%").stream().map(BookingProjectionDTO::new).toList();
         return new ResponseEntity<>(bookingProjectionDtos, HttpStatus.OK);
     }
@@ -322,7 +325,7 @@ public class AdminController {
      */
     @PostMapping("users/{id}/mfa/disable")
     public ResponseEntity<String> disableUserMfa(@PathVariable("id") int id) {
-        userService.logging("disableUserMfa( " + id + " )");
+        logger.info("disableUserMfa( {} )", id);
         try {
             UserEntity user = userRepository.getReferenceById(id);
             if (!user.isMfaEnabled()) {
@@ -331,7 +334,7 @@ public class AdminController {
             user.setMfaEnabled(false);
             user.setMfaSecret(null);
             userRepository.save(user);
-            userService.logging("Admin disabled MFA for user id: " + id);
+            logger.info("Admin disabled MFA for user id: {}", id);
             return new ResponseEntity<>("MFA disabled successfully", HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>("Failed to disable MFA: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -347,7 +350,7 @@ public class AdminController {
      */
     @PutMapping("users/{id}/password/reset")
     public ResponseEntity<String> resetUserPassword(@PathVariable("id") int id, @RequestBody java.util.Map<String, String> request) {
-        userService.logging("resetUserPassword( " + id + " )");
+        logger.info("resetUserPassword( {} )", id);
         String newPassword = request.get("newPassword");
         if (newPassword == null || newPassword.isEmpty()) {
             return new ResponseEntity<>("New password is required", HttpStatus.BAD_REQUEST);
@@ -356,7 +359,7 @@ public class AdminController {
             UserEntity user = userRepository.getReferenceById(id);
             user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
-            userService.logging("Admin reset password for user id: " + id);
+            logger.info("Admin reset password for user id: {}", id);
             return new ResponseEntity<>("Password reset successfully", HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>("Failed to reset password: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -371,7 +374,7 @@ public class AdminController {
      */
     @PutMapping("users/{id}/active")
     public ResponseEntity<?> setUserActiveStatus(@PathVariable("id") int id, @RequestBody java.util.Map<String, Boolean> request) {
-        userService.logging("setUserActiveStatus( " + id + ", " + request.get("active") + " )");
+        logger.info("setUserActiveStatus( {}, {} )", id, request.get("active"));
         try {
             Boolean active = request.get("active");
             if (active == null) {
@@ -380,7 +383,7 @@ public class AdminController {
             UserEntity user = userRepository.getReferenceById(id);
             user.setActive(active);
             userRepository.save(user);
-            userService.logging("Admin set active=" + active + " for user id: " + id);
+            logger.info("Admin set active={} for user id: {}", active, id);
             return new ResponseEntity<>(new UserEntity(user), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>("Failed to update user status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -392,7 +395,7 @@ public class AdminController {
      */
     @PutMapping("booking-settings")
     public ResponseEntity<BookingSettingsDTO> updateBookingSettings(@RequestBody BookingSettingsDTO dto) {
-        userService.logging("updateBookingSettings( " + dto + " )");
+        logger.info("updateBookingSettings( {} )", dto);
         validateSettingsDto(dto);
         BookingSettingsDTO saved = new BookingSettingsDTO(bookingSettingsService.updateSettings(dto));
         return new ResponseEntity<>(saved, HttpStatus.OK);

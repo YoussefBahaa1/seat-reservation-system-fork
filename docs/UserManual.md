@@ -141,6 +141,19 @@ A desk/workstation is a concrete place that a user can book. For the following g
 7. Below you will see the attributes of the choosen desk. You can change them. If you are sure, click on `UPDATE`.
 8. A small window will appear with the information that the desk was updated.
 
+## Booking settings
+Configure global booking rules that apply to every booking.
+
+1. Login with ADMIN role.
+2. Go to `Admin` → `Booking Settings`.
+3. Set:
+   - **Lead time**: 0–12 hours in 0.5h steps (minimum time before a booking may start).
+   - **Max duration**: Unrestricted or 2–12 hours (0.5h steps).
+   - **Max advance**: Unrestricted or 7/14/30/60/90/180 days (how far into the future users can book).
+4. Click **Submit**. **Reset to defaults** restores 30 min lead time, 6h max duration, 30 days max advance.
+
+The backend enforces these rules for all users and booking flows and the UI blocks invalid choices and shows explanatory messages to users.
+
 ## Search options
 ### Search for free rooms
 If a group wants to meet it is useful to quickly find a room with at least n desks in it. This search option helps the user with this task.
@@ -179,6 +192,14 @@ Often you want to sit next to your colleagues. To do so you must know the rooms 
 7. Click `SEARCH`.
 8. In the lower part of the page a list of all colleagues will appear with all their bookings on the given date.
 
+### Search of Service contacts
+If you need to find contact details of admins or service personel (ie. phone numbers or emails), you complete these steps.
+1. Login
+2. On the left side menu you will see the row called `Search`. Click on it.
+3. Click on 'Service Contacts'
+4. View or copy-and-paste contact details of the admins or service personel
+5. OR Use the mssaging form (placeholder in Sprint 2)
+
 ## Settings
 
 ### Change language
@@ -198,6 +219,25 @@ A user can change the default floor, which is displayed first when a booking is 
 6. Choose your default floor. This floor is displayed first when you want to book a desk. To do so choose the building and the concrete floor.
 7. Click in `SUBMIT`.
 8. A small window will appear with the information that the settings was successful updated.
+
+### Visibility
+Choose how your name is shown to other users (admins still see full names).
+
+1. Login
+2. Click `Settings` -> `Visibility`.
+3. Pick one option: `Name`, `Abbreviation`, or `Anonymous`.
+4. Click `SUBMIT`. Your preference is saved per user and persists through logout/login.
+
+### Notifications
+Choose which events should send you an Outlook email (with calendar invite) via Mail.
+
+1. Login
+2. On the left side click `Settings` → `Notifications`.
+3. In the modal, toggle the events you want:
+   - Booking created
+   - Booking cancelled
+   - Parking request decision (approve/reject of your request)
+4. Click `SUBMIT` to save and close. `CANCEL` closes without changes.
 
 ### Password
 Follow the next steps to change your password.
@@ -221,15 +261,7 @@ Admins can optionally enable Multi-Factor Authentication (MFA) using a TOTP auth
 5. Enter the 6-digit code from the app to confirm setup.
 6. To disable MFA later, click `Disable MFA` and confirm using either your password or a current 6-digit code.
 
-### Visibility
-Choose how your name is shown to other users (admins still see full names).
-
-1. Login
-2. Click `Settings` -> `Visibility`.
-3. Pick one option: `Name`, `Abbreviation`, or `Anonymous`.
-4. Click `SUBMIT`. Your preference is saved per user and persists through logout/login.
-
-### Favourites
+## Favourites
 Save rooms you book often and jump back to them quickly.
 
 On the room booking screen: click the star in the top-right. Empty = not a favourite; filled = favourite. Click to toggle.
@@ -241,58 +273,195 @@ From the sidebar: click `Favourites` (between Bookings and Search) to:
 
 Favourite Rooms also come up first in RoomSearch
 
+## Home overview
+The `Home` page is the main entry point for both desk and parking workflows.
+
+### View and mode toggles
+- `Calendar/Floor` toggle: Switch between month calendar view and floor-based view.
+- `Desk/Parking` toggle: Switch between desk mode and parking mode.
+
+### Floor toolbar
+- In floor view, the toolbar provides `Today`, `Back`, and `Next` for day navigation.
+
+### Daily list (bottom panel) and color rules
+- The lower list shows bookings for the selected day in the active mode.
+- Colors indicate ownership and status:
+- Own bookings: blue.
+- Own parking bookings with `PENDING`: yellow.
+- Other users' parking bookings with `PENDING`: light gray.
+- Other users' bookings and accepted/occupied entries: dark gray.
+
 ## Create a booking
 The main task of this tool is to let the user create bookings in defined time ranges on specific desks.
 For this we assume that an admin already include at least a building with a floor that contains a room with an desk.
 
 1. Login
-2. You see the main page with the Calendar view. This is indicate by the word calendar that is highlighted in the left bar and also in the url that contains /home.
-3. Choose a date on which you want to book a desk. Left click on it.
-4. You see the floor selection view. Here you can choose a building and a floor in this building. The image in the center is the floor plan of the selected floor. Every blue icon indicates a room. A room can have 0..n desks in it.
-5. Select a room. To do so left click on one of the blue icons. 
-6. You see the desk view for the choosen room. If the room has desks in it, you will see them on the left side.
-7. Choose a desk. To do so left click on one of the desks to the left. The choosen desk will change its color.
-8. Select a time range. To do so right click in the table. Hold the left button and move the mouse to the wanted end time of your booking. Release the left mouse button. If youre desired time range collides with a booking of a other user a error message will appear.
-9. After you choose a valid time range it will appear grey.
-10. Click `BOOK` on the bottom of the view.
-11. You will be asked if you like to commit this booking. Click either yes or no. If you clicked yes a message will appear, informing you the the booking was successfull.
+2. You see the main page with the Home view. This is indicate by the word home that is highlighted in the left bar and also in the url that contains /home.
+3. Use the view toggle to switch between `Calendar` and `Floor`.
+4. Choose the date on which you want to book a desk.
+5. Open the floor selection view for that date. Here you can choose a building and a floor in this building. The image in the center is the floor plan of the selected floor. Every blue icon indicates a room. A room can have 0..n desks in it.
+6. Select a room by left-clicking one of the blue icons.
+7. You see the desk view for the chosen room. If the room has desks in it, you will see them on the left side.
+8. Choose a desk by left-clicking one of the desks on the left. The chosen desk changes color.
+9. Select a time range. To do so right click in the table. Hold the left button and move the mouse to the wanted end time of your booking. Release the left mouse button. If your desired time range collides with another booking, an error message appears.
+10. After you choose a valid time range it appears grey.
+11. Click `BOOK` on the bottom of the view.
+12. You will be asked if you like to commit this booking. Click either yes or no. If you clicked yes a message appears confirming the booking was successful.
 
 ## Create a parking spot booking
-This tool allows any logged-in user to book a parking spot.
+This tool allows any logged-in user to reserve and book a parking spot.
 
 1. Login
-2. Navigate thorough the sidebar to the Search tab.
-3. Select Parking
-4. Above the parking street plan you can select a valid date and time for your booking.
-5. In the parking street plan you hover over any spot to view it's details and select (press on) any available spot (highlighted green).
-6. After selecting an available spot you can press the Reserve button to book it for the selected time.
-7. Your parking spot is now booked, now after un-selecting that spot or refreshing the page you'll see that spot is turned red.
-8. For any spot highlighted red, you can hover over it to see who has booked it (does show yourself as well).
+2. Open `Home` from the sidebar (`/home`).
+3. Use the mode toggle to switch from `Desk` to `Parking`.
+4. (Optional) Use the view toggle to switch between `Calendar` and `Floor` view.
+5. Select the date and time range in the parking toolbar.
+6. Click a parking spot on the map to open the details modal.
+7. If the spot is available (green), click `Reserve`.
+8. For non-admin users, the reservation is created as `PENDING` (yellow) until an admin approves or rejects it.
+9. If approved, the spot becomes occupied (red). If rejected, it is not booked for you.
+10. For occupied/pending spots you can open details to see reservation information (time window, requester, spot properties). A 30-minute overlap buffer is applied.
+
+## My Bookings
+`My Bookings` gives you an overview of your own desk reservations and actions for each entry.
+
+1. Login.
+2. Open `My Bookings` from the sidebar.
+3. The calendar shows your bookings and includes historical entries with a lookback window of 90 days.
+4. Click one booking to open the booking details modal.
+5. Use `Delete` in the modal to remove the booking (updated delete UI/flow).
+6. Use `Edit Booking` to open the desk booking screen in edit mode and update date/time/desk.
+7. Use `Export ICS` to download the selected booking as a `.ics` calendar file.
 
 ## Create and manage series bookings
-A series allows the user to create bookings in fixed intervals on a choosen desk between an start date and end date.
+A series allows users to create bookings at fixed intervals on a chosen desk between a start date and an end date.
 
-To allow the user to adjust the concrete days on which bookings will be create, the parameter `Frequency` is introduced: 
-- `Daily` For every day in [start date .. end date] a booking is created.
-- `Weekly` Every seventh day in [start date .. end date] a booking is created. Additionally a weekday must be provided. The first booking happens on the first weekday in the interval [start date .. end date].
-- `Every two weeks` Every two weeks in [start date .. end date] a booking is created. Additionally a weekday must be provided. The first booking happens on the first weekday in the interval [start date .. end date].
-- `Every three weeks` Every three weeks in [start date .. end date] a booking is created. Additionally a weekday must be provided. The first booking happens on the first weekday in the interval [start date .. end date].
-- `Monthly` Every month in [start date .. end date] a booking is created. Additionally a weekday must be provided. The first booking happens on the first weekday in the interval [start date .. end date].
+To let users choose the concrete days on which bookings are created, the parameter `Frequency` is introduced:
+- `Daily`: For every day in [start date .. end date], a booking is created.
+- `Weekly`: Every seventh day in [start date .. end date], a booking is created. Additionally, a weekday must be provided. The first booking happens on the first weekday in the interval [start date .. end date].
+- `Every two weeks`: Every two weeks in [start date .. end date], a booking is created. Additionally, a weekday must be provided. The first booking happens on the first weekday in the interval [start date .. end date].
+- `Every three weeks`: Every three weeks in [start date .. end date], a booking is created. Additionally, a weekday must be provided. The first booking happens on the first weekday in the interval [start date .. end date].
+- `Monthly`: Every month in [start date .. end date], a booking is created. Additionally, a weekday must be provided. The first booking happens on the first weekday in the interval [start date .. end date].
 
-We assume that an admin already include at least a building with a floor that contains a room with an desk.
+We assume that an admin has already added at least one building with a floor that contains a room with a desk.
 
-1. Login
-2. You see the main page with the Calendar view. This is indicate by the word calendar that is highlighted in the left bar and also in the url that contains /home.
-3. On the left side you will see the row called `Series Booking`. Click on it and you will see two children elements: `Manage` and `Create`. For now we want to create a series booking and therefore we click on `Create`.
-4. We are directed to a new page where we can define an start and end date. Between these dates the the series booking will take place. You have to provide an start and end time of the individual bookings. The frequency is used to set on which days between start date and end date we like to create bookings. You can choose a building or consider all buildings where a free desk is searched for your series booking. Finally a weekday on which you like to create bookings is needed if you dont choose `Daily` as `Frequency`.
-5. In the central part of the page you see the calculated dates.
-6. In the lower part of the page you can see all desks that are available for the provided parameters. If a desk has already a booking on the calculated dates for the provided timerange it is not displayed. 
-To create a series, and therefore the bookings on the calculated dates, click `SUBMIT` on your choosen desk. 
-7. A small window will appear with the information that the series was created.
-8. To see your series bookings click left on `Series Booking` and then `Manage`.
-9. You see a table of all your series bookings. 
-10. If you want to delete a series, and therefore all bookings that belongs to this series, click on `Delete`. You will be asked if you really want to delete this series. 
-11. A small window will appear with the information that the series was deleted.
+1. Login.
+2. You see the main page with the `Home` view (`/home`).
+3. On the left side you will see the row called `Series Bookings`. Click it and choose `Create`.
+4. You are directed to a new page where you can define a start date and end date for the series. You must also provide a start and end time for each individual booking. The `Frequency` determines on which days bookings are created. You can choose a specific building or consider all buildings.
+5. In the central part of the page, you see the calculated dates.
+6. In the lower part of the page, you can see all desks that are available for the provided parameters. If a desk already has a booking on the calculated dates for the provided time range, it is not shown.
+7. To create the series (and all calculated bookings), click `SUBMIT` on your chosen desk.
+8. A small window appears with the information that the series was created.
+9. To see your series bookings, click `Series Bookings` and then `Manage`.
+10. You see a table of all your series bookings.
+11. If you want to delete a series (and all bookings that belong to it), click `Delete`. You will be asked to confirm.
+12. A small window appears with the information that the series was deleted.
+
+## Defect management system
+
+### Roles and access
+- Every logged-in user can report defects from booking-related pages.
+- Users with `SERVICE_PERSONNEL` or `ADMIN` role can open and use the Defect Dashboard.
+- Admin users inherit service personnel permissions.
+
+### Report a defect
+Defects can be reported from:
+- `Home` (calendar/room desk booking view) via the `Report Defect` button for the selected workstation.
+- `Search` -> `Workstations` via the `Report Defect` button in the free-desk result table.
+- `Series Bookings` -> `Create` via the `Report Defect` button in the desk result table.
+
+Reporting flow:
+1. Click `Report Defect`.
+2. Select a `Category`:
+   - `Technical Defect`
+   - `Missing Equipment`
+   - `Incorrect Description`
+3. Select an `Urgency`:
+   - `Low`, `Medium`, `High`, or `Critical`
+4. Enter a `Description` (minimum 20 characters).
+5. Submit the form.
+
+Notes:
+- Only one active defect is allowed per workstation. If an unresolved defect already exists, reporting is rejected.
+- On successful creation, a ticket number is generated in format `DEF-000001`.
+- New defects start with status `NEW`.
+
+### Defect dashboard (service personnel and admins)
+1. Open `Defects` from the left sidebar.
+2. Select the section:
+   - `All Defects`: all tickets.
+   - `My Assignments`: defects assigned to the current user.
+   - `Defect History`: all defects for one selected workstation.
+3. Select the visual mode:
+   - `List`
+   - `Kanban`
+
+Filtering:
+- In `All Defects` and `My Assignments`, filter by urgency, category, status, room, and age range in days.
+- In `Defect History`, first select a workstation, then all defects for that workstation are shown.
+
+### Work with a defect ticket
+Open a ticket from list or kanban to see details:
+- Ticket ID
+- Location (building/floor/room/workstation)
+- Status, urgency, category
+- Reporter
+- Reported timestamp
+- Description
+- Assigned service person
+
+Status changes:
+- `NEW` -> `IN_PROGRESS`
+- `IN_PROGRESS` -> `RESOLVED`
+
+When a ticket is set to `RESOLVED`, the workstation is automatically unblocked if it was blocked by that ticket.
+
+### Block and unblock workstations from a defect
+1. Open a defect ticket.
+2. Enter `Estimated End Date`.
+3. Click `Block Workstation`.
+
+If future bookings exist for that workstation, the system asks whether to:
+- `Cancel Bookings` (future bookings are removed and cancellation notifications are sent), or
+- `Retain Bookings` (future bookings remain as-is).
+
+While blocked, the workstation shows:
+- Blocked reason (defect category)
+- Estimated end date
+
+You can:
+- Update the end date.
+- Unblock using `Unblock Workstation`.
+
+### Internal notes on defects
+Service personnel/admin users can add internal notes to a ticket.
+
+Rules:
+- Note content cannot be empty.
+- Only the original note author can edit or delete their note.
+- Edited notes display an updated timestamp.
+
+### Notifications and automatic assignment
+When a defect is created:
+- The reporter receives a confirmation email.
+- The system tries to auto-assign the ticket to a random active service personnel user (non-admin account).
+- If assigned, the assignee receives an assignment email.
+- If no active service personnel user is available, the defect remains unassigned.
+
+When defect status changes:
+- The reporter receives a status update email.
+
+Notification details:
+- Language follows each recipient's preferred language (`English`/`Deutsch`).
+- Assignment emails can include a direct `/defects` dashboard link when `FRONTEND_BASE_URL` is configured.
+- Emails are sent only when `ICS_NOTIFICATIONS_ENABLED=true` and mail settings are configured.
+
+### Blocked workstation behavior in booking flows
+- Blocked desks are visibly marked as blocked in booking views.
+- Users cannot book blocked desks from the UI.
+- Backend validation also rejects booking creation/confirmation for blocked desks.
+- Free desk and series search results return only unblocked desks.
 
 ## Add new floor images
 Every room is associated with an floor in a building.
@@ -307,6 +476,6 @@ For now you have to follow the following steps to add a new building or new floo
 
 1. Add a new entry to the table building. (only if you want to create a new building)
 2. Add a new entry to the table floor with floor_id as a foreign key to the needed building row. Note the name of the new floor.
-3. In `$PROJECT_PATH/frontend/public/assets/` create a new folder with the name of the building. The folder may be named `$PROJECT_PATH/frontend/public/assets/Mustergebäude`.
+3. In `$PROJECT_PATH/frontend/public/Assets/` create a new folder with the name of the building. The folder may be named `$PROJECT_PATH/frontend/public/Assets/Mustergebäude`.
 4. For every floor you must have a png file representing the floor plan. The png file must have exact the same name as the freshly added floor in the floors table.
 5. If you restart your application (`./scripts/build_and_run.sh`) and choose the building and the floor you can add new rooms with new desks (if you have admin rights). After this these desks can be booked.

@@ -1,4 +1,6 @@
 package com.desk_sharing.controllers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -8,7 +10,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.desk_sharing.entities.Equipment;
 import com.desk_sharing.services.EquipmentService;
-import com.desk_sharing.services.UserService;
 
 import lombok.AllArgsConstructor;
 
@@ -16,11 +17,11 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/equipments")
 @AllArgsConstructor
 public class EquipmentController {
+    private static final Logger logger = LoggerFactory.getLogger(EquipmentController.class);
     private final EquipmentService equipmentService;
-    private final UserService userService;
     @GetMapping
     public List<Equipment> getEquipments() {
-        userService.logging("getEquipments()");
+        logger.info("getEquipments()");
         return equipmentService.getEquipments();
     }
 }

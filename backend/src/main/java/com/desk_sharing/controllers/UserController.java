@@ -1,4 +1,6 @@
 package com.desk_sharing.controllers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -19,6 +21,7 @@ import com.desk_sharing.misc.LdapUserNotFoundException;
 import com.desk_sharing.services.UserService;
 import com.desk_sharing.entities.VisibilityMode;
 import com.desk_sharing.model.NotificationPreferencesDTO;
+import com.desk_sharing.model.UserLanguagePreferenceDTO;
 
 import lombok.AllArgsConstructor;
 
@@ -29,6 +32,7 @@ import com.desk_sharing.model.LoginDto;
 @RequestMapping("/users")
 @AllArgsConstructor
 public class UserController {
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
     //private final AuthenticationManager authenticationManager;
     //private final UserRepository userRepository;
     //private final JWTGenerator jwtGenerator;
@@ -39,7 +43,7 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody LoginDto loginDto) {
-        userService.logging("login( " + loginDto.getEmail() + " )");
+        logger.info("login( {} )", loginDto.getEmail());
         String errorMessage;
         try {
             return new ResponseEntity<>(
@@ -68,13 +72,13 @@ public class UserController {
 
     @PutMapping("/visibility/{id}")
     public int changeVisibility(@PathVariable("id") int id) {
-        userService.logging("changeVisibility( " + id + " )");
+        logger.info("changeVisibility( {} )", id);
         return userService.changeVisibility(id);
     }
 
     @PutMapping("/password/{id}")
     public ResponseEntity<Boolean> changePassword(@PathVariable("id") int id, @RequestBody Map<String, String> request) {
-        userService.logging("changePassword( " + id + ", " + "***" + " )");
+        logger.info("changePassword( {}, *** )", id);
         String oldPassword = request.get("oldPassword");
         String newPassword = request.get("newPassword");
         boolean answer = userService.changePassword(id, oldPassword, newPassword);
@@ -84,25 +88,25 @@ public class UserController {
  
     @GetMapping("/get/{id}")
     public UserEntity getUser(@PathVariable("id") int id) {
-        userService.logging("deleteUser( " + id + " )");
+        logger.info("getUser({})", id);
         return userService.getUser(id);
     }
 
     @GetMapping("/admin/{id}")
     public boolean isAdmin(@PathVariable("id") int id) {
-        userService.logging("isAdmin( " + id + " )");
+        logger.info("isAdmin( {} )", id);
         return userService.isAdmin(id);
     }
 
     @GetMapping("/visibilityMode/{id}")
     public String getVisibilityMode(@PathVariable("id") int id) {
-        userService.logging("getVisibilityMode( " + id + " )");
+        logger.info("getVisibilityMode( {} )", id);
         return userService.getVisibilityMode(id).name();
     }
 
     @PutMapping("/visibilityMode/{id}/{mode}")
     public ResponseEntity<Boolean> setVisibilityMode(@PathVariable("id") int id, @PathVariable("mode") String mode) {
-        userService.logging("setVisibilityMode( " + id + ", " + mode + " )");
+        logger.info("setVisibilityMode( {}, {} )", id, mode);
         try {
             VisibilityMode vm = VisibilityMode.valueOf(mode);
             return ResponseEntity.ok(userService.setVisibilityMode(id, vm));
@@ -127,5 +131,22 @@ public class UserController {
         userService.updateNotificationPreferences(request);
         UserEntity user = userService.getCurrentUser();
         return ResponseEntity.ok(NotificationPreferencesDTO.fromUser(user));
+    }
+
+    @GetMapping("/me/language")
+    public ResponseEntity<UserLanguagePreferenceDTO> getLanguagePreference() {
+        UserEntity user = userService.getCurrentUser();
+        return ResponseEntity.ok(UserLanguagePreferenceDTO.fromUser(user));
+    }
+
+    @PutMapping("/me/language")
+    public ResponseEntity<UserLanguagePreferenceDTO> updateLanguagePreference(
+        @RequestBody UserLanguagePreferenceDTO request
+    ) {
+        if (request == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        String language = userService.updateCurrentUserPreferredLanguage(request.getLanguage());
+        return ResponseEntity.ok(new UserLanguagePreferenceDTO(language));
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { IoCalendarNumberOutline } from "react-icons/io5";
 import { BsList } from "react-icons/bs";
 import { Sidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
@@ -24,10 +24,11 @@ import { MdLocalParking, MdSupportAgent, MdBuild } from 'react-icons/md';
 import { IoMdNotifications } from 'react-icons/io';
 import Defaults from "./Defaults";
 import VisibilityPreferences from "./VisibilityPreferences";
-import i18n from '../../i18n';
+import { putRequest } from "../RequestFunctions/RequestFunctions";
 
 const SidebarComponent = () => {
   const { t, i18n } = useTranslation();
+  const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const [collapsed, setCollapsed] = useState(
     localStorage.getItem('sidebarCollapsed') === 'true'
   );
@@ -116,6 +117,15 @@ const SidebarComponent = () => {
         const userId = localStorage.getItem('userId');
         if (userId) {
           localStorage.setItem(`language_${userId}`, newLanguage);
+          putRequest(
+            `${process.env.REACT_APP_BACKEND_URL}/users/me/language`,
+            headers.current,
+            () => {},
+            () => {
+              console.warn('Failed to persist user language preference');
+            },
+            JSON.stringify({ language: newLanguage })
+          );
         }
         break;
 

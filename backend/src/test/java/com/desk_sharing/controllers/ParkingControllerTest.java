@@ -61,7 +61,6 @@ class ParkingControllerTest {
 
         ResponseEntity<List<ParkingAvailabilityResponseDTO>> resp = controller.availability(request);
 
-        verify(userService).logging("parkingAvailability( " + request + " )");
         verify(parkingReservationService).getAvailability(request);
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isSameAs(body);
@@ -81,7 +80,6 @@ class ParkingControllerTest {
 
         ResponseEntity<ParkingReservation> resp = controller.reserve(request);
 
-        verify(userService).logging("parkingReserve( " + request + " )");
         verify(parkingReservationService).createReservation(request);
         assertThat(resp.getStatusCode().value()).isEqualTo(201);
         assertThat(resp.getBody()).isSameAs(saved);
@@ -91,7 +89,6 @@ class ParkingControllerTest {
     void delete_returnsNoContentAndDelegates() {
         ResponseEntity<Void> resp = controller.delete(77L);
 
-        verify(userService).logging("parkingDelete( " + 77L + " )");
         verify(parkingReservationService).deleteReservation(77L);
         assertThat(resp.getStatusCode().value()).isEqualTo(204);
     }
@@ -105,7 +102,6 @@ class ParkingControllerTest {
 
         ResponseEntity<List<ParkingReviewItemDTO>> resp = controller.pending();
 
-        verify(userService).logging("parkingReviewPending()");
         verify(parkingReservationService).getPendingReservationsForReview();
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isSameAs(body);
@@ -117,7 +113,6 @@ class ParkingControllerTest {
 
         ResponseEntity<Long> resp = controller.pendingCount();
 
-        verify(userService).logging("parkingReviewPendingCount()");
         verify(parkingReservationService).getPendingReservationsCount();
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isEqualTo(3L);
@@ -131,7 +126,6 @@ class ParkingControllerTest {
 
         ResponseEntity<ParkingReservation> resp = controller.approve(55L);
 
-        verify(userService).logging("parkingReviewApprove( " + 55L + " )");
         verify(parkingReservationService).approveReservation(55L);
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isSameAs(approved);
@@ -141,7 +135,6 @@ class ParkingControllerTest {
     void reject_returnsNoContentAndDelegates() {
         ResponseEntity<Void> resp = controller.reject(19L);
 
-        verify(userService).logging("parkingReviewReject( " + 19L + " )");
         verify(parkingReservationService).rejectReservation(19L);
         assertThat(resp.getStatusCode().value()).isEqualTo(204);
     }
@@ -155,7 +148,6 @@ class ParkingControllerTest {
 
         ResponseEntity<List<ParkingMyReservationDTO>> resp = controller.myReservations();
 
-        verify(userService).logging("parkingMyReservations()");
         verify(parkingReservationService).getMyReservations();
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isSameAs(body);
@@ -170,7 +162,6 @@ class ParkingControllerTest {
 
         ResponseEntity<ParkingSpot> resp = controller.blockSpot("32");
 
-        verify(userService).logging("parkingBlockSpot( " + "32" + " )");
         verify(parkingReservationService).setSpotManualBlocked("32", true);
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isSameAs(spot);
@@ -185,7 +176,6 @@ class ParkingControllerTest {
 
         ResponseEntity<ParkingSpot> resp = controller.unblockSpot("32");
 
-        verify(userService).logging("parkingUnblockSpot( " + "32" + " )");
         verify(parkingReservationService).setSpotManualBlocked("32", false);
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isSameAs(spot);
@@ -201,7 +191,6 @@ class ParkingControllerTest {
 
         Dictionary<Date, Integer> resp = controller.getAllBookingsForDate(days);
 
-        verify(userService).logging("parkingGetAllBookingsForDate( " + days + " )");
         verify(parkingReservationService).getAllReservationsForDates(days);
         assertThat(resp).isSameAs(counts);
     }
@@ -214,7 +203,6 @@ class ParkingControllerTest {
 
         ResponseEntity<List<BookingDayEventDTO>> resp = controller.getReservationsForDay("01.02.2099");
 
-        verify(userService).logging("parkingDay( " + "01.02.2099" + " )");
         verify(parkingReservationService).getReservationsForDate(expected);
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isSameAs(body);
@@ -228,7 +216,6 @@ class ParkingControllerTest {
 
         ResponseEntity<List<BookingDayEventDTO>> resp = controller.getReservationsForDay("2099-02-01");
 
-        verify(userService).logging("parkingDay( " + "2099-02-01" + " )");
         verify(parkingReservationService).getReservationsForDate(expected);
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isSameAs(body);
@@ -238,7 +225,6 @@ class ParkingControllerTest {
     void getReservationsForDay_invalidDateReturnsBadRequest() {
         ResponseEntity<List<BookingDayEventDTO>> resp = controller.getReservationsForDay("not-a-date");
 
-        verify(userService).logging("parkingDay( " + "not-a-date" + " )");
         assertThat(resp.getStatusCode().value()).isEqualTo(400);
     }
 }

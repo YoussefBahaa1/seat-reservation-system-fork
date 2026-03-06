@@ -1,4 +1,6 @@
 package com.desk_sharing.controllers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -11,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.desk_sharing.entities.Building;
 import com.desk_sharing.repositories.BuildingRepository;
-import com.desk_sharing.services.UserService;
 
 import lombok.AllArgsConstructor;
 
@@ -19,18 +20,18 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/buildings")
 @AllArgsConstructor
 public class BuildingController {
-    private final UserService userService;
+    private static final Logger logger = LoggerFactory.getLogger(BuildingController.class);
     private final BuildingRepository buildingRepository;
 
     @GetMapping("/all")
     public ResponseEntity<List<Building>> getAllBuildings() {
-        userService.logging("getAllUsedBuildings()");
+        logger.info("getAllUsedBuildings()");
         return new ResponseEntity<>(buildingRepository.getAllUsedBuildings(), HttpStatus.OK);
     }
 
     @GetMapping("/{building_id}")
     public ResponseEntity<Building> getBuildingByBuildingId(@PathVariable("building_id") Long building_id) {
-        userService.logging("getBuildingByBuildingId("+building_id+")");
+        logger.info("getBuildingByBuildingId({})", building_id);
         return new ResponseEntity<>(buildingRepository.getBuildingByBuildingId(building_id), HttpStatus.OK);
     }
 }
