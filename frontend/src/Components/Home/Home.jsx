@@ -250,15 +250,98 @@ const Home = () => {
     refreshCalendarCounts();
   }, [fetchDayEvents, refreshCalendarCounts]);
 
+  const roomBuildingByRoomId = useMemo(() => {
+    const map = new Map();
+    rooms.forEach((room) => {
+      if (room?.id == null) return;
+      const buildingId = room?.floor?.building?.id;
+      if (buildingId == null) return;
+      map.set(String(room.id), String(buildingId));
+    });
+    return map;
+  }, [rooms]);
+
+  const sanitizeDeskFilterValues = useCallback((values) => {
+    const rawValues = Array.isArray(values) ? values : [];
+    const allowedValues = rawValues
+      .filter((value) => typeof value === 'string')
+      .filter((value) => {
+        if (value.startsWith('building:')) return true;
+        if (value.startsWith('room:')) return true;
+        if (value.startsWith('type:')) return String(value).toLowerCase() !== 'type:unknown';
+        return false;
+      });
+    const selectedBuildingSet = new Set(
+      allowedValues
+        .filter((value) => value.startsWith('building:'))
+        .map((value) => value.replace('building:', ''))
+        .filter((value) => value)
+    );
+    if (selectedBuildingSet.size === 0) {
+      return allowedValues.filter((value) => !value.startsWith('room:'));
+    }
+    return allowedValues.filter((value) => {
+      if (!value.startsWith('room:')) return true;
+      const roomId = value.replace('room:', '');
+      const buildingId = roomBuildingByRoomId.get(roomId);
+      return buildingId != null && selectedBuildingSet.has(buildingId);
+    });
+  }, [roomBuildingByRoomId]);
+
+  const selectedDeskFiltersSanitized = useMemo(
+    () => sanitizeDeskFilterValues(selectedDeskFilters),
+    [sanitizeDeskFilterValues, selectedDeskFilters]
+  );
+
+  useEffect(() => {
+    const sameLength = selectedDeskFilters.length === selectedDeskFiltersSanitized.length;
+    const sameValues = sameLength && selectedDeskFilters.every((value, idx) => value === selectedDeskFiltersSanitized[idx]);
+    if (!sameValues) {
+      setSelectedDeskFilters(selectedDeskFiltersSanitized);
+    }
+  }, [selectedDeskFilters, selectedDeskFiltersSanitized]);
+
+  const selectedBuildingIds = useMemo(
+    () => new Set(
+      selectedDeskFiltersSanitized
+        .filter((value) => value.startsWith('building:'))
+        .map((value) => value.replace('building:', ''))
+        .filter((value) => value)
+    ),
+    [selectedDeskFiltersSanitized]
+  );
+
+  const buildingOptions = useMemo(() => {
+    if (mode !== 'desk') return [];
+    const buildingMap = new Map();
+    rooms.forEach((room) => {
+      const building = room?.floor?.building;
+      if (building?.id == null) return;
+      const id = String(building.id);
+      const label = String(building?.name || id).trim() || id;
+      if (!buildingMap.has(id)) {
+        buildingMap.set(id, { value: `building:${id}`, label });
+      }
+    });
+    return Array.from(buildingMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [mode, rooms]);
+
   const roomOptions = useMemo(() => {
     if (mode !== 'desk') return [];
+    if (selectedBuildingIds.size === 0) return [];
     return rooms
       .filter((room) => room?.id && room?.remark)
+      .filter((room) => {
+        const buildingId = room?.floor?.building?.id;
+        if (buildingId == null) return false;
+        return selectedBuildingIds.has(String(buildingId));
+      })
       .map((room) => ({
         value: `room:${room.id}`,
         label: room.remark
-      }));
-  }, [rooms, mode]);
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [rooms, mode, selectedBuildingIds]);
 
   const typeOptions = useMemo(() => {
     if (mode === 'desk') {
@@ -302,49 +385,44 @@ const Home = () => {
 
   const selectedFilters = useMemo(() => {
     if (mode === 'desk') {
-      return selectedDeskFilters.filter((value) => {
-        if (!value.startsWith('room:') && !value.startsWith('type:')) return false;
-        const lower = String(value).toLowerCase();
-        return lower !== 'type:unknown';
-      });
+      return selectedDeskFiltersSanitized;
     }
     return selectedParkingFilters.filter(
       (value) => value.startsWith('type:') || value.startsWith('covered:')
     );
-  }, [mode, selectedDeskFilters, selectedParkingFilters]);
+  }, [mode, selectedDeskFiltersSanitized, selectedParkingFilters]);
 
 
-  const handleFilterChange = (event) => {
+  const handleFilterChange = useCallback((event) => {
     const values =
       typeof event.target.value === 'string'
         ? event.target.value.split(',')
         : event.target.value;
     if (mode === 'desk') {
-      setSelectedDeskFilters(
-        values.filter((value) => {
-          if (!value.startsWith('room:') && !value.startsWith('type:')) return false;
-          return String(value).toLowerCase() !== 'type:unknown';
-        })
-      );
+      setSelectedDeskFilters(sanitizeDeskFilterValues(values));
     } else {
       setSelectedParkingFilters(
         values.filter((value) => value.startsWith('type:') || value.startsWith('covered:'))
       );
     }
-  };
+  }, [mode, sanitizeDeskFilterValues]);
 
-  const toggleFilterValue = (value) => {
+  const toggleFilterValue = useCallback((value) => {
     if (mode === 'desk') {
-      setSelectedDeskFilters((prev) =>
-        prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
-      );
+      setSelectedDeskFilters((prev) => {
+        if (!value.startsWith('building:') && !value.startsWith('room:') && !value.startsWith('type:')) {
+          return prev;
+        }
+        const next = prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value];
+        return sanitizeDeskFilterValues(next);
+      });
     } else {
       setSelectedParkingFilters((prev) => {
         if (!value.startsWith('type:') && !value.startsWith('covered:')) return prev;
         return prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value];
       });
     }
-  };
+  }, [mode, sanitizeDeskFilterValues]);
 
   const timeBlocks = useMemo(() => {
     const blocks = [];
@@ -367,6 +445,11 @@ const Home = () => {
   }, [desks]);
 
   const filteredDayEvents = useMemo(() => {
+    const selectedBuildingSet = new Set(
+      selectedFilters
+        .filter((value) => value.startsWith('building:'))
+        .map((value) => value.replace('building:', ''))
+    );
     const selectedRoomSet = new Set(
       selectedFilters
         .filter((value) => value.startsWith('room:'))
@@ -396,10 +479,17 @@ const Home = () => {
       })
       .filter((event) => {
         if (mode === 'desk') {
+          const eventRoomId = event?.roomId == null ? null : String(event.roomId);
+          const eventBuildingId = eventRoomId == null ? null : roomBuildingByRoomId.get(eventRoomId);
+          const buildingMatch = selectedBuildingSet.size === 0
+            || (eventBuildingId != null && selectedBuildingSet.has(eventBuildingId));
+          if (!buildingMatch) {
+            return false;
+          }
           if (selectedRoomSet.size === 0 && selectedTypeSet.size === 0) {
             return true;
           }
-          const roomMatch = event.roomId && selectedRoomSet.has(String(event.roomId));
+          const roomMatch = eventRoomId != null && selectedRoomSet.has(eventRoomId);
           const typeValue = event.workspaceType;
           const equipmentTypeMatch = typeValue && selectedTypeSet.has(typeValue);
           const desk = desksById.get(String(event?.deskId ?? ''));
@@ -423,7 +513,7 @@ const Home = () => {
         const coveredMatch = selectedCoveredSet.size === 0 || selectedCoveredSet.has(coveredValue);
         return typeMatch && coveredMatch;
       });
-  }, [dayEvents, mode, selectedFilters, desksById]);
+  }, [dayEvents, mode, selectedFilters, desksById, roomBuildingByRoomId]);
 
   const groupedDayEvents = useMemo(() => {
     const groups = timeBlocks.map((block) => ({ ...block, events: [] }));
@@ -665,6 +755,11 @@ const Home = () => {
             renderValue={(selected) =>
               selected
                 .map((value) => {
+                  if (value.startsWith('building:')) {
+                    const buildingId = value.replace('building:', '');
+                    const building = buildingOptions.find((option) => option.value === value);
+                    return building ? building.label : buildingId;
+                  }
                   if (value.startsWith('room:')) {
                     const roomId = value.replace('room:', '');
                     const room = roomOptions.find((option) => option.value === value);
@@ -686,13 +781,24 @@ const Home = () => {
           >
             {mode === 'desk' && (
               <>
-                <ListSubheader>{t('rooms')}</ListSubheader>
-                {roomOptions.map((option) => (
+                <ListSubheader>{t('building')}</ListSubheader>
+                {buildingOptions.map((option) => (
                   <MenuItem key={option.value} value={option.value} onClick={() => toggleFilterValue(option.value)}>
                     <Checkbox checked={selectedFilters.includes(option.value)} />
                     <ListItemText primary={option.label} />
                   </MenuItem>
                 ))}
+                {selectedBuildingIds.size > 0 && (
+                  <>
+                    <ListSubheader>{t('rooms')}</ListSubheader>
+                    {roomOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value} onClick={() => toggleFilterValue(option.value)}>
+                        <Checkbox checked={selectedFilters.includes(option.value)} />
+                        <ListItemText primary={option.label} />
+                      </MenuItem>
+                    ))}
+                  </>
+                )}
               </>
             )}
             <ListSubheader>
