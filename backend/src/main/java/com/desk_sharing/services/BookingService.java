@@ -555,7 +555,7 @@ public class BookingService {
             slots.put(day, 0);
             // Ever enabled room
             for (Room room : rooms) {
-                List<Desk> desks = deskRepository.findByRoomId(room.getId());
+                List<Desk> desks = deskRepository.findByRoomIdAndHiddenFalse(room.getId());
                 // Every desk in a room
                 for (Desk desk : desks) {
                     LocalTime time = LocalTime.of(6, 0, 0);

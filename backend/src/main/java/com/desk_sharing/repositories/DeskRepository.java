@@ -13,7 +13,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface DeskRepository extends JpaRepository<Desk, Long> {
+    List<Desk> findByHiddenFalse();
     List<Desk> findByRoomId(Long roomId);
+    List<Desk> findByRoomIdAndHiddenFalse(Long roomId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from Desk d where d.id = :id")
@@ -25,7 +27,7 @@ public interface DeskRepository extends JpaRepository<Desk, Long> {
     public Desk findByDeskRemark(@Param("deskRemark") String deskRemarg);
     @Query(value = 
     "SELECT distinct * FROM desks d0 " +
-    "WHERE d0.is_blocked = 0 AND d0.desk_id NOT IN ( " +
+    "WHERE d0.is_blocked = 0 AND d0.is_hidden = 0 AND d0.desk_id NOT IN ( " +
     "  SELECT d.desk_id " +
     "  FROM desks d " +
     "  JOIN bookings b ON d.desk_id = b.desk_id " +
@@ -46,7 +48,7 @@ public interface DeskRepository extends JpaRepository<Desk, Long> {
     "SELECT distinct d0.* FROM desks d0 " +
     "join rooms on rooms.room_id=d0.room_id " +
     "join floors on floors.floor_id=rooms.floor_id " +
-    "WHERE d0.is_blocked = 0 AND floors.building_id=:building_id and " +
+    "WHERE d0.is_blocked = 0 AND d0.is_hidden = 0 AND floors.building_id=:building_id and " +
     "   d0.desk_id NOT IN ( " +
     "   SELECT d.desk_id " +
     "   FROM desks d " +

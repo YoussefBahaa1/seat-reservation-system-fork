@@ -61,7 +61,7 @@ public class DeskService {
     }
 
     public List<Desk> getAllDesks() {
-        return deskRepository.findAll();
+        return deskRepository.findByHiddenFalse();
     }
 
     public Optional<Desk> getDeskById(@NonNull final Long id) {
@@ -69,6 +69,10 @@ public class DeskService {
     }
 
     public List<Desk> getDeskByRoomId(Long roomId) {
+        return deskRepository.findByRoomIdAndHiddenFalse(roomId);
+    }
+
+    public List<Desk> getDeskByRoomIdIncludingHidden(Long roomId) {
         return deskRepository.findByRoomId(roomId);
     }
 
@@ -87,6 +91,13 @@ public class DeskService {
         final Desk desk = getDeskById(deskId)
             .orElseThrow(() -> new EntityNotFoundException("Desk not found in DeskService.toggleFixed : " + deskId));
         desk.setFixed(!desk.isFixed());
+        return deskRepository.save(desk);
+    }
+
+    public Desk toggleHidden(@NonNull final Long deskId) {
+        final Desk desk = getDeskById(deskId)
+            .orElseThrow(() -> new EntityNotFoundException("Desk not found in DeskService.toggleHidden : " + deskId));
+        desk.setHidden(!desk.isHidden());
         return deskRepository.save(desk);
     }
 

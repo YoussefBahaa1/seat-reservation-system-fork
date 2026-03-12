@@ -2,6 +2,7 @@ package com.desk_sharing.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -68,6 +69,52 @@ class DeskServiceTest {
         assertThat(saved.getDeskNumberInRoom()).isEqualTo(1L);
     }
 
+    @Test
+    void getAllDesks_returnsOnlyVisibleDesks() {
+        Desk visible = desk(1L, false);
+        when(deskRepository.findByHiddenFalse()).thenReturn(List.of(visible));
+
+        List<Desk> result = deskService.getAllDesks();
+
+        assertThat(result).containsExactly(visible);
+        verify(deskRepository).findByHiddenFalse();
+    }
+
+    @Test
+    void getDeskByRoomId_returnsOnlyVisibleDesks() {
+        Desk visible = desk(2L, false);
+        when(deskRepository.findByRoomIdAndHiddenFalse(10L)).thenReturn(List.of(visible));
+
+        List<Desk> result = deskService.getDeskByRoomId(10L);
+
+        assertThat(result).containsExactly(visible);
+        verify(deskRepository).findByRoomIdAndHiddenFalse(10L);
+    }
+
+    @Test
+    void getDeskByRoomIdIncludingHidden_returnsAllDesks() {
+        Desk visible = desk(2L, false);
+        Desk hidden = desk(3L, true);
+        when(deskRepository.findByRoomId(10L)).thenReturn(List.of(visible, hidden));
+
+        List<Desk> result = deskService.getDeskByRoomIdIncludingHidden(10L);
+
+        assertThat(result).containsExactly(visible, hidden);
+        verify(deskRepository).findByRoomId(10L);
+    }
+
+    @Test
+    void toggleHidden_switchesDeskVisibility() {
+        Desk d = desk(7L, false);
+        when(deskRepository.findById(7L)).thenReturn(Optional.of(d));
+        when(deskRepository.save(any(Desk.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Desk updated = deskService.toggleHidden(7L);
+
+        assertThat(updated.isHidden()).isTrue();
+        verify(deskRepository).save(d);
+    }
+
     private static DeskDTO deskDto(Long roomId, String equipment, String remark, Boolean fixed) {
         DeskDTO dto = new DeskDTO();
         dto.setRoomId(roomId);
@@ -81,6 +128,13 @@ class DeskServiceTest {
         Room room = new Room();
         room.setId(id);
         return room;
+    }
+
+    private static Desk desk(Long id, boolean hidden) {
+        Desk desk = new Desk();
+        desk.setId(id);
+        desk.setHidden(hidden);
+        return desk;
     }
 
     private static Equipment equipment(String name) {

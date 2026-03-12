@@ -41,7 +41,7 @@ export default function HideShowFixedWorkstation({ isOpen, onClose }) {
       const safeRooms = Array.isArray(rooms) ? rooms : [];
       const desksByRoom = await Promise.all(
         safeRooms.map((room) =>
-          getRequestAsPromise(`${process.env.REACT_APP_BACKEND_URL}/admin/desks/room/${room.id}`)
+          getRequestAsPromise(`${process.env.REACT_APP_BACKEND_URL}/admin/desks/roomAll/${room.id}`)
             .catch(() => [])
         )
       );
@@ -81,16 +81,16 @@ export default function HideShowFixedWorkstation({ isOpen, onClose }) {
     loadDesksForFloor(selectedFloor);
   }, [selectedFloor, loadDesksForFloor]);
 
-  const toggleDeskFixed = (desk) => {
+  const toggleDeskHidden = (desk) => {
     if (!desk?.id) return;
     putRequest(
-      `${process.env.REACT_APP_BACKEND_URL}/admin/desks/toggleFixed/${desk.id}`,
+      `${process.env.REACT_APP_BACKEND_URL}/admin/desks/toggleHidden/${desk.id}`,
       headers.current,
       () => {
-        toast.success(t('fixedToggleSuccess'));
+        toast.success(t('deskVisibilityToggleSuccess'));
         loadDesksForFloor(selectedFloor);
       },
-      () => toast.error(t('fixedToggleFailed')),
+      () => toast.error(t('deskVisibilityToggleFailed')),
       JSON.stringify({})
     );
   };
@@ -133,8 +133,16 @@ export default function HideShowFixedWorkstation({ isOpen, onClose }) {
               <DeskTable
                 name='hideShowFixed'
                 desks={desksForFloor}
-                submit_function={toggleDeskFixed}
-                submitLabelKey='hideShow'
+                submit_function={toggleDeskHidden}
+                submitLabelKeyForDesk={(desk) => (desk?.hidden ? 'show' : 'hide')}
+                submitButtonSxForDesk={(desk) => (
+                  desk?.hidden
+                    ? {
+                      backgroundColor: '#9e9e9e',
+                      '&:hover': { backgroundColor: '#757575' }
+                    }
+                    : undefined
+                )}
                 onReportDefect={handleReportDefect}
               />
             )

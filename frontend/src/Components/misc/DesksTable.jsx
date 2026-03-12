@@ -10,7 +10,15 @@ import {
     Paper,
 } from '@mui/material';
 
-const DeskTable = ({name, desks, submit_function, onReportDefect, submitLabelKey = 'submit'}) =>{
+const DeskTable = ({
+    name,
+    desks,
+    submit_function,
+    onReportDefect,
+    submitLabelKey = 'submit',
+    submitLabelKeyForDesk = null,
+    submitButtonSxForDesk = null
+}) =>{
     const { t } = useTranslation();
     
     return (
@@ -40,9 +48,13 @@ const DeskTable = ({name, desks, submit_function, onReportDefect, submitLabelKey
                                 <TableCell>{desk.room.floor.building.name}</TableCell>
                                 <TableCell>{desk.room.floor.name}</TableCell>
                                 <TableCell>
-                                    <Button id={`sbmt_btn_${desk.remark}`} variant='contained' onClick={(_)=>{
+                                    <Button
+                                        id={`sbmt_btn_${desk.remark}`}
+                                        variant='contained'
+                                        sx={submitButtonSxForDesk ? submitButtonSxForDesk(desk) : undefined}
+                                        onClick={(_)=>{
                                         submit_function(desk);}}>
-                                        {t(submitLabelKey)}
+                                        {t(submitLabelKeyForDesk ? submitLabelKeyForDesk(desk) : submitLabelKey)}
                                     </Button>
                                 </TableCell>
                                 {onReportDefect && (

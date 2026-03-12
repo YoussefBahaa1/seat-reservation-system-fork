@@ -30,6 +30,7 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
         scripts/db/migration/parking_spot_features.sql \
         scripts/db/migration/workstation_equipment_fields.sql \
         scripts/db/migration/fixed_desks.sql \
+        scripts/db/migration/hidden_desks.sql \
         scripts/db/migration/defect_management.sql \
         scripts/db/migration/user_language_preference.sql; do
         if [ -f "$migration" ]; then

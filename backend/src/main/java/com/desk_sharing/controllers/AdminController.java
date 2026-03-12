@@ -135,6 +135,13 @@ public class AdminController {
         return new ResponseEntity<>(desks, HttpStatus.OK);
     }
 
+    @GetMapping("desks/roomAll/{id}")
+    public ResponseEntity<List<Desk>> getDeskByRoomIdIncludingHidden(@PathVariable("id") Long roomId) {
+        logger.info("getDeskByRoomIdIncludingHidden( {} )", roomId);
+        List<Desk> desks = deskService.getDeskByRoomIdIncludingHidden(roomId);
+        return new ResponseEntity<>(desks, HttpStatus.OK);
+    }
+
     @PutMapping("desks/updateDesk")
     public ResponseEntity<Desk> updateDesk(@RequestBody final DeskDTO desk) {
         logger.info("updateDesk( {} )", desk);
@@ -173,6 +180,13 @@ public class AdminController {
     public ResponseEntity<Desk> toggleDeskFixed(@NonNull @PathVariable("id") final Long id) {
         logger.info("toggleDeskFixed( {} )", id);
         final Desk updatedDesk = deskService.toggleFixed(id);
+        return new ResponseEntity<>(updatedDesk, HttpStatus.OK);
+    }
+
+    @PutMapping("desks/toggleHidden/{id}")
+    public ResponseEntity<Desk> toggleDeskHidden(@NonNull @PathVariable("id") final Long id) {
+        logger.info("toggleDeskHidden( {} )", id);
+        final Desk updatedDesk = deskService.toggleHidden(id);
         return new ResponseEntity<>(updatedDesk, HttpStatus.OK);
     }
     
