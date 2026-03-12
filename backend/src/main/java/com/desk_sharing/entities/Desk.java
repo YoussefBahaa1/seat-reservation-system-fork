@@ -80,4 +80,7 @@ public class Desk {
 
     @Column(name = "blocked_by_defect_id", nullable = true)
     private Long blockedByDefectId;
+
+    @Column(name = "is_fixed", nullable = false)
+    private boolean fixed = false;
 }
