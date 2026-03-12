@@ -28,70 +28,6 @@ join buildings b on b.building_id = f.building_id
 set f.name_of_img = '1-1.png'
 where b.name = '1 Bautznerstr. 19 a-b' and f.name = '1. OG';
 
--- Second building (empty floors for later room/desk onboarding)
-INSERT INTO buildings (address,name,ordering,remark,town,used)
-SELECT 'Musterstraße 2','2 Bautznerstr. 19 c', 2, 'Zweites Gebaeude', 'Musterstadt', true
-WHERE NOT EXISTS (
-    SELECT 1 FROM buildings WHERE buildings.name = '2 Bautznerstr. 19 c'
-);
-
-INSERT into floors (name,name_of_img,ordering,remark,building_id)
-select 'EG', '2-eg.png', 1, 'Erdgeschoss', (select building_id from buildings where buildings.name='2 Bautznerstr. 19 c')
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM floors f
-    JOIN buildings b ON b.building_id = f.building_id
-    WHERE b.name = '2 Bautznerstr. 19 c' AND f.name = 'EG'
-);
-
-INSERT into floors (name,name_of_img,ordering,remark,building_id)
-select '1. OG', '2-1.png', 2, '1. Obergeschoss', (select building_id from buildings where buildings.name='2 Bautznerstr. 19 c')
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM floors f
-    JOIN buildings b ON b.building_id = f.building_id
-    WHERE b.name = '2 Bautznerstr. 19 c' AND f.name = '1. OG'
-);
-
-INSERT into floors (name,name_of_img,ordering,remark,building_id)
-select '2. OG', '2-2.png', 3, '2. Obergeschoss', (select building_id from buildings where buildings.name='2 Bautznerstr. 19 c')
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM floors f
-    JOIN buildings b ON b.building_id = f.building_id
-    WHERE b.name = '2 Bautznerstr. 19 c' AND f.name = '2. OG'
-);
-
-INSERT into floors (name,name_of_img,ordering,remark,building_id)
-select '3. OG', '2-3.png', 4, '3. Obergeschoss', (select building_id from buildings where buildings.name='2 Bautznerstr. 19 c')
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM floors f
-    JOIN buildings b ON b.building_id = f.building_id
-    WHERE b.name = '2 Bautznerstr. 19 c' AND f.name = '3. OG'
-);
-
--- Keep image references in sync even if floors already exist.
-update floors f
-join buildings b on b.building_id = f.building_id
-set f.name_of_img = '2-eg.png'
-where b.name = '2 Bautznerstr. 19 c' and f.name = 'EG';
-
-update floors f
-join buildings b on b.building_id = f.building_id
-set f.name_of_img = '2-1.png'
-where b.name = '2 Bautznerstr. 19 c' and f.name = '1. OG';
-
-update floors f
-join buildings b on b.building_id = f.building_id
-set f.name_of_img = '2-2.png'
-where b.name = '2 Bautznerstr. 19 c' and f.name = '2. OG';
-
-update floors f
-join buildings b on b.building_id = f.building_id
-set f.name_of_img = '2-3.png'
-where b.name = '2 Bautznerstr. 19 c' and f.name = '3. OG';
-
 -- rooms
 -- Remove existing sample rooms/desks for these room names so coordinates and desk counts are replaced.
 delete d
@@ -210,6 +146,71 @@ where not exists (
     where existing_building.name = '1 Bautznerstr. 19 a-b'
       and existing_desk.remark = new_desks.remark
 );
+
+-- The second building
+INSERT INTO buildings (address,name,ordering,remark,town,used)
+SELECT 'Musterstraße 2','2 Bautznerstr. 19 c', 2, 'Zweites Gebaeude', 'Musterstadt', true
+WHERE NOT EXISTS (
+    SELECT 1 FROM buildings WHERE buildings.name = '2 Bautznerstr. 19 c'
+);
+
+-- Floors for second building
+INSERT into floors (name,name_of_img,ordering,remark,building_id)
+select 'EG', '2-eg.png', 1, 'Erdgeschoss', (select building_id from buildings where buildings.name='2 Bautznerstr. 19 c')
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM floors f
+    JOIN buildings b ON b.building_id = f.building_id
+    WHERE b.name = '2 Bautznerstr. 19 c' AND f.name = 'EG'
+);
+
+INSERT into floors (name,name_of_img,ordering,remark,building_id)
+select '1. OG', '2-1.png', 2, '1. Obergeschoss', (select building_id from buildings where buildings.name='2 Bautznerstr. 19 c')
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM floors f
+    JOIN buildings b ON b.building_id = f.building_id
+    WHERE b.name = '2 Bautznerstr. 19 c' AND f.name = '1. OG'
+);
+
+INSERT into floors (name,name_of_img,ordering,remark,building_id)
+select '2. OG', '2-2.png', 3, '2. Obergeschoss', (select building_id from buildings where buildings.name='2 Bautznerstr. 19 c')
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM floors f
+    JOIN buildings b ON b.building_id = f.building_id
+    WHERE b.name = '2 Bautznerstr. 19 c' AND f.name = '2. OG'
+);
+
+INSERT into floors (name,name_of_img,ordering,remark,building_id)
+select '3. OG', '2-3.png', 4, '3. Obergeschoss', (select building_id from buildings where buildings.name='2 Bautznerstr. 19 c')
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM floors f
+    JOIN buildings b ON b.building_id = f.building_id
+    WHERE b.name = '2 Bautznerstr. 19 c' AND f.name = '3. OG'
+);
+
+-- Keep image references in sync even if floors already exist.
+update floors f
+join buildings b on b.building_id = f.building_id
+set f.name_of_img = '2-eg.png'
+where b.name = '2 Bautznerstr. 19 c' and f.name = 'EG';
+
+update floors f
+join buildings b on b.building_id = f.building_id
+set f.name_of_img = '2-1.png'
+where b.name = '2 Bautznerstr. 19 c' and f.name = '1. OG';
+
+update floors f
+join buildings b on b.building_id = f.building_id
+set f.name_of_img = '2-2.png'
+where b.name = '2 Bautznerstr. 19 c' and f.name = '2. OG';
+
+update floors f
+join buildings b on b.building_id = f.building_id
+set f.name_of_img = '2-3.png'
+where b.name = '2 Bautznerstr. 19 c' and f.name = '3. OG';
 
 -- rooms for second building
 delete d
