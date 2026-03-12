@@ -388,8 +388,25 @@ public class ParkingReservationService {
         if (day == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing day");
         }
-        return parkingReservationRepository.findByDay(day).stream()
-            .map(BookingDayEventDTO::new)
+        final List<ParkingReservation> reservations = parkingReservationRepository.findByDay(day);
+        final List<String> labels = reservations.stream()
+            .map(ParkingReservation::getSpotLabel)
+            .filter(label -> label != null && !label.isBlank())
+            .map(String::trim)
+            .distinct()
+            .toList();
+        final Map<String, ParkingSpot> spotByLabel = new HashMap<>();
+        if (!labels.isEmpty()) {
+            parkingSpotRepository.findBySpotLabelIn(labels).forEach(spot -> spotByLabel.put(spot.getSpotLabel(), spot));
+        }
+        return reservations.stream()
+            .map(reservation -> {
+                final String label = reservation.getSpotLabel() == null ? null : reservation.getSpotLabel().trim();
+                final ParkingSpot spot = label == null ? null : spotByLabel.get(label);
+                final ParkingSpotType spotType = effectiveSpotType(spot, label);
+                final boolean covered = effectiveCovered(spot);
+                return new BookingDayEventDTO(reservation, spotType.name(), covered);
+            })
             .toList();
     }
 

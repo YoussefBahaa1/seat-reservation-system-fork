@@ -25,6 +25,7 @@ public class BookingDayEventDTO {
     private String workspaceType;
     private Long parkingId;
     private String parkingType;
+    private Boolean parkingCovered;
     private String parkingStatus;
     private String mode;
 
@@ -42,6 +43,7 @@ public class BookingDayEventDTO {
             booking.getDesk() != null && booking.getDesk().getEquipment() != null
                 ? booking.getDesk().getEquipment().getEquipmentName()
                 : null,
+            null,
             null,
             null,
             null,
@@ -74,6 +76,27 @@ public class BookingDayEventDTO {
             null,
             parseSpotLabel(reservation.getSpotLabel()),
             null,
+            null,
+            (reservation.getStatus() == null ? ParkingReservationStatus.APPROVED : reservation.getStatus()).name(),
+            "parking"
+        );
+    }
+
+    public BookingDayEventDTO(final ParkingReservation reservation, final String parkingType, final Boolean parkingCovered) {
+        this(
+            reservation.getId(),
+            reservation.getUserId(),
+            reservation.getDay(),
+            reservation.getBegin(),
+            reservation.getEnd(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            parseSpotLabel(reservation.getSpotLabel()),
+            parkingType,
+            parkingCovered,
             (reservation.getStatus() == null ? ParkingReservationStatus.APPROVED : reservation.getStatus()).name(),
             "parking"
         );

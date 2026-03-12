@@ -263,7 +263,12 @@ class ParkingReservationServiceTest {
         reservation.setBegin(Time.valueOf("08:00:00"));
         reservation.setEnd(Time.valueOf("10:00:00"));
         reservation.setStatus(ParkingReservationStatus.PENDING);
+        ParkingSpot spot = new ParkingSpot();
+        spot.setSpotLabel("32");
+        spot.setSpotType(ParkingSpotType.E_CHARGING_STATION);
+        spot.setCovered(true);
         when(parkingReservationRepository.findByDay(day)).thenReturn(List.of(reservation));
+        when(parkingSpotRepository.findBySpotLabelIn(List.of("32"))).thenReturn(List.of(spot));
 
         List<BookingDayEventDTO> result = service.getReservationsForDate(day);
 
@@ -272,6 +277,8 @@ class ParkingReservationServiceTest {
         assertThat(dto.getId()).isEqualTo(8L);
         assertThat(dto.getUserId()).isEqualTo(21);
         assertThat(dto.getParkingId()).isEqualTo(32L);
+        assertThat(dto.getParkingType()).isEqualTo("E_CHARGING_STATION");
+        assertThat(dto.getParkingCovered()).isTrue();
         assertThat(dto.getParkingStatus()).isEqualTo("PENDING");
         assertThat(dto.getMode()).isEqualTo("parking");
     }

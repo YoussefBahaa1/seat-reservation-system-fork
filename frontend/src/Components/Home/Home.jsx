@@ -17,6 +17,13 @@ import MapOutlinedIcon from '@mui/icons-material/MapOutlined';
 import FloorImage from '../FloorImage/FloorImage.jsx';
 import CarparkView from '../Carpark/CarparkView.jsx';
 
+const PARKING_TYPE_VALUES = ['STANDARD', 'ACCESSIBLE', 'E_CHARGING_STATION', 'SPECIAL_CASE'];
+const toSentenceCase = (value) => {
+  const normalized = String(value || '').toLowerCase();
+  if (!normalized) return '';
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+};
+
 const Home = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -253,12 +260,34 @@ const Home = () => {
           label: t(equipment.equipmentName)
         }));
     }
-    return [];
-  }, [equipments, mode, t]);
+    const dynamicTypes = dayParkingEvents
+      .map((event) => String(event?.parkingType || '').toUpperCase())
+      .filter((value) => value);
+    const values = Array.from(new Set([...PARKING_TYPE_VALUES, ...dynamicTypes]));
+    const labelForType = (value) => {
+      if (value === 'STANDARD') return t('carparkStandard');
+      if (value === 'SPECIAL_CASE') return t('carparkSpecialCase');
+      return toSentenceCase(value.replaceAll('_', ' '));
+    };
+    return values.map((value) => ({
+      value: `type:${value}`,
+      label: labelForType(value)
+    }));
+  }, [dayParkingEvents, equipments, mode, t]);
+
+  const coveredOptions = useMemo(() => {
+    if (mode !== 'parking') return [];
+    return [
+      { value: 'covered:true', label: t('yes') },
+      { value: 'covered:false', label: t('no') }
+    ];
+  }, [mode, t]);
 
   const selectedFilters = useMemo(() => {
     if (mode === 'desk') return selectedDeskFilters;
-    return selectedParkingFilters.filter((value) => value.startsWith('type:'));
+    return selectedParkingFilters.filter(
+      (value) => value.startsWith('type:') || value.startsWith('covered:')
+    );
   }, [mode, selectedDeskFilters, selectedParkingFilters]);
 
 
@@ -270,7 +299,9 @@ const Home = () => {
     if (mode === 'desk') {
       setSelectedDeskFilters(values);
     } else {
-      setSelectedParkingFilters(values.filter((value) => value.startsWith('type:')));
+      setSelectedParkingFilters(
+        values.filter((value) => value.startsWith('type:') || value.startsWith('covered:'))
+      );
     }
   };
 
@@ -281,7 +312,7 @@ const Home = () => {
       );
     } else {
       setSelectedParkingFilters((prev) => {
-        if (!value.startsWith('type:')) return prev;
+        if (!value.startsWith('type:') && !value.startsWith('covered:')) return prev;
         return prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value];
       });
     }
@@ -309,6 +340,11 @@ const Home = () => {
         .filter((value) => value.startsWith('type:'))
         .map((value) => value.replace('type:', ''))
     );
+    const selectedCoveredSet = new Set(
+      selectedFilters
+        .filter((value) => value.startsWith('covered:'))
+        .map((value) => value.replace('covered:', ''))
+    );
 
     return dayEvents
       .filter((event) => event.mode === mode)
@@ -322,13 +358,24 @@ const Home = () => {
         return true;
       })
       .filter((event) => {
-        if (selectedRoomSet.size === 0 && selectedTypeSet.size === 0) {
+        if (mode === 'desk') {
+          if (selectedRoomSet.size === 0 && selectedTypeSet.size === 0) {
+            return true;
+          }
+          const roomMatch = event.roomId && selectedRoomSet.has(String(event.roomId));
+          const typeValue = event.workspaceType;
+          const typeMatch = typeValue && selectedTypeSet.has(typeValue);
+          return roomMatch || typeMatch;
+        }
+
+        if (selectedTypeSet.size === 0 && selectedCoveredSet.size === 0) {
           return true;
         }
-        const roomMatch = event.roomId && selectedRoomSet.has(String(event.roomId));
-        const typeValue = mode === 'desk' ? event.workspaceType : event.parkingType;
-        const typeMatch = typeValue && selectedTypeSet.has(typeValue);
-        return roomMatch || typeMatch;
+        const parkingTypeValue = String(event?.parkingType || '').toUpperCase();
+        const typeMatch = selectedTypeSet.size === 0 || selectedTypeSet.has(parkingTypeValue);
+        const coveredValue = String(event?.parkingCovered === true);
+        const coveredMatch = selectedCoveredSet.size === 0 || selectedCoveredSet.has(coveredValue);
+        return typeMatch && coveredMatch;
       });
   }, [dayEvents, mode, selectedFilters]);
 
@@ -582,6 +629,10 @@ const Home = () => {
                     const type = typeOptions.find((option) => option.value === value);
                     return type ? type.label : typeValue;
                   }
+                  if (value.startsWith('covered:')) {
+                    const covered = coveredOptions.find((option) => option.value === value);
+                    return covered ? covered.label : value;
+                  }
                   return value;
                 })
                 .join(', ')
@@ -607,6 +658,17 @@ const Home = () => {
                 <ListItemText primary={option.label} />
               </MenuItem>
             ))}
+            {mode === 'parking' && (
+              <>
+                <ListSubheader>{t('carparkCovered')}</ListSubheader>
+                {coveredOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value} onClick={() => toggleFilterValue(option.value)}>
+                    <Checkbox checked={selectedFilters.includes(option.value)} />
+                    <ListItemText primary={option.label} />
+                  </MenuItem>
+                ))}
+              </>
+            )}
             </Select>
           </FormControl>
         </div>
