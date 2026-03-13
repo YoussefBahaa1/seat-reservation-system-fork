@@ -138,6 +138,8 @@
     "minimum": "Aufenthaltsdauer mindestens 2 Stunden",
     "maximum": "Aufenthaltsdauer maximal 9 Stunden",
     "overlap": "Die Auswahl überschneidet sich mit einer anderen Buchung für diesen Arbeitsplatz",
+    "otherFreeDesksForSelectedTimeSlots": "Andere freie Arbeitsplaetze fuer den ausgewaehlten Zeitraum",
+    "noFreeDesksForSelectedTimeSlotInBuilding": "Fuer dieses Zeitfenster gibt es in diesem Gebaeude keine freien Arbeitsplaetze.",
     "booked": "Buchung erfolgreich",
     "selectDeskMessage": "Bitte wählen Sie zuerst einen Arbeitsplatz",
     "blank": "Bitte wählen Sie zuerst einen Arbeitsplatz und Zeitraum vor der Buchung",

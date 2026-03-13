@@ -1,5 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Button, Typography, IconButton, Tooltip/*, FormControl, RadioGroup, FormControlLabel, Radio */} from '@mui/material';
+import {
+  Box,
+  Button,
+  Typography,
+  IconButton,
+  Tooltip,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  /*, FormControl, RadioGroup, FormControlLabel, Radio */
+} from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -9,11 +19,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { confirmAlert } from 'react-confirm-alert';
 import { FaStar, FaRegStar } from 'react-icons/fa';
+import CloseIcon from '@mui/icons-material/Close';
 
 import LayoutPage from '../../Templates/LayoutPage.jsx';
 import { getRequest, postRequest, putRequest, deleteRequest } from '../../RequestFunctions/RequestFunctions';
 import bookingPostRequest from '../../misc/bookingPostRequest.js';
 import ReportDefectModal from '../../Defects/ReportDefectModal';
+import { DeskTable } from '../../misc/DesksTable.jsx';
 //import { buildFullDaySlots } from './buildFullDaySlots.js';
 
 const BOOKING_CONTEXT_KEY = 'bookingNavigationContext';
@@ -26,6 +38,19 @@ const parseStoredBookingContext = () => {
   } catch {
     return null;
   }
+};
+
+const toFiniteNumber = (value, fallback = Number.MAX_SAFE_INTEGER) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const compareRankTuples = (left, right) => {
+  for (let i = 0; i < left.length; i += 1) {
+    if (left[i] < right[i]) return -1;
+    if (left[i] > right[i]) return 1;
+  }
+  return 0;
 };
 
 const Booking = () => {
@@ -70,10 +95,14 @@ const Booking = () => {
     maxAdvanceDays: 30,
   });
   const [isReportDefectOpen, setIsReportDefectOpen] = useState(false);
+  const [isAlternativeDeskDialogOpen, setIsAlternativeDeskDialogOpen] = useState(false);
+  const [isAlternativeDeskDialogLoading, setIsAlternativeDeskDialogLoading] = useState(false);
+  const [alternativeDesks, setAlternativeDesks] = useState([]);
 
   const eventRef = useRef(event);
   const eventsRef = useRef(events);
   const bookingPendingRef = useRef(false);
+  const pendingSlotSuggestionRef = useRef(null);
 
   const setBookingPending = useCallback((value) => {
     bookingPendingRef.current = value;
@@ -119,6 +148,148 @@ const Booking = () => {
     );
   }, []);
 
+  const rankAlternativeDesks = useCallback((availableDesks) => {
+    if (!Array.isArray(availableDesks)) return [];
+
+    const selectedDesk = desks.find((desk) => desk.id === clickedDeskId) || null;
+    const sourceRoom = selectedDesk?.room || room || null;
+    const sourceRoomId = sourceRoom?.id;
+    const sourceFloorId = sourceRoom?.floor?.floor_id;
+    const sourceBuildingId = sourceRoom?.floor?.building?.id;
+    const sourceRoomX = toFiniteNumber(sourceRoom?.x, 0);
+    const sourceRoomY = toFiniteNumber(sourceRoom?.y, 0);
+    const sourceFloorOrder = toFiniteNumber(sourceRoom?.floor?.ordering, 0);
+    const selectedDeskNumber = toFiniteNumber(selectedDesk?.deskNumberInRoom, Number.MAX_SAFE_INTEGER);
+
+    const roomDistanceToSource = (candidateRoom) => {
+      const candidateX = toFiniteNumber(candidateRoom?.x, sourceRoomX);
+      const candidateY = toFiniteNumber(candidateRoom?.y, sourceRoomY);
+      return Math.hypot(candidateX - sourceRoomX, candidateY - sourceRoomY);
+    };
+
+    const rankTupleForDesk = (desk) => {
+      const candidateRoom = desk?.room;
+      const candidateFloor = candidateRoom?.floor;
+      const candidateDeskNumber = toFiniteNumber(desk?.deskNumberInRoom, Number.MAX_SAFE_INTEGER);
+      const isSameRoom = candidateRoom?.id === sourceRoomId;
+      const isSameFloor = candidateFloor?.floor_id === sourceFloorId;
+      const category = isSameRoom ? 0 : (isSameFloor ? 1 : 2);
+      const floorDistance = category === 2
+        ? Math.abs(toFiniteNumber(candidateFloor?.ordering, Number.MAX_SAFE_INTEGER) - sourceFloorOrder)
+        : 0;
+      const sameRoomDeskDistance = category === 0
+        ? Math.abs(candidateDeskNumber - selectedDeskNumber)
+        : 0;
+      const roomDistance = roomDistanceToSource(candidateRoom);
+      return [
+        category,
+        floorDistance,
+        sameRoomDeskDistance,
+        roomDistance,
+        String(candidateRoom?.remark || ''),
+        candidateDeskNumber,
+        toFiniteNumber(desk?.id, Number.MAX_SAFE_INTEGER),
+      ];
+    };
+
+    return availableDesks
+      .filter((desk) => desk?.id && desk.id !== clickedDeskId)
+      .filter((desk) => !sourceBuildingId || desk?.room?.floor?.building?.id === sourceBuildingId)
+      .sort((left, right) => compareRankTuples(rankTupleForDesk(left), rankTupleForDesk(right)));
+  }, [clickedDeskId, desks, room]);
+
+  const closeAlternativeDeskDialog = useCallback(() => {
+    setIsAlternativeDeskDialogOpen(false);
+    setIsAlternativeDeskDialogLoading(false);
+    setAlternativeDesks([]);
+    pendingSlotSuggestionRef.current = null;
+  }, []);
+
+  const openAlternativeDeskDialogForSlot = useCallback((startTime, endTime) => {
+    const selectedDesk = desks.find((desk) => desk.id === clickedDeskId) || null;
+    const sourceRoom = selectedDesk?.room || room || null;
+    const buildingId = sourceRoom?.floor?.building?.id;
+    pendingSlotSuggestionRef.current = { start: new Date(startTime), end: new Date(endTime) };
+    setIsAlternativeDeskDialogOpen(true);
+    setAlternativeDesks([]);
+
+    if (!buildingId) {
+      setIsAlternativeDeskDialogLoading(false);
+      return;
+    }
+
+    setIsAlternativeDeskDialogLoading(true);
+    postRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/series/desksForBuildingAndDatesAndTimes/${buildingId}`,
+      headers.current,
+      (data) => {
+        const rankedDesks = rankAlternativeDesks(data).slice(0, 5);
+        setAlternativeDesks(rankedDesks);
+        setIsAlternativeDeskDialogLoading(false);
+      },
+      () => {
+        setAlternativeDesks([]);
+        setIsAlternativeDeskDialogLoading(false);
+        toast.error(t('httpOther'));
+      },
+      JSON.stringify({
+        dates: [moment(startTime).format('YYYY-MM-DD')],
+        startTime: moment(startTime).format('HH:mm'),
+        endTime: moment(endTime).format('HH:mm'),
+      })
+    );
+  }, [clickedDeskId, desks, rankAlternativeDesks, room, t]);
+
+  const handleAlternativeDeskSelection = useCallback((desk) => {
+    if (bookingPendingRef.current) return;
+    const pendingSlot = pendingSlotSuggestionRef.current;
+    if (!pendingSlot?.start || !pendingSlot?.end) {
+      toast.error(t('blank'));
+      return;
+    }
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      toast.error(t('httpOther'));
+      return;
+    }
+
+    const startMoment = moment(pendingSlot.start).seconds(0).milliseconds(0);
+    const endMoment = moment(pendingSlot.end).seconds(0).milliseconds(0);
+    if (startMoment.minute() % 30 !== 0 || endMoment.minute() % 30 !== 0) {
+      toast.warning(t('bookingTimeAlignmentError'));
+      return;
+    }
+
+    const bookingDTO = {
+      userId: userId,
+      roomId: desk?.room?.id ?? roomId,
+      deskId: desk.id,
+      day: startMoment.format('YYYY-MM-DD'),
+      begin: startMoment.format('HH:mm:ss'),
+      end: endMoment.format('HH:mm:ss'),
+    };
+
+    // Close suggestions popup first so the booking confirmation modal is visible.
+    closeAlternativeDeskDialog();
+    setBookingPending(true);
+    bookingPostRequest(
+      'Booking.jsx',
+      bookingDTO,
+      desk?.remark || '',
+      headers,
+      t,
+      (booking) => {
+        closeAlternativeDeskDialog();
+        navigate('/home', { state: { booking }, replace: true });
+      },
+      {
+        onFinish: () => {
+          setBookingPending(false);
+        },
+      }
+    );
+  }, [closeAlternativeDeskDialog, navigate, roomId, setBookingPending, t]);
+
   const loadBookings = useCallback(() => {
     if (!clickedDeskId) return;
 
@@ -140,7 +311,7 @@ const Booking = () => {
                   : b.displayName || ''),
           id: b.booking_id,
         }));
-        //setDeskEvents(bookingEvents);
+
         if (isEditMode && editBooking?.deskId === clickedDeskId) {
           const editStart = new Date(`${editBooking.day}T${editBooking.begin}`);
           const editEnd = new Date(`${editBooking.day}T${editBooking.end}`);
@@ -221,6 +392,7 @@ const Booking = () => {
     );
     if (isOverlap) {
       toast.warning(t('overlap'));
+      openAlternativeDeskDialogForSlot(startTime, endTime);
       return;
     }
 
@@ -231,8 +403,9 @@ const Booking = () => {
     ]);
 
     setEvent(newEvent);
+    pendingSlotSuggestionRef.current = null;
 
-  }, [editBooking, isEditMode, t, bookingSettings]);
+  }, [editBooking, isEditMode, t, bookingSettings, openAlternativeDeskDialogForSlot]);
 
   /** ----- EVENT FUNCTIONS ----- */
   const booking = async () => {
@@ -777,6 +950,38 @@ const Booking = () => {
         onClose={() => setIsReportDefectOpen(false)}
         deskId={clickedDeskId}
       />
+      <Dialog
+        open={isAlternativeDeskDialogOpen}
+        onClose={closeAlternativeDeskDialog}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 1 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
+            {t('otherFreeDesksForSelectedTimeSlots')}
+          </Typography>
+          <IconButton
+            onClick={closeAlternativeDeskDialog}
+            aria-label={t('close')}
+            sx={{ ml: 'auto' }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {isAlternativeDeskDialogLoading ? (
+            <Typography>{t('loading')}</Typography>
+          ) : alternativeDesks.length > 0 ? (
+            <DeskTable
+              name="booking_alternative_desks"
+              desks={alternativeDesks}
+              submit_function={handleAlternativeDeskSelection}
+            />
+          ) : (
+            <Typography>{t('noFreeDesksForSelectedTimeSlotInBuilding')}</Typography>
+          )}
+        </DialogContent>
+      </Dialog>
     </LayoutPage>
   );
 };

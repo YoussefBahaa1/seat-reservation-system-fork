@@ -138,6 +138,8 @@
     "minimum": "Minimum booking duration is 2 hours",
     "maximum": "Maximum booking duration is 9 hours",
     "overlap": "This slot overlaps with another booking for this desk",
+    "otherFreeDesksForSelectedTimeSlots": "Other free desks for selected time slots",
+    "noFreeDesksForSelectedTimeSlotInBuilding": "No free desks are available for this time slot in this building.",
     "booked": "Booking saved successfully",
     "selectDeskMessage": "Please first select a desk",
     "blank": "Please choose a desk and time before booking.",
