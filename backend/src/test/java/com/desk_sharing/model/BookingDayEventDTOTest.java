@@ -2,7 +2,6 @@ package com.desk_sharing.model;
 
 import com.desk_sharing.entities.Booking;
 import com.desk_sharing.entities.Desk;
-import com.desk_sharing.entities.Equipment;
 import com.desk_sharing.entities.ParkingReservation;
 import com.desk_sharing.entities.ParkingReservationStatus;
 import com.desk_sharing.entities.Room;
@@ -26,14 +25,11 @@ class BookingDayEventDTOTest {
         room.setId(3L);
         room.setRemark("Zimmer 2.1");
 
-        Equipment equipment = new Equipment();
-        equipment.setEquipmentName("withEquipment");
-
         Desk desk = new Desk();
         desk.setId(7L);
         desk.setRemark("Arbeitsplatz 2.1.2");
         desk.setRoom(room);
-        desk.setEquipment(equipment);
+        desk.setWorkstationType("Ergonomic");
 
         Booking booking = new Booking();
         booking.setId(88L);
@@ -52,7 +48,7 @@ class BookingDayEventDTOTest {
         assertThat(dto.getRoomRemark()).isEqualTo("Zimmer 2.1");
         assertThat(dto.getDeskId()).isEqualTo(7L);
         assertThat(dto.getDeskRemark()).isEqualTo("Arbeitsplatz 2.1.2");
-        assertThat(dto.getWorkspaceType()).isEqualTo("withEquipment");
+        assertThat(dto.getWorkspaceType()).isEqualTo("Ergonomic");
         assertThat(dto.getParkingId()).isNull();
         assertThat(dto.getParkingCovered()).isNull();
         assertThat(dto.getParkingStatus()).isNull();

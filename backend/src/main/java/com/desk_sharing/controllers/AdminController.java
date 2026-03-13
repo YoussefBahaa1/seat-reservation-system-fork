@@ -131,7 +131,7 @@ public class AdminController {
     @GetMapping("desks/room/{id}")
     public ResponseEntity<List<Desk>> getDeskByRoomId(@PathVariable("id") Long roomId) {
         logger.info("getDeskByRoomId( {} )", roomId);
-        List<Desk> desks = deskService.getDeskByRoomId(roomId);
+        List<Desk> desks = deskService.getDeskByRoomIdIncludingHidden(roomId);
         return new ResponseEntity<>(desks, HttpStatus.OK);
     }
 
@@ -150,7 +150,7 @@ public class AdminController {
             System.err.println("deskId is null in AdminController.updateDesk()");
             return null;
         }
-        final Desk updatedDesk = deskService.updateDesk(deskId, desk.getEquipment(), desk.getRemark(), desk.getFixed());
+        final Desk updatedDesk = deskService.updateDesk(deskId, desk);
         return new ResponseEntity<>(updatedDesk, HttpStatus.OK);
     }
 

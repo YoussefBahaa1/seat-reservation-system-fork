@@ -40,9 +40,7 @@ public class BookingDayEventDTO {
             booking.getRoom() != null ? booking.getRoom().getRemark() : null,
             booking.getDesk() != null ? booking.getDesk().getId() : null,
             booking.getDesk() != null ? booking.getDesk().getRemark() : null,
-            booking.getDesk() != null && booking.getDesk().getEquipment() != null
-                ? booking.getDesk().getEquipment().getEquipmentName()
-                : null,
+            booking.getDesk() != null ? booking.getDesk().getWorkstationType() : null,
             null,
             null,
             null,

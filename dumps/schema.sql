@@ -87,7 +87,6 @@ CREATE TABLE `desks` (
   `room_id` bigint(20) NOT NULL,
   `remark` varchar(255) DEFAULT NULL,
   `desk_number_in_room` bigint(20) DEFAULT NULL,
-  `workstation_identifier` varchar(50) DEFAULT NULL,
   `workstation_type` varchar(50) DEFAULT NULL,
   `monitors_quantity` int(11) DEFAULT NULL,
   `monitors_size` varchar(50) DEFAULT NULL,
@@ -96,27 +95,10 @@ CREATE TABLE `desks` (
   `technology_webcam` tinyint(1) DEFAULT NULL,
   `technology_headset` tinyint(1) DEFAULT NULL,
   `special_features` text DEFAULT NULL,
-  `equipment_id` bigint(20) NOT NULL,
   PRIMARY KEY (`desk_id`),
   KEY `FK1glnwylpo1qx4k8ckyg6sd65y` (`room_id`),
-  KEY `FKnj02jj3tcyb5e604r1ufb7gfi` (`equipment_id`),
-  CONSTRAINT `FK1glnwylpo1qx4k8ckyg6sd65y` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`room_id`),
-  CONSTRAINT `FKnj02jj3tcyb5e604r1ufb7gfi` FOREIGN KEY (`equipment_id`) REFERENCES `equipments` (`equipment_id`)
+  CONSTRAINT `FK1glnwylpo1qx4k8ckyg6sd65y` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`room_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=555 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `equipments`
---
-
-DROP TABLE IF EXISTS `equipments`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `equipments` (
-  `equipment_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `equipment_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  PRIMARY KEY (`equipment_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -449,7 +431,6 @@ CREATE TABLE `desks` (
   `room_id` bigint(20) NOT NULL,
   `remark` varchar(255) DEFAULT NULL,
   `desk_number_in_room` bigint(20) DEFAULT NULL,
-  `workstation_identifier` varchar(50) DEFAULT NULL,
   `workstation_type` varchar(50) DEFAULT NULL,
   `monitors_quantity` int(11) DEFAULT NULL,
   `monitors_size` varchar(50) DEFAULT NULL,
@@ -458,27 +439,10 @@ CREATE TABLE `desks` (
   `technology_webcam` tinyint(1) DEFAULT NULL,
   `technology_headset` tinyint(1) DEFAULT NULL,
   `special_features` text DEFAULT NULL,
-  `equipment_id` bigint(20) NOT NULL,
   PRIMARY KEY (`desk_id`),
   KEY `FK1glnwylpo1qx4k8ckyg6sd65y` (`room_id`),
-  KEY `FKnj02jj3tcyb5e604r1ufb7gfi` (`equipment_id`),
-  CONSTRAINT `FK1glnwylpo1qx4k8ckyg6sd65y` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`room_id`),
-  CONSTRAINT `FKnj02jj3tcyb5e604r1ufb7gfi` FOREIGN KEY (`equipment_id`) REFERENCES `equipments` (`equipment_id`)
+  CONSTRAINT `FK1glnwylpo1qx4k8ckyg6sd65y` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`room_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=555 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `equipments`
---
-
-DROP TABLE IF EXISTS `equipments`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `equipments` (
-  `equipment_id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `equipment_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  PRIMARY KEY (`equipment_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

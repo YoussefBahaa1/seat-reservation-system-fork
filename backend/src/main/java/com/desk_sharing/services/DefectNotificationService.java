@@ -143,10 +143,10 @@ public class DefectNotificationService {
 
     private String deskLabel(Defect defect) {
         if (defect.getDesk() == null) return "";
-        if (defect.getDesk().getWorkstationIdentifier() != null)
-            return defect.getDesk().getWorkstationIdentifier();
         if (defect.getDesk().getRemark() != null)
             return defect.getDesk().getRemark();
+        if (defect.getDesk().getDeskNumberInRoom() != null)
+            return "#" + defect.getDesk().getDeskNumberInRoom();
         return String.valueOf(defect.getDesk().getId());
     }
 

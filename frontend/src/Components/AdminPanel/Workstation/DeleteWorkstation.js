@@ -84,9 +84,23 @@ export default function DeleteWorkstation({ onClose, isOpen }) {
       {selectedDesk &&
         <WorkStationDefinition 
           t={t}
-          equipment={selectedDesk.equipment}
           remark={selectedDesk.remark}
+          workstationType={selectedDesk.workstationType || 'Standard'}
+          monitorsQuantity={selectedDesk.monitorsQuantity ?? 0}
+          deskHeightAdjustable={Boolean(selectedDesk.deskHeightAdjustable)}
+          technologyDockingStation={Boolean(selectedDesk.technologyDockingStation)}
+          technologyWebcam={Boolean(selectedDesk.technologyWebcam)}
+          technologyHeadset={Boolean(selectedDesk.technologyHeadset)}
+          specialFeatures={selectedDesk.specialFeatures || ''}
+          setWorkstationType={() => {}}
+          setMonitorsQuantity={() => {}}
+          setDeskHeightAdjustable={() => {}}
+          setTechnologyDockingStation={() => {}}
+          setTechnologyWebcam={() => {}}
+          setTechnologyHeadset={() => {}}
           disabled={true}
+          setRemark={() => {}}
+          setSpecialFeatures={() => {}}
         />
       }
     </LayoutModalAdmin>

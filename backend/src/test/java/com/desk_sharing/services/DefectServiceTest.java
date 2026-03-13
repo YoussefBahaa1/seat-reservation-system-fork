@@ -665,7 +665,7 @@ class DefectServiceTest {
         Desk desk = new Desk();
         desk.setId(id);
         desk.setRoom(room);
-        desk.setWorkstationIdentifier("WS-" + id);
+        desk.setRemark("Desk " + id);
         desk.setBlocked(false);
         return desk;
     }

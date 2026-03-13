@@ -2,6 +2,7 @@ package com.desk_sharing.services;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -23,13 +24,48 @@ import com.desk_sharing.repositories.BookingRepository;
 @Service
 @AllArgsConstructor
 public class DeskService {
+    public static final int SPECIAL_FEATURES_MAX_LENGTH = 120;
+
     private final DeskRepository deskRepository;
     private final BookingRepository bookingRepository;
     private final SeriesRepository seriesRepository;
     private final SeriesService seriesService;
-    private final EquipmentService equipmentService;
-    //private final RoomService roomService;
     private final RoomRepository roomRepository;
+
+    private String normalizeWorkstationType(String workstationType) {
+        if (workstationType == null || workstationType.isBlank()) {
+            return "Standard";
+        }
+        return Stream.of("Standard", "Silent", "Ergonomic", "Premium")
+            .filter(allowed -> allowed.equalsIgnoreCase(workstationType.trim()))
+            .findFirst()
+            .orElse("Standard");
+    }
+
+    private String normalizeSpecialFeatures(String specialFeatures) {
+        if (specialFeatures == null) {
+            return "";
+        }
+        final String trimmed = specialFeatures.trim();
+        if (trimmed.length() <= SPECIAL_FEATURES_MAX_LENGTH) {
+            return trimmed;
+        }
+        return trimmed.substring(0, SPECIAL_FEATURES_MAX_LENGTH);
+    }
+
+    private void applyDeskMetadata(Desk desk, DeskDTO deskDto) {
+        desk.setRemark(deskDto.getRemark());
+        desk.setWorkstationType(normalizeWorkstationType(deskDto.getWorkstationType()));
+        desk.setMonitorsQuantity(deskDto.getMonitorsQuantity() == null ? 0 : deskDto.getMonitorsQuantity());
+        desk.setDeskHeightAdjustable(Boolean.TRUE.equals(deskDto.getDeskHeightAdjustable()));
+        desk.setTechnologyDockingStation(Boolean.TRUE.equals(deskDto.getTechnologyDockingStation()));
+        desk.setTechnologyWebcam(Boolean.TRUE.equals(deskDto.getTechnologyWebcam()));
+        desk.setTechnologyHeadset(Boolean.TRUE.equals(deskDto.getTechnologyHeadset()));
+        desk.setSpecialFeatures(normalizeSpecialFeatures(deskDto.getSpecialFeatures()));
+        if (deskDto.getFixed() != null) {
+            desk.setFixed(deskDto.getFixed());
+        }
+    }
 
     public Desk saveDesk(final DeskDTO deskDto) {
         if (deskDto == null) {
@@ -45,11 +81,7 @@ public class DeskService {
         final Room room = roomRepository.findById(roomId)
             .orElseThrow(() -> new EntityNotFoundException("Room not found in DeskService.saveDesk : " + roomId));
         desk.setRoom(room);
-        desk.setEquipment(equipmentService.getEquipmentByEquipmentName(deskDto.getEquipment()));
-        desk.setRemark(deskDto.getRemark());
-        if (deskDto.getFixed() != null) {
-            desk.setFixed(deskDto.getFixed());
-        }
+        applyDeskMetadata(desk, deskDto);
         final List<Desk> allDesksInCurrentRoomn = deskRepository.findByRoomId(desk.getRoom().getId());
         final Long newDeskNumberInRoom = 1 + allDesksInCurrentRoomn.stream()
             .filter(d -> d.getDeskNumberInRoom() != null)
@@ -61,7 +93,7 @@ public class DeskService {
     }
 
     public List<Desk> getAllDesks() {
-        return deskRepository.findByHiddenFalse();
+        return deskRepository.findByHiddenFalseAndFixedFalse();
     }
 
     public Optional<Desk> getDeskById(@NonNull final Long id) {
@@ -69,21 +101,17 @@ public class DeskService {
     }
 
     public List<Desk> getDeskByRoomId(Long roomId) {
-        return deskRepository.findByRoomIdAndHiddenFalse(roomId);
+        return deskRepository.findByRoomIdAndHiddenFalseAndFixedFalse(roomId);
     }
 
     public List<Desk> getDeskByRoomIdIncludingHidden(Long roomId) {
         return deskRepository.findByRoomId(roomId);
     }
 
-    public Desk updateDesk(@NonNull final Long deskId, String equipment, String remark, Boolean fixed) {
+    public Desk updateDesk(@NonNull final Long deskId, DeskDTO deskDto) {
         final Desk desk = getDeskById(deskId)
             .orElseThrow(() -> new EntityNotFoundException("Desk not found in DeskService.updateDesk : " + deskId));
-        desk.setEquipment(equipmentService.getEquipmentByEquipmentName(equipment));
-        desk.setRemark(remark);
-        if (fixed != null) {
-            desk.setFixed(fixed);
-        }
+        applyDeskMetadata(desk, deskDto);
         return deskRepository.save(desk);
     }
 

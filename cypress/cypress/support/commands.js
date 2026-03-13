@@ -467,14 +467,13 @@ Cypress.Commands.add('rmDesk', (buildingId, floorId, roomRemark, imgSrc, deskRem
 /**
  * Must be logged in as admin.
  */
-Cypress.Commands.add('addDesk', (buildingId, floorId, roomRemark, imgSrc, deskRemark, equipment='withEquipment')=>{
+Cypress.Commands.add('addDesk', (buildingId, floorId, roomRemark, imgSrc, deskRemark)=>{
   cy.visit('/admin').then(()=>{
     cy.get('button#roomManagement').click().then(()=>{
       cy.get('button#addWorkstation').click().then(()=>{
         cy.setFloor(buildingId, floorId, imgSrc).then(()=>{ 
           cy.get(`button#icon_button_${roomRemark}`).click().then(()=>{
             Cypress.Promise.all([
-              cy.setStr('workstationDefinition_setEquipment', equipment),
               cy.setStr('workStationDefinition_setRemark', deskRemark)
             ]).then(()=>{
               cy.get('button#modal_submit').click().then(()=>{

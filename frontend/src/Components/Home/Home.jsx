@@ -16,6 +16,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined';
 import FloorImage from '../FloorImage/FloorImage.jsx';
 import CarparkView from '../Carpark/CarparkView.jsx';
+import { WORKSTATION_TYPE_VALUES } from '../misc/workstationMetadata';
 
 const PARKING_TYPE_VALUES = ['STANDARD', 'ACCESSIBLE', 'E_CHARGING_STATION', 'SPECIAL_CASE'];
 const toSentenceCase = (value) => {
@@ -69,7 +70,6 @@ const Home = () => {
   });
   const [rooms, setRooms] = useState([]);
   const [desks, setDesks] = useState([]);
-  const [equipments, setEquipments] = useState([]);
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const lastRoomIdRef = useRef(null);
   const currentUserId = localStorage.getItem('userId');
@@ -202,14 +202,6 @@ const Home = () => {
       }
     );
     getRequest(
-      `${process.env.REACT_APP_BACKEND_URL}/equipments`,
-      headers.current,
-      (data) => setEquipments(Array.isArray(data) ? data : []),
-      (errorCode) => {
-        console.log('Error fetching equipments:', errorCode);
-      }
-    );
-    getRequest(
       `${process.env.REACT_APP_BACKEND_URL}/desks`,
       headers.current,
       (data) => setDesks(Array.isArray(data) ? data : []),
@@ -268,7 +260,7 @@ const Home = () => {
       .filter((value) => {
         if (value.startsWith('building:')) return true;
         if (value.startsWith('room:')) return true;
-        if (value.startsWith('type:')) return String(value).toLowerCase() !== 'type:unknown';
+        if (value.startsWith('type:')) return true;
         return false;
       });
     const selectedBuildingSet = new Set(
@@ -345,12 +337,9 @@ const Home = () => {
 
   const typeOptions = useMemo(() => {
     if (mode === 'desk') {
-      const equipmentOptions = equipments
-        .filter((equipment) => equipment?.equipmentName)
-        .filter((equipment) => String(equipment.equipmentName).trim().toLowerCase() !== 'unknown')
-        .map((equipment) => ({
-          value: `type:${equipment.equipmentName}`,
-          label: t(equipment.equipmentName)
+      const ergonomicsOptions = WORKSTATION_TYPE_VALUES.map((value) => ({
+          value: `type:${value}`,
+          label: t(`workstationType${value}`)
         }));
       const deskFlagOptions = [
         { value: 'type:flag:fixed', label: t('fixed') },
@@ -358,7 +347,7 @@ const Home = () => {
         { value: 'type:flag:technologyWebcam', label: t('deskFilterTechnologyWebcam') },
         { value: 'type:flag:technologyHeadset', label: t('deskFilterTechnologyHeadset') }
       ];
-      return [...equipmentOptions, ...deskFlagOptions];
+      return [...ergonomicsOptions, ...deskFlagOptions];
     }
     const dynamicTypes = dayParkingEvents
       .map((event) => String(event?.parkingType || '').toUpperCase())
@@ -373,7 +362,7 @@ const Home = () => {
       value: `type:${value}`,
       label: labelForType(value)
     }));
-  }, [dayParkingEvents, equipments, mode, t]);
+  }, [dayParkingEvents, mode, t]);
 
   const coveredOptions = useMemo(() => {
     if (mode !== 'parking') return [];
@@ -491,7 +480,7 @@ const Home = () => {
           }
           const roomMatch = eventRoomId != null && selectedRoomSet.has(eventRoomId);
           const typeValue = event.workspaceType;
-          const equipmentTypeMatch = typeValue && selectedTypeSet.has(typeValue);
+          const ergonomicsTypeMatch = typeValue && selectedTypeSet.has(typeValue);
           const desk = desksById.get(String(event?.deskId ?? ''));
           const fixedMatch = selectedTypeSet.has('flag:fixed') && desk?.fixed === true;
           const heightAdjustableMatch =
@@ -499,7 +488,7 @@ const Home = () => {
           const webcamMatch = selectedTypeSet.has('flag:technologyWebcam') && desk?.technologyWebcam === true;
           const headsetMatch = selectedTypeSet.has('flag:technologyHeadset') && desk?.technologyHeadset === true;
           const typeMatch = Boolean(
-            equipmentTypeMatch || fixedMatch || heightAdjustableMatch || webcamMatch || headsetMatch
+            ergonomicsTypeMatch || fixedMatch || heightAdjustableMatch || webcamMatch || headsetMatch
           );
           return roomMatch || typeMatch;
         }

@@ -4,6 +4,7 @@ import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.entities.VisibilityMode;
 import com.desk_sharing.repositories.*;
 import com.desk_sharing.security.JWTGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,13 +28,14 @@ class VisibilityServiceTest {
     @Mock JWTGenerator jwtGenerator;
     @Mock AuthenticationManager authenticationManager;
     @Mock LdapService ldapService;
+    ObjectMapper objectMapper = new ObjectMapper();
 
     private UserService userService;
 
     @BeforeEach
     void setup() {
         userService = new UserService(userRepository, passwordEncoder, floorRepository,
-                bookingRepository, seriesRepository, roleRepository, jwtGenerator, authenticationManager, ldapService);
+                bookingRepository, seriesRepository, roleRepository, jwtGenerator, authenticationManager, ldapService, objectMapper);
     }
 
     @Test

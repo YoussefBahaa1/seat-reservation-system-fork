@@ -87,12 +87,11 @@ where not exists (
 );
 
 -- Desks/Workstations
-insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+insert into desks (room_id, remark, desk_number_in_room)
 select
     r.room_id,
     new_desks.remark,
-    new_desks.desk_number_in_room,
-    e.equipment_id
+    new_desks.desk_number_in_room
 from (
     select 'Zimmer 1.1' as room_remark, 'Arbeitsplatz 1.1.1' as remark, 1 as desk_number_in_room
     union all select 'Zimmer 1.1', 'Arbeitsplatz 1.1.2', 2
@@ -136,7 +135,6 @@ from (
 join rooms r on r.remark = new_desks.room_remark
 join floors f on f.floor_id = r.floor_id
 join buildings b on b.building_id = f.building_id and b.name = '1 Bautznerstr. 19 a-b'
-join equipments e on e.equipment_name = 'withEquipment'
 where not exists (
     select 1
     from desks existing_desk
@@ -280,12 +278,11 @@ where not exists (
       and existing_room.remark = new_rooms.remark
 );
 
-insert into desks (room_id, remark, desk_number_in_room, equipment_id)
+insert into desks (room_id, remark, desk_number_in_room)
 select
     r.room_id,
     new_desks.remark,
-    new_desks.desk_number_in_room,
-    e.equipment_id
+    new_desks.desk_number_in_room
 from (
     select 'Zimmer 1.1' as room_remark, 'Arbeitsplatz 1.1.1' as remark, 1 as desk_number_in_room
     union all select 'Zimmer 1.2', 'Arbeitsplatz 1.2.1', 1
@@ -338,7 +335,6 @@ from (
 join rooms r on r.remark = new_desks.room_remark
 join floors f on f.floor_id = r.floor_id
 join buildings b on b.building_id = f.building_id and b.name = '2 Bautznerstr. 19 c'
-join equipments e on e.equipment_name = 'withEquipment'
 where not exists (
     select 1
     from desks existing_desk

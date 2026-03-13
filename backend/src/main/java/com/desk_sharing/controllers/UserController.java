@@ -22,6 +22,7 @@ import com.desk_sharing.services.UserService;
 import com.desk_sharing.entities.VisibilityMode;
 import com.desk_sharing.model.NotificationPreferencesDTO;
 import com.desk_sharing.model.UserLanguagePreferenceDTO;
+import com.desk_sharing.model.WorkstationSearchFiltersDTO;
 
 import lombok.AllArgsConstructor;
 
@@ -148,5 +149,20 @@ public class UserController {
         }
         String language = userService.updateCurrentUserPreferredLanguage(request.getLanguage());
         return ResponseEntity.ok(new UserLanguagePreferenceDTO(language));
+    }
+
+    @GetMapping("/me/workstation-search-filters")
+    public ResponseEntity<WorkstationSearchFiltersDTO> getWorkstationSearchFilters() {
+        return ResponseEntity.ok(userService.getCurrentUserWorkstationSearchFilters());
+    }
+
+    @PutMapping("/me/workstation-search-filters")
+    public ResponseEntity<WorkstationSearchFiltersDTO> updateWorkstationSearchFilters(
+        @RequestBody WorkstationSearchFiltersDTO request
+    ) {
+        if (request == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(userService.updateCurrentUserWorkstationSearchFilters(request));
     }
 }

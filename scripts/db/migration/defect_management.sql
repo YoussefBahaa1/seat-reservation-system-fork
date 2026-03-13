@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS `defect_internal_notes` (
 
 -- Desk blocking columns
 ALTER TABLE `desks` ADD COLUMN IF NOT EXISTS `is_blocked` tinyint(1) NOT NULL DEFAULT 0;
+ALTER TABLE `desks` MODIFY COLUMN `is_blocked` tinyint(1) NOT NULL DEFAULT 0;
 ALTER TABLE `desks` ADD COLUMN IF NOT EXISTS `blocked_reason_category` varchar(30) DEFAULT NULL;
 ALTER TABLE `desks` ADD COLUMN IF NOT EXISTS `blocked_estimated_end_date` date DEFAULT NULL;
 ALTER TABLE `desks` ADD COLUMN IF NOT EXISTS `blocked_by_defect_id` bigint(20) DEFAULT NULL;

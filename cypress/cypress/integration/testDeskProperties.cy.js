@@ -7,8 +7,8 @@ describe('Test desk properties ', ()=> {
     const deskRemark = 'testdesk1';
     const newDeskRemark = 'test_remark_desk' + 2;
     const imgSrc = '/Assets/Hauptstelle Dresden,  Bautzner Str.19ab/1. Obergeschoss.png';
-    const equipment = 'withoutEquipment';
-    const newEquipment = 'unknown';
+    const workstationType = 'Standard';
+    const newWorkstationType = 'Premium';
 
     it('Create desk and change properties', ()=>{
         cy.login()
@@ -16,7 +16,7 @@ describe('Test desk properties ', ()=> {
         .rmAllRooms(buildingId, floorId, roomRemark, imgSrc)
         .rmAllRooms(buildingId, floorId, newRoomRemark, imgSrc)
         .addRoom(buildingId, floorId, roomRemark, imgSrc)
-        .addDesk(buildingId, floorId, roomRemark, imgSrc, deskRemark, equipment)
+        .addDesk(buildingId, floorId, roomRemark, imgSrc, deskRemark)
         .visit('/admin')
         // 1. check
         .get('button#roomManagement').click()
@@ -25,10 +25,10 @@ describe('Test desk properties ', ()=> {
         .get(`button#icon_button_${roomRemark}`).click()
         .get('div#deskSelector').click()
         .get('div').contains(`${deskRemark}`).click()
-        .get('div#workstationDefinition_setEquipment').find('input').should('exist').should('have.value', equipment)
+        .get('#workstationDefinition_setType').contains(workstationType)
         .get('div#workStationDefinition_setRemark').find('input').should('exist').should('have.value', deskRemark)
         // 1. change
-        .setStr('workstationDefinition_setEquipment', newEquipment)
+        .setStr('workstationDefinition_setType', newWorkstationType)
         .setStr('workStationDefinition_setRemark', newDeskRemark)
         .get('button#modal_submit').click()
         .get('.Toastify__toast').should('be.visible').contains('Desk updated successfully')
@@ -38,10 +38,10 @@ describe('Test desk properties ', ()=> {
         .get(`button#icon_button_${roomRemark}`).click()
         .get('div#deskSelector').click()
         .get('div').contains(`${newDeskRemark}`).click()
-        .get('div#workstationDefinition_setEquipment').find('input').should('exist').should('have.value', newEquipment)
+        .get('#workstationDefinition_setType').contains(newWorkstationType)
         .get('div#workStationDefinition_setRemark').find('input').should('exist').should('have.value', newDeskRemark)
         // 2. change
-        .setStr('workstationDefinition_setEquipment', equipment)
+        .setStr('workstationDefinition_setType', workstationType)
         .setStr('workStationDefinition_setRemark', deskRemark)
         .get('button#modal_submit').click()
         .get('.Toastify__toast').should('be.visible').contains('Desk updated successfully')
@@ -51,10 +51,10 @@ describe('Test desk properties ', ()=> {
         .get(`button#icon_button_${roomRemark}`).click()
         .get('div#deskSelector').click()
         .get('div').contains(deskRemark).click()
-        .get('div#workstationDefinition_setEquipment').find('input').should('exist').should('have.value', equipment)
+        .get('#workstationDefinition_setType').contains(workstationType)
         .get('div#workStationDefinition_setRemark').find('input').should('exist').should('have.value', deskRemark)
         // 3. change
-        .setStr('workstationDefinition_setEquipment', newEquipment)
+        .setStr('workstationDefinition_setType', newWorkstationType)
         .setStr('workStationDefinition_setRemark', newDeskRemark)
         .get('button#modal_submit').click()
         .get('.Toastify__toast').should('be.visible').contains('Desk updated successfully')

@@ -4,19 +4,19 @@ describe('Home day view', () => {
     { id: 1, remark: 'Zimmer 1.1' },
     { id: 2, remark: 'Zimmer 2.3' }
   ];
-  const equipmentsResponse = [
-    { id: 1, equipmentName: 'withEquipment' },
-    { id: 2, equipmentName: 'withoutEquipment' }
+  const desksResponse = [
+    { id: 1, workstationType: 'Standard', technologyWebcam: false, technologyHeadset: false, deskHeightAdjustable: false },
+    { id: 2, workstationType: 'Ergonomic', technologyWebcam: true, technologyHeadset: false, deskHeightAdjustable: true }
   ];
 
   beforeEach(() => {
     cy.intercept('GET', '**/rooms', { statusCode: 200, body: roomsResponse }).as('getRooms');
-    cy.intercept('GET', '**/equipments', { statusCode: 200, body: equipmentsResponse }).as('getEquipments');
+    cy.intercept('GET', '**/desks', { statusCode: 200, body: desksResponse }).as('getDesks');
     cy.intercept('GET', '**/bookings/day/**', { statusCode: 200, body: [] }).as('getBookingsDay');
 
     cy.login();
     cy.visit('/home');
-    cy.wait(['@getRooms', '@getEquipments']);
+    cy.wait(['@getRooms', '@getDesks']);
   });
 
   //Ensure a day click triggers the lower list and hour rows are always present.
@@ -36,7 +36,7 @@ describe('Home day view', () => {
     cy.contains('Rooms').should('be.visible');
     cy.contains('Desk types').should('be.visible');
     cy.contains('Zimmer 1.1').should('be.visible');
-    cy.contains('With equipment').should('be.visible');
+    cy.contains('Standard').should('be.visible');
   });
 
   //Verify parking mode hides Rooms and shows only Parking types.
@@ -47,7 +47,7 @@ describe('Home day view', () => {
     cy.contains('Rooms').should('not.exist');
     cy.contains('Parking types').should('be.visible');
     cy.contains('Zimmer 1.1').should('not.exist');
-    cy.contains('With equipment').should('not.exist');
+    cy.contains('Standard').should('not.exist');
   });
 });
 

@@ -8,8 +8,7 @@ export function buildLocationLabel(defect) {
   if (room?.floor?.name) parts.push(room.floor.name);
   if (room?.remark) parts.push(room.remark);
 
-  const deskLabel = desk.workstationIdentifier
-    || (desk.deskNumberInRoom ? `#${desk.deskNumberInRoom}` : null)
+  const deskLabel = (desk.deskNumberInRoom ? `#${desk.deskNumberInRoom}` : null)
     || desk.remark
     || `ID ${desk.id}`;
   parts.push(deskLabel);

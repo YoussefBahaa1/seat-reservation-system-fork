@@ -1,31 +1,122 @@
-import { FormControl, TextField } from '@mui/material';
-import MySelectComponent from '../../misc/MySelectComponent';
+import { FormControl, InputLabel, MenuItem, Select, TextField } from '@mui/material';
+import {
+    booleanChoiceOptions,
+    monitorCountOptions,
+    workstationTypeOptions,
+} from '../../misc/workstationMetadata';
+
+const SPECIAL_FEATURES_MAX_LENGTH = 120;
 
 export default function WorkStationDefinition({
     t, 
-    equipment, 
-    setEquipment,
     remark,
     setRemark,
+    workstationType,
+    setWorkstationType,
+    monitorsQuantity,
+    setMonitorsQuantity,
+    deskHeightAdjustable,
+    setDeskHeightAdjustable,
+    technologyDockingStation,
+    setTechnologyDockingStation,
+    technologyWebcam,
+    setTechnologyWebcam,
+    technologyHeadset,
+    setTechnologyHeadset,
+    specialFeatures,
+    setSpecialFeatures,
     disabled=false
 }) {
-    
+    const yesNoOptions = booleanChoiceOptions(t);
+    const adjustableOptions = booleanChoiceOptions(t, 'adjustable', 'notAdjustable');
+
     return (
         <>
-            
-            {/*equipment &&*/ <MySelectComponent 
-                t={t}
-                id={'workstationDefinition_setEquipment'}
-                name='equipment'
-                disabled={disabled}
-                value={equipment}
-                setValue={setEquipment}
-                url='equipments'
-                propertyName='equipmentName'
-                idName='equipmentId'
-            />}
+            <FormControl id='workstationDefinition_setType' required fullWidth size='small'>
+                <InputLabel>{t('ergonomics')}</InputLabel>
+                <Select
+                    disabled={disabled}
+                    value={workstationType}
+                    label={t('ergonomics')}
+                    onChange={(e) => setWorkstationType(e.target.value)}
+                >
+                    {workstationTypeOptions(t).map((option) => (
+                        <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
             <br/><br/>
-            {/*remark &&*/ <FormControl id='workStationDefinition_setRemark' required={false} size='small' fullWidth variant='standard'>
+            <FormControl id='workstationDefinition_setMonitors' required fullWidth size='small'>
+                <InputLabel>{t('monitors')}</InputLabel>
+                <Select
+                    disabled={disabled}
+                    value={String(monitorsQuantity)}
+                    label={t('monitors')}
+                    onChange={(e) => setMonitorsQuantity(Number(e.target.value))}
+                >
+                    {monitorCountOptions().map((option) => (
+                        <MenuItem key={option.value} value={String(option.value)}>{option.label}</MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
+            <br/><br/>
+            <FormControl id='workstationDefinition_setAdjustable' required fullWidth size='small'>
+                <InputLabel>{t('deskType')}</InputLabel>
+                <Select
+                    disabled={disabled}
+                    value={String(Boolean(deskHeightAdjustable))}
+                    label={t('deskType')}
+                    onChange={(e) => setDeskHeightAdjustable(e.target.value === 'true')}
+                >
+                    {adjustableOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
+            <br/><br/>
+            <FormControl id='workstationDefinition_setDockingStation' required fullWidth size='small'>
+                <InputLabel>{t('technologyDockingStation')}</InputLabel>
+                <Select
+                    disabled={disabled}
+                    value={String(Boolean(technologyDockingStation))}
+                    label={t('technologyDockingStation')}
+                    onChange={(e) => setTechnologyDockingStation(e.target.value === 'true')}
+                >
+                    {yesNoOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
+            <br/><br/>
+            <FormControl id='workstationDefinition_setWebcam' required fullWidth size='small'>
+                <InputLabel>{t('technologyWebcam')}</InputLabel>
+                <Select
+                    disabled={disabled}
+                    value={String(Boolean(technologyWebcam))}
+                    label={t('technologyWebcam')}
+                    onChange={(e) => setTechnologyWebcam(e.target.value === 'true')}
+                >
+                    {yesNoOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
+            <br/><br/>
+            <FormControl id='workstationDefinition_setHeadset' required fullWidth size='small'>
+                <InputLabel>{t('technologyHeadset')}</InputLabel>
+                <Select
+                    disabled={disabled}
+                    value={String(Boolean(technologyHeadset))}
+                    label={t('technologyHeadset')}
+                    onChange={(e) => setTechnologyHeadset(e.target.value === 'true')}
+                >
+                    {yesNoOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
+            <br/><br/>
+            <FormControl id='workStationDefinition_setRemark' required={false} size='small' fullWidth variant='standard'>
                 <TextField
                     disabled={disabled}
                     id='textfield_desk_remark'
@@ -36,8 +127,21 @@ export default function WorkStationDefinition({
                     value={remark}
                     onChange={(e)=>setRemark(e.target.value)}
                 />
-            </FormControl>}
+            </FormControl>
+            <br/><br/>
+            <FormControl id='workstationDefinition_setSpecialFeatures' required={false} size='small' fullWidth variant='standard'>
+                <TextField
+                    disabled={disabled}
+                    id='textfield_special_features'
+                    label={t('specialFeatures')}
+                    size='small'
+                    type='string'
+                    value={specialFeatures}
+                    inputProps={{ maxLength: SPECIAL_FEATURES_MAX_LENGTH }}
+                    helperText={`${String(specialFeatures || '').length}/${SPECIAL_FEATURES_MAX_LENGTH}`}
+                    onChange={(e)=>setSpecialFeatures(e.target.value)}
+                />
+            </FormControl>
         </>
     );
 }
-

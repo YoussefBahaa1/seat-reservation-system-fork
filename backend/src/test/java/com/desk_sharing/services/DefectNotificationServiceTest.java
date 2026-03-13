@@ -109,7 +109,7 @@ class DefectNotificationServiceTest {
         defect.setDescription("The monitor cable is broken and needs replacement.");
 
         Desk desk = new Desk();
-        desk.setWorkstationIdentifier("WS-01");
+        desk.setRemark("Desk 1");
         defect.setDesk(desk);
 
         Room room = new Room();

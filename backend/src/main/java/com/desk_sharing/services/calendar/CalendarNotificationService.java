@@ -157,9 +157,9 @@ public class CalendarNotificationService {
         sb.append(german ? "Raum: " : "Room: ")
             .append(booking.getRoom() != null ? booking.getRoom().getRemark() : "")
             .append("\\n");
-        if (booking.getDesk() != null && booking.getDesk().getEquipment() != null) {
-            sb.append(german ? "Arbeitsplatztyp: " : "Workspace type: ")
-                .append(booking.getDesk().getEquipment().getEquipmentName())
+        if (booking.getDesk() != null && booking.getDesk().getWorkstationType() != null) {
+            sb.append(german ? "Ergonomie: " : "Ergonomics: ")
+                .append(booking.getDesk().getWorkstationType())
                 .append("\\n");
         }
         if (!isBlank(frontendBaseUrl)) {

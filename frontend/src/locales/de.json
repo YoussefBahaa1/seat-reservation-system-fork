@@ -123,8 +123,31 @@
     "defaultFloor": "Std. Etage",
     "defaultView": "Std. Ansicht",
     "building": "Gebäude",
+    "defaultBuilding": "Std. Gebäude",
     "type": "Art",
-    "equipment": "Austattung",
+    "ergonomics": "Ergonomie",
+    "equipment": "Ausstattung",
+    "workstationType": "Ergonomie",
+    "workstationTypeStandard": "Standard",
+    "workstationTypeSilent": "Still",
+    "workstationTypeErgonomic": "Ergonomisch",
+    "workstationTypePremium": "Premium",
+    "monitorSingular": "Monitor",
+    "monitors": "Monitore",
+    "deskType": "Tischtyp",
+    "adjustable": "Hoehenverstellbar",
+    "notAdjustable": "Nicht hoehenverstellbar",
+    "adjustableHeight": "Hoehenverstellbar",
+    "notAdjustableHeight": "Nicht hoehenverstellbar",
+    "technology": "Technik",
+    "technologyDockingStation": "Dockingstation",
+    "technologyWebcam": "Webcam",
+    "technologyHeadset": "Headset",
+    "specialFeatures": "Besondere Merkmale",
+    "advancedFilters": "Erweiterte Filter",
+    "noFiltersApplied": "Keine Filter aktiv",
+    "spacesFound": "{{count}} Plaetze gefunden",
+    "resetFilters": "Filter zuruecksetzen",
     "choose": "Wählen Sie eine Buchung aus",
     "editBookingTime": "Buchungszeit bearbeiten",
     "deleteBookingMessage": "Sind Sie sicher, dass Sie diese Buchung entfernen möchten?",
@@ -212,9 +235,6 @@
     "selectRoom": "Zimmer auswählen",
     "selectDesk": "Tisch auswählen",
     "deskNotFound": "Tisch nicht gefunden",
-    "withEquipment": "Mit Austattung",
-    "withoutEquipment": "Ohne Austattung",
-    "unknown": "Unbekannt",
     
     "deleteBooking": "Buchung Entfernen",
     "editBooking": "Buchung Bearbeiten",
@@ -262,10 +282,8 @@
     "helpAddRoom":"Bitte wählen Sie einen Ort für ein neues Büro auf der Karte und klicken Sie darauf.<br/>Anschließend geben Sie alle nötigen Informationen ein und wählen <strong>Einreichen</strong>."
     ,"helpChooseRoom":"Bitte wählen Sie ein existierendes Büro aus und klicken hierauf."
     ,"helpCreateBooking":"Bitte wählen Sie zuerst ein Arbeitsplatz und dann eine Zeitspanne aus. Klicken Sie anschließend <strong>Buchen</strong>."
-    ,"booking.tooltip.identifier":"Kennung"
-    ,"booking.tooltip.type":"Typ"
+    ,"booking.tooltip.ergonomics":"Ergonomie"
     ,"booking.tooltip.monitors":"Monitore"
-    ,"booking.tooltip.deskTypeHeightAdjustable":"Tischtyp (hoehenverstellbar)"
     ,"booking.tooltip.technology":"Technik"
     ,"booking.tooltip.specialFeatures":"Besondere Merkmale"
     ,"helpDeleteRoom":"Klicken Sie auf den jeweiligen Raum um diesen zu löschen."
@@ -278,7 +296,7 @@
     ,"desksTitle":"Arbeitsplaetze"
     ,"parkingsTitle":"Parkplaetze"
     ,"filter":"Filter"
-    ,"deskTypes":"Arbeitsplatztypen"
+    ,"deskTypes":"Ergonomie"
     ,"deskFilterDeskHeightAdjustable":"Hoehenverstellbar"
     ,"deskFilterTechnologyWebcam":"Webcam"
     ,"deskFilterTechnologyHeadset":"Headset"

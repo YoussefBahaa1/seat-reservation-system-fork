@@ -9,6 +9,7 @@ import com.desk_sharing.entities.Desk;
 import com.desk_sharing.model.DatesAndTimesDTO;
 import com.desk_sharing.model.RangeDTO;
 import com.desk_sharing.model.SeriesDTO;
+import com.desk_sharing.model.WorkstationSearchRequestDTO;
 import com.desk_sharing.services.SeriesService;
 
 import lombok.AllArgsConstructor;
@@ -44,6 +45,23 @@ public class SeriesController {
         final List<Desk> desks = seriesService.desksForBuildingAndDatesAndTimes(building_id, datesAndTimesDTO);
         return new ResponseEntity<List<Desk>>(desks, HttpStatus.OK);
     };
+
+    @PostMapping("/search/desks")
+    public ResponseEntity<List<Desk>> searchDesks(@RequestBody WorkstationSearchRequestDTO requestDTO) {
+        logger.info("searchDesks( {} )", requestDTO);
+        final List<Desk> desks = seriesService.getDesksForDatesTimesAndFilters(requestDTO);
+        return new ResponseEntity<>(desks, HttpStatus.OK);
+    }
+
+    @PostMapping("/search/desks/{building_id}")
+    public ResponseEntity<List<Desk>> searchDesksForBuilding(
+        @PathVariable("building_id") Long buildingId,
+        @RequestBody WorkstationSearchRequestDTO requestDTO
+    ) {
+        logger.info("searchDesksForBuilding( {}, {} )", buildingId, requestDTO);
+        final List<Desk> desks = seriesService.getDesksForBuildingDatesTimesAndFilters(buildingId, requestDTO);
+        return new ResponseEntity<>(desks, HttpStatus.OK);
+    }
 
     /**
      * Calculates dates between an start- and enddate.

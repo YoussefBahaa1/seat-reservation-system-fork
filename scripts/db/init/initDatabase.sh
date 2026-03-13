@@ -29,6 +29,8 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
         scripts/db/migration/parking_reservation_status.sql \
         scripts/db/migration/parking_spot_features.sql \
         scripts/db/migration/workstation_equipment_fields.sql \
+        scripts/db/migration/workstation_search_filters.sql \
+        scripts/db/migration/workstation_metadata_backfill.sql \
         scripts/db/migration/fixed_desks.sql \
         scripts/db/migration/hidden_desks.sql \
         scripts/db/migration/defect_management.sql \
@@ -40,8 +42,6 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
     done
     # Insert viewmodes
     scripts/db/exec_db.sh init/insertViewModes.sql
-    # Insert equipments
-    scripts/db/exec_db.sh init/insertEquipment.sql
     # Insert roomstatuses
     scripts/db/exec_db.sh init/insertRoomStatuses.sql
     # Insert roles

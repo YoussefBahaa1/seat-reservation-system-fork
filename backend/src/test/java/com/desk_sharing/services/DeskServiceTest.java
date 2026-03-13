@@ -15,7 +15,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.desk_sharing.entities.Desk;
-import com.desk_sharing.entities.Equipment;
 import com.desk_sharing.entities.Room;
 import com.desk_sharing.model.DeskDTO;
 import com.desk_sharing.repositories.BookingRepository;
@@ -30,19 +29,16 @@ class DeskServiceTest {
     @Mock BookingRepository bookingRepository;
     @Mock SeriesRepository seriesRepository;
     @Mock SeriesService seriesService;
-    @Mock EquipmentService equipmentService;
     @Mock RoomRepository roomRepository;
 
     @InjectMocks DeskService deskService;
 
     @Test
     void saveDesk_setsFixedTrue_whenDtoFixedIsTrue() {
-        DeskDTO dto = deskDto(10L, "With equipment", "Desk 1", true);
+        DeskDTO dto = deskDto(10L, "Desk 1", true);
         Room room = room(10L);
-        Equipment equipment = equipment("With equipment");
 
         when(roomRepository.findById(10L)).thenReturn(Optional.of(room));
-        when(equipmentService.getEquipmentByEquipmentName("With equipment")).thenReturn(equipment);
         when(deskRepository.findByRoomId(10L)).thenReturn(List.of());
         when(deskRepository.save(any(Desk.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -54,12 +50,10 @@ class DeskServiceTest {
 
     @Test
     void saveDesk_keepsDefaultFixedFalse_whenDtoFixedIsNull() {
-        DeskDTO dto = deskDto(10L, "With equipment", "Desk 2", null);
+        DeskDTO dto = deskDto(10L, "Desk 2", null);
         Room room = room(10L);
-        Equipment equipment = equipment("With equipment");
 
         when(roomRepository.findById(10L)).thenReturn(Optional.of(room));
-        when(equipmentService.getEquipmentByEquipmentName("With equipment")).thenReturn(equipment);
         when(deskRepository.findByRoomId(10L)).thenReturn(List.of());
         when(deskRepository.save(any(Desk.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -72,23 +66,43 @@ class DeskServiceTest {
     @Test
     void getAllDesks_returnsOnlyVisibleDesks() {
         Desk visible = desk(1L, false);
-        when(deskRepository.findByHiddenFalse()).thenReturn(List.of(visible));
+        when(deskRepository.findByHiddenFalseAndFixedFalse()).thenReturn(List.of(visible));
 
         List<Desk> result = deskService.getAllDesks();
 
         assertThat(result).containsExactly(visible);
-        verify(deskRepository).findByHiddenFalse();
+        verify(deskRepository).findByHiddenFalseAndFixedFalse();
     }
 
     @Test
     void getDeskByRoomId_returnsOnlyVisibleDesks() {
         Desk visible = desk(2L, false);
-        when(deskRepository.findByRoomIdAndHiddenFalse(10L)).thenReturn(List.of(visible));
+        when(deskRepository.findByRoomIdAndHiddenFalseAndFixedFalse(10L)).thenReturn(List.of(visible));
 
         List<Desk> result = deskService.getDeskByRoomId(10L);
 
         assertThat(result).containsExactly(visible);
-        verify(deskRepository).findByRoomIdAndHiddenFalse(10L);
+        verify(deskRepository).findByRoomIdAndHiddenFalseAndFixedFalse(10L);
+    }
+
+    @Test
+    void saveDesk_setsStructuredDefaults() {
+        DeskDTO dto = deskDto(10L, "Desk 3", false);
+        Room room = room(10L);
+
+        when(roomRepository.findById(10L)).thenReturn(Optional.of(room));
+        when(deskRepository.findByRoomId(10L)).thenReturn(List.of());
+        when(deskRepository.save(any(Desk.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Desk saved = deskService.saveDesk(dto);
+
+        assertThat(saved.getWorkstationType()).isEqualTo("Standard");
+        assertThat(saved.getMonitorsQuantity()).isEqualTo(0);
+        assertThat(saved.getDeskHeightAdjustable()).isFalse();
+        assertThat(saved.getTechnologyDockingStation()).isFalse();
+        assertThat(saved.getTechnologyWebcam()).isFalse();
+        assertThat(saved.getTechnologyHeadset()).isFalse();
+        assertThat(saved.getSpecialFeatures()).isEmpty();
     }
 
     @Test
@@ -115,10 +129,9 @@ class DeskServiceTest {
         verify(deskRepository).save(d);
     }
 
-    private static DeskDTO deskDto(Long roomId, String equipment, String remark, Boolean fixed) {
+    private static DeskDTO deskDto(Long roomId, String remark, Boolean fixed) {
         DeskDTO dto = new DeskDTO();
         dto.setRoomId(roomId);
-        dto.setEquipment(equipment);
         dto.setRemark(remark);
         dto.setFixed(fixed);
         return dto;
@@ -135,11 +148,5 @@ class DeskServiceTest {
         desk.setId(id);
         desk.setHidden(hidden);
         return desk;
-    }
-
-    private static Equipment equipment(String name) {
-        Equipment equipment = new Equipment();
-        equipment.setEquipmentName(name);
-        return equipment;
     }
 }

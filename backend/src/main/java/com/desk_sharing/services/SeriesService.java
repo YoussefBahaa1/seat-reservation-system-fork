@@ -8,6 +8,8 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +21,8 @@ import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.model.DatesAndTimesDTO;
 import com.desk_sharing.model.RangeDTO;
 import com.desk_sharing.model.SeriesDTO;
+import com.desk_sharing.model.WorkstationSearchFiltersDTO;
+import com.desk_sharing.model.WorkstationSearchRequestDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
 //import com.desk_sharing.repositories.RoomRepository;
@@ -141,6 +145,73 @@ public class SeriesService {
             timestringToTime(datesAndTimesDTO.getEndTime())
         );
         return desks;
+    }
+
+    private List<Desk> applyWorkstationFilters(List<Desk> desks, WorkstationSearchFiltersDTO filters) {
+        if (filters == null) {
+            return desks;
+        }
+        final Set<String> types = filters.getTypes() == null
+            ? Set.of()
+            : filters.getTypes().stream().filter(v -> v != null && !v.isBlank()).collect(Collectors.toSet());
+        final Set<Integer> monitorCounts = filters.getMonitorCounts() == null
+            ? Set.of()
+            : filters.getMonitorCounts().stream().filter(v -> v != null).collect(Collectors.toSet());
+        final Set<Boolean> adjustableValues = filters.getDeskHeightAdjustable() == null
+            ? Set.of()
+            : filters.getDeskHeightAdjustable().stream().filter(v -> v != null).collect(Collectors.toSet());
+        final Set<String> technologySelections = filters.getTechnologySelections() == null
+            ? Set.of()
+            : filters.getTechnologySelections().stream()
+                .filter(v -> v != null && !v.isBlank())
+                .map(String::trim)
+                .collect(Collectors.toSet());
+        final Set<Boolean> specialFeatures = filters.getSpecialFeatures() == null
+            ? Set.of()
+            : filters.getSpecialFeatures().stream().filter(v -> v != null).collect(Collectors.toSet());
+
+        return desks.stream()
+            .filter(desk -> types.isEmpty() || types.contains(String.valueOf(desk.getWorkstationType())))
+            .filter(desk -> monitorCounts.isEmpty() || monitorCounts.contains(desk.getMonitorsQuantity()))
+            .filter(desk -> adjustableValues.isEmpty() || adjustableValues.contains(Boolean.TRUE.equals(desk.getDeskHeightAdjustable())))
+            .filter(desk -> {
+                if (technologySelections.isEmpty()) {
+                    return true;
+                }
+                if (technologySelections.contains("dockingStation") && !Boolean.TRUE.equals(desk.getTechnologyDockingStation())) {
+                    return false;
+                }
+                if (technologySelections.contains("webcam") && !Boolean.TRUE.equals(desk.getTechnologyWebcam())) {
+                    return false;
+                }
+                if (technologySelections.contains("headset") && !Boolean.TRUE.equals(desk.getTechnologyHeadset())) {
+                    return false;
+                }
+                return true;
+            })
+            .filter(desk -> {
+                if (specialFeatures.isEmpty()) {
+                    return true;
+                }
+                final boolean hasSpecialFeatures = desk.getSpecialFeatures() != null && !desk.getSpecialFeatures().trim().isEmpty();
+                return specialFeatures.contains(hasSpecialFeatures);
+            })
+            .toList();
+    }
+
+    public List<Desk> getDesksForDatesTimesAndFilters(WorkstationSearchRequestDTO requestDTO) {
+        final List<Desk> desks = getDesksForDatesAndTimes(
+            new DatesAndTimesDTO(requestDTO.getDates(), requestDTO.getStartTime(), requestDTO.getEndTime())
+        );
+        return applyWorkstationFilters(desks, requestDTO.getFilters());
+    }
+
+    public List<Desk> getDesksForBuildingDatesTimesAndFilters(Long buildingId, WorkstationSearchRequestDTO requestDTO) {
+        final List<Desk> desks = desksForBuildingAndDatesAndTimes(
+            buildingId,
+            new DatesAndTimesDTO(requestDTO.getDates(), requestDTO.getStartTime(), requestDTO.getEndTime())
+        );
+        return applyWorkstationFilters(desks, requestDTO.getFilters());
     }
 
     public boolean createSeries(@RequestBody SeriesDTO seriesDTO) {

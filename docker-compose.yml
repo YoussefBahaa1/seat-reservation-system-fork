@@ -49,7 +49,6 @@ services:
     privileged: true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /etc/docker/daemon.json:/etc/docker/daemon.json 
       - ${BACKEND_LOGS}:/usr/src/app/logs
         # mount tls stuff read only
       - ${PATH_TO_TLS}/backend:/app/tls:ro

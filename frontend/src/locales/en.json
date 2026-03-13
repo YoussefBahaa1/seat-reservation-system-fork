@@ -124,7 +124,29 @@
     "building": "Building",
     "defaultBuilding": "Default Building",
     "type": "Type",
+    "ergonomics": "Ergonomics",
     "equipment": "Equipment",
+    "workstationType": "Ergonomics",
+    "workstationTypeStandard": "Standard",
+    "workstationTypeSilent": "Silent",
+    "workstationTypeErgonomic": "Ergonomic",
+    "workstationTypePremium": "Premium",
+    "monitorSingular": "Monitor",
+    "monitors": "Monitors",
+    "deskType": "Desk type",
+    "adjustable": "Height Adjustable",
+    "notAdjustable": "Not Height Adjustable",
+    "adjustableHeight": "Adjustable height",
+    "notAdjustableHeight": "Not adjustable height",
+    "technology": "Technology",
+    "technologyDockingStation": "Docking station",
+    "technologyWebcam": "Webcam",
+    "technologyHeadset": "Headset",
+    "specialFeatures": "Special features",
+    "advancedFilters": "Advanced filters",
+    "noFiltersApplied": "No filters applied",
+    "spacesFound": "{{count}} spaces found",
+    "resetFilters": "Reset filters",
     "choose": "Choose a booking",
     "editBookingTime": "Edit Booking Time",
     "deleteBookingMessage": "Are you sure you want to remove this booking?",
@@ -212,9 +234,6 @@
     "selectRoom": "Select Room",
     "selectDesk": "Select Desk",
     "deskNotFound": "Desk not found",
-    "withEquipment": "With equipment",
-    "withoutEquipment": "Without equipment",
-    "unknown": "unknown",
     
     "deleteBooking": "Delete Booking",
     "editBooking": "Edit Booking",
@@ -262,10 +281,8 @@
     "helpAddRoom":"Please choose a location for an new room on the map and click on it.<br/>Additionally provide all necessary informations and push <strong>Submit</strong>."
     ,"helpChooseRoom":"Please choose an existing room and click on it."
     ,"helpCreateBooking":"Please choose first an desk and then a timespan. Finish with a push on <strong>Book</strong>."
-    ,"booking.tooltip.identifier":"Identifier"
-    ,"booking.tooltip.type":"Type"
+    ,"booking.tooltip.ergonomics":"Ergonomics"
     ,"booking.tooltip.monitors":"Monitors"
-    ,"booking.tooltip.deskTypeHeightAdjustable":"Desk type (height-adjustable)"
     ,"booking.tooltip.technology":"Technology"
     ,"booking.tooltip.specialFeatures":"Special features"
     ,"helpDeleteRoom":"Click on the room you want to be deleted."
@@ -278,10 +295,10 @@
     ,"desksTitle":"Desks"
     ,"parkingsTitle":"Parkings"
     ,"filter":"Filter"
-    ,"deskTypes":"Desk types"
-    ,"deskFilterDeskHeightAdjustable":"Desk height adjustable"
-    ,"deskFilterTechnologyWebcam":"Technology webcam"
-    ,"deskFilterTechnologyHeadset":"Technology headset"
+    ,"deskTypes":"Ergonomics"
+    ,"deskFilterDeskHeightAdjustable":"Adjustable height"
+    ,"deskFilterTechnologyWebcam":"Webcam"
+    ,"deskFilterTechnologyHeadset":"Headset"
     ,"parkingTypes":"Parking types"
     ,"switchToParking":"Switch to parking"
     ,"switchToDesk":"Switch to desk"

@@ -1,2 +1,5 @@
 ALTER TABLE `desks`
 ADD COLUMN IF NOT EXISTS `is_fixed` tinyint(1) NOT NULL DEFAULT 0;
+
+ALTER TABLE `desks`
+MODIFY COLUMN `is_fixed` tinyint(1) NOT NULL DEFAULT 0;

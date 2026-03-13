@@ -8,6 +8,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -38,6 +39,9 @@ import com.desk_sharing.entities.Floor;
 import com.desk_sharing.entities.Role;
 import com.desk_sharing.entities.Series;
 import com.desk_sharing.entities.VisibilityMode;
+import com.desk_sharing.model.WorkstationSearchFiltersDTO;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +63,7 @@ public class UserService  {
     private final JWTGenerator jwtGenerator;
     private final AuthenticationManager authenticationManager;
     private final LdapService ldapService;
+    private final ObjectMapper objectMapper;
 
     private UserEntity getCurrentUserOrThrow() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -105,6 +110,33 @@ public class UserService  {
         user.setPreferredLanguage(normalizedLanguage);
         userRepository.save(user);
         return normalizedLanguage;
+    }
+
+    public WorkstationSearchFiltersDTO getCurrentUserWorkstationSearchFilters() {
+        UserEntity user = getCurrentUserOrThrow();
+        String raw = user.getWorkstationSearchFilters();
+        if (raw == null || raw.isBlank()) {
+            return new WorkstationSearchFiltersDTO();
+        }
+        try {
+            WorkstationSearchFiltersDTO parsed = objectMapper.readValue(raw, WorkstationSearchFiltersDTO.class);
+            return parsed == null ? new WorkstationSearchFiltersDTO() : parsed;
+        } catch (JsonProcessingException ex) {
+            loggingErr("Failed to parse workstation search filters for user {}: {}", user.getId(), ex.getMessage());
+            return new WorkstationSearchFiltersDTO();
+        }
+    }
+
+    public WorkstationSearchFiltersDTO updateCurrentUserWorkstationSearchFilters(WorkstationSearchFiltersDTO filters) {
+        UserEntity user = getCurrentUserOrThrow();
+        WorkstationSearchFiltersDTO safeFilters = filters == null ? new WorkstationSearchFiltersDTO() : filters;
+        try {
+            user.setWorkstationSearchFilters(objectMapper.writeValueAsString(safeFilters));
+        } catch (JsonProcessingException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid workstation search filters");
+        }
+        userRepository.save(user);
+        return safeFilters;
     }
 
     public AuthResponseDTO login(final String email, final String password) throws LdapUserNotFoundException, DaoUserNotFoundException, BadCredentialsException {

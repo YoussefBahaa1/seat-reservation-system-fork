@@ -20,13 +20,41 @@ const DeskTable = ({
     submitButtonSxForDesk = null
 }) =>{
     const { t } = useTranslation();
+
+    const equipmentSummary = (desk) => {
+        const hasSpecialFeatures = desk?.specialFeatures != null && String(desk.specialFeatures).trim() !== '';
+        const monitorCount = desk?.monitorsQuantity ?? 0;
+        const labels = [
+            t(`workstationType${desk?.workstationType || 'Standard'}`),
+            `${monitorCount} ${t(monitorCount === 1 ? 'monitorSingular' : 'monitors')}`,
+        ];
+
+        if (desk?.deskHeightAdjustable === true) {
+            labels.push(t('adjustableHeight'));
+        }
+
+        if (desk?.technologyDockingStation === true) {
+            labels.push(t('technologyDockingStation'));
+        }
+        if (desk?.technologyWebcam === true) {
+            labels.push(t('technologyWebcam'));
+        }
+        if (desk?.technologyHeadset === true) {
+            labels.push(t('technologyHeadset'));
+        }
+
+        if (hasSpecialFeatures) {
+            labels.push(`${t('specialFeatures')}: ${String(desk.specialFeatures).trim()}`);
+        }
+        return labels.join(', ');
+    };
     
     return (
         <TableContainer component={Paper} sx={{
             maxHeight: 400,
             overflowY: 'auto',
         }}>
-            <Table stickyHeader id='room_table'>
+            <Table stickyHeader id='room_table' sx={{ tableLayout: 'fixed' }}>
                 <TableHead>
                     <TableRow>
                         <TableCell>{t('deskRemark')}</TableCell>
@@ -43,7 +71,16 @@ const DeskTable = ({
                         desks.map((desk) => (
                             <TableRow id={name+'_'+desk.remark} key={desk.id}>
                                 <TableCell>{desk.remark}</TableCell>
-                                <TableCell>{t(desk.equipment.equipmentName)}</TableCell>
+                                <TableCell
+                                    sx={{
+                                        width: 300,
+                                        maxWidth: 300,
+                                        whiteSpace: 'normal',
+                                        wordBreak: 'break-word',
+                                    }}
+                                >
+                                    {equipmentSummary(desk)}
+                                </TableCell>
                                 <TableCell>{desk.room.remark}</TableCell>
                                 <TableCell>{desk.room.floor.building.name}</TableCell>
                                 <TableCell>{desk.room.floor.name}</TableCell>

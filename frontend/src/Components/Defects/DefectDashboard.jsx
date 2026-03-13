@@ -200,8 +200,7 @@ const DefectDashboard = () => {
                 })
                 .map((desk) => {
                   const roomLabel = desk?.room?.remark || `Room ${desk?.room?.id || '—'}`;
-                  const workstationLabel = desk?.workstationIdentifier
-                    || desk?.remark
+                  const workstationLabel = desk?.remark
                     || `Desk ${desk?.id || '—'}`;
                   return (
                     <MenuItem key={desk.id} value={desk.id}>

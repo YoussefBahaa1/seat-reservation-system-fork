@@ -15,28 +15,38 @@ export default function EditWorkstation({ isOpen, onClose }) {
   // const [allDesks, setAllDesks] = useState([]);
   const [room, setRoom]= useState('');
   const [selectedDesk, setSelectedDesk] = useState('');
-  const [equipment, setEquipment]= useState('');
   const [remark, setRemark]= useState('');
+  const [workstationType, setWorkstationType] = useState('Standard');
+  const [monitorsQuantity, setMonitorsQuantity] = useState(0);
+  const [deskHeightAdjustable, setDeskHeightAdjustable] = useState(false);
+  const [technologyDockingStation, setTechnologyDockingStation] = useState(false);
+  const [technologyWebcam, setTechnologyWebcam] = useState(false);
+  const [technologyHeadset, setTechnologyHeadset] = useState(false);
+  const [specialFeatures, setSpecialFeatures] = useState('');
   const [fixed, setFixed] = useState(false);
   const helpText = t('helpEditWorkstation');
 
   async function updateWorkstation() {
-    if (selectedDesk?.id && equipment && remark) {
+    if (selectedDesk?.id) {
       putRequest(
         `${process.env.REACT_APP_BACKEND_URL}/admin/desks/updateDesk`,
         headers.current,
         (_) => {
           toast.success(t('deskUpdate'));
-          // setEquipment('');
-          // setRemark('');
           onClose();
         },
         () => {console.log('Failed to update workstation in EditWorkstation.js');},
         JSON.stringify({
           'deskId': selectedDesk.id,
-          'equipment': equipment.equipmentName,
           'remark': remark,
-          'fixed': Boolean(fixed)
+          'fixed': Boolean(fixed),
+          'workstationType': workstationType,
+          'monitorsQuantity': monitorsQuantity,
+          'deskHeightAdjustable': deskHeightAdjustable,
+          'technologyDockingStation': technologyDockingStation,
+          'technologyWebcam': technologyWebcam,
+          'technologyHeadset': technologyHeadset,
+          'specialFeatures': specialFeatures
         })
       );
     }
@@ -46,8 +56,15 @@ export default function EditWorkstation({ isOpen, onClose }) {
   };
 
   useEffect(()=>{
-    setEquipment(selectedDesk.equipment);
-    setRemark(selectedDesk.remark);
+    if (!selectedDesk) return;
+    setRemark(selectedDesk.remark || '');
+    setWorkstationType(selectedDesk.workstationType || 'Standard');
+    setMonitorsQuantity(selectedDesk.monitorsQuantity ?? 0);
+    setDeskHeightAdjustable(Boolean(selectedDesk.deskHeightAdjustable));
+    setTechnologyDockingStation(Boolean(selectedDesk.technologyDockingStation));
+    setTechnologyWebcam(Boolean(selectedDesk.technologyWebcam));
+    setTechnologyHeadset(Boolean(selectedDesk.technologyHeadset));
+    setSpecialFeatures(selectedDesk.specialFeatures || '');
     setFixed(Boolean(selectedDesk.fixed));
   },[selectedDesk])
 
@@ -60,14 +77,11 @@ export default function EditWorkstation({ isOpen, onClose }) {
       return;
     }
     setRoom(data.room);
-    setRemark(data.room.remark);
-    setEquipment(data.room.equipment);
   };
 
   return (
     <LayoutModalAdmin
-      onClose={()=>{/*setEquipment('');
-        setRemark('');*/onClose();}}
+      onClose={onClose}
       isOpen={isOpen}
       title={t('editWorkstation')}
       submit={updateWorkstation}
@@ -89,10 +103,22 @@ export default function EditWorkstation({ isOpen, onClose }) {
           <>
             <WorkStationDefinition
               t={t}
-              equipment={equipment}
-              setEquipment={setEquipment}
               remark={remark}
               setRemark={setRemark}
+              workstationType={workstationType}
+              setWorkstationType={setWorkstationType}
+              monitorsQuantity={monitorsQuantity}
+              setMonitorsQuantity={setMonitorsQuantity}
+              deskHeightAdjustable={deskHeightAdjustable}
+              setDeskHeightAdjustable={setDeskHeightAdjustable}
+              technologyDockingStation={technologyDockingStation}
+              setTechnologyDockingStation={setTechnologyDockingStation}
+              technologyWebcam={technologyWebcam}
+              setTechnologyWebcam={setTechnologyWebcam}
+              technologyHeadset={technologyHeadset}
+              setTechnologyHeadset={setTechnologyHeadset}
+              specialFeatures={specialFeatures}
+              setSpecialFeatures={setSpecialFeatures}
             />
             <br/>
             <FormControl required size='small' fullWidth sx={{ mt: 2 }}>

@@ -6,8 +6,14 @@ import lombok.Data;
 public class DeskDTO {
 
 	private Long roomId;
-	private String equipment;
 	private String remark;
 	private Long deskId;
 	private Boolean fixed;
+	private String workstationType;
+	private Integer monitorsQuantity;
+	private Boolean deskHeightAdjustable;
+	private Boolean technologyDockingStation;
+	private Boolean technologyWebcam;
+	private Boolean technologyHeadset;
+	private String specialFeatures;
 }

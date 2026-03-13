@@ -108,7 +108,6 @@ describe('Defect management and service personnel features', () => {
     desk: {
       id: 301,
       remark: 'Desk 301',
-      workstationIdentifier: 'WS-301',
       room: {
         id: 21,
         remark: 'Room A',
@@ -244,7 +243,7 @@ describe('Defect management and service personnel features', () => {
     const freeDesk = {
       id: 8801,
       remark: 'DeskFD1',
-      equipment: { equipmentName: 'withEquipment' },
+      workstationType: 'Standard',
       room: {
         id: 91,
         remark: 'Room FD',
@@ -331,7 +330,6 @@ describe('Defect management and service personnel features', () => {
       desk: {
         id: 301,
         remark: 'Desk 301',
-        workstationIdentifier: 'WS-301',
         room: { id: 21, remark: 'Room A' },
         blocked: false,
         blockedByDefectId: null,
@@ -362,7 +360,6 @@ describe('Defect management and service personnel features', () => {
     cy.intercept('GET', '**/desks', [
       {
         id: 301,
-        workstationIdentifier: 'WS-301',
         remark: 'Desk 301',
         room: { id: 21, remark: 'Room A' },
       },
@@ -390,7 +387,7 @@ describe('Defect management and service personnel features', () => {
     ]).should('be.visible');
 
     cy.get('div[role="combobox"]').first().click({ force: true });
-    cy.contains('li', 'Room A — WS-301').click({ force: true });
+    cy.contains('li', 'Room A — Desk 301').click({ force: true });
 
     cy.wait('@getDefectsHistory');
     cy.contains('DF-HISTORY-001').should('be.visible');
@@ -500,7 +497,6 @@ describe('Defect management and service personnel features', () => {
       desk: {
         id: 401,
         remark: 'Desk 401',
-        workstationIdentifier: 'WS-401',
         room: { id: 31, remark: 'Room B' },
         blocked: false,
         blockedByDefectId: null,
@@ -572,7 +568,6 @@ describe('Defect management and service personnel features', () => {
       desk: {
         id: 1820,
         remark: 'Desk 1820',
-        workstationIdentifier: 'WS-1820',
         room: { id: 82, remark: 'Room 82' },
         blocked,
         blockedByDefectId: blocked ? 820 : null,
