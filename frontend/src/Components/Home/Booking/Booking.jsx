@@ -513,17 +513,10 @@ const Booking = () => {
 
   const monitorSummary = (desk) => {
     const quantity = desk?.monitorsQuantity;
-    const size = desk?.monitorsSize;
-    if (quantity == null && (size == null || String(size).trim() === '')) {
+    if (quantity == null) {
       return '1';
     }
-    if (quantity != null && size != null && String(size).trim() !== '') {
-      return `${quantity} x ${String(size).trim()}`;
-    }
-    if (quantity != null) {
-      return showOrPlaceholder(quantity);
-    }
-    return showOrPlaceholder(size);
+    return showOrPlaceholder(quantity);
   };
 
   const deskTypeSummary = (desk) => {

@@ -36,10 +36,6 @@ public class Desk {
     @Column(name = "monitors_quantity", nullable = true)
     private Integer monitorsQuantity;
 
-    /** Monitor size description, e.g. 24". */
-    @Column(name = "monitors_size", nullable = true)
-    private String monitorsSize;
-
     /** Whether the desk is height-adjustable. */
     @Column(name = "desk_height_adjustable", nullable = true)
     private Boolean deskHeightAdjustable;

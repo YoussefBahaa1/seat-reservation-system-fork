@@ -7,11 +7,11 @@ BEGIN
     ALTER TABLE desks DROP FOREIGN KEY FKnj02jj3tcyb5e604r1ufb7gfi;
     ALTER TABLE desks DROP COLUMN equipment_id;
     ALTER TABLE desks DROP COLUMN workstation_identifier;
+    ALTER TABLE desks DROP COLUMN monitors_size;
     DROP TABLE IF EXISTS equipments;
 
     ALTER TABLE desks ADD COLUMN IF NOT EXISTS workstation_type VARCHAR(50) NULL;
     ALTER TABLE desks ADD COLUMN IF NOT EXISTS monitors_quantity INT NULL;
-    ALTER TABLE desks ADD COLUMN IF NOT EXISTS monitors_size VARCHAR(50) NULL;
     ALTER TABLE desks ADD COLUMN IF NOT EXISTS desk_height_adjustable TINYINT(1) NULL;
     ALTER TABLE desks ADD COLUMN IF NOT EXISTS technology_docking_station TINYINT(1) NULL;
     ALTER TABLE desks ADD COLUMN IF NOT EXISTS technology_webcam TINYINT(1) NULL;
