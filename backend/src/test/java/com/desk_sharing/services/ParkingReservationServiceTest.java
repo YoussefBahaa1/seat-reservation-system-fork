@@ -8,6 +8,7 @@ import com.desk_sharing.entities.Role;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
+import com.desk_sharing.model.ParkingSpotUpdateDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
 import com.desk_sharing.repositories.ParkingSpotRepository;
 import com.desk_sharing.repositories.UserRepository;
@@ -67,6 +68,7 @@ class ParkingReservationServiceTest {
         request.setBegin("10:00");
         request.setEnd("11:00");
 
+        when(parkingSpotRepository.findById("1")).thenReturn(java.util.Optional.of(activeSpot("1")));
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("1"), any(Time.class), any(Time.class)))
                 .thenReturn(List.of());
         when(parkingReservationRepository.save(any(ParkingReservation.class)))
@@ -104,6 +106,7 @@ class ParkingReservationServiceTest {
         request.setBegin("10:00");
         request.setEnd("11:00");
 
+        when(parkingSpotRepository.findById("2")).thenReturn(java.util.Optional.of(activeSpot("2")));
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("2"), any(Time.class), any(Time.class)))
             .thenReturn(List.of());
         when(parkingReservationRepository.save(any(ParkingReservation.class)))
@@ -137,6 +140,7 @@ class ParkingReservationServiceTest {
         existing.setEnd(Time.valueOf("12:00:00"));
         existing.setStatus(ParkingReservationStatus.APPROVED);
 
+        when(parkingSpotRepository.findById("2")).thenReturn(java.util.Optional.of(activeSpot("2")));
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("2"), any(Time.class), any(Time.class)))
             .thenReturn(List.of(existing));
 
@@ -349,6 +353,44 @@ class ParkingReservationServiceTest {
     }
 
     @Test
+    void createReservation_rejectsUnknownSpot() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+
+        ParkingReservationRequestDTO request = new ParkingReservationRequestDTO();
+        request.setSpotLabel("404");
+        request.setDay(LocalDate.now().plusDays(1).toString());
+        request.setBegin("10:00");
+        request.setEnd("11:00");
+
+        when(parkingSpotRepository.findById("404")).thenReturn(java.util.Optional.empty());
+
+        assertThatThrownBy(() -> service.createReservation(request))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("Parking spot not found");
+    }
+
+    @Test
+    void createReservation_rejectsInactiveSpot() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+
+        ParkingSpot inactiveSpot = activeSpot("15");
+        inactiveSpot.setActive(false);
+        when(parkingSpotRepository.findById("15")).thenReturn(java.util.Optional.of(inactiveSpot));
+
+        ParkingReservationRequestDTO request = new ParkingReservationRequestDTO();
+        request.setSpotLabel("15");
+        request.setDay(LocalDate.now().plusDays(1).toString());
+        request.setBegin("10:00");
+        request.setEnd("11:00");
+
+        assertThatThrownBy(() -> service.createReservation(request))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("Parking spot is not active");
+    }
+
+    @Test
     void createReservation_rejectsWhenSpotIsManuallyBlocked() {
         ParkingReservationService service = new ParkingReservationService(
             parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
@@ -356,6 +398,7 @@ class ParkingReservationServiceTest {
         ParkingSpot blockedSpot = new ParkingSpot();
         blockedSpot.setSpotLabel("7");
         blockedSpot.setSpotType(ParkingSpotType.STANDARD);
+        blockedSpot.setActive(true);
         blockedSpot.setManuallyBlocked(true);
         when(parkingSpotRepository.findById("7")).thenReturn(java.util.Optional.of(blockedSpot));
 
@@ -384,6 +427,7 @@ class ParkingReservationServiceTest {
         request.setEnd("11:00");
         request.setLocale("de-DE");
 
+        when(parkingSpotRepository.findById("2")).thenReturn(java.util.Optional.of(activeSpot("2")));
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("2"), any(Time.class), any(Time.class)))
             .thenReturn(List.of());
         when(parkingReservationRepository.save(any(ParkingReservation.class)))
@@ -408,6 +452,7 @@ class ParkingReservationServiceTest {
         request.setEnd("11:00");
         request.setLocale(" ");
 
+        when(parkingSpotRepository.findById("2")).thenReturn(java.util.Optional.of(activeSpot("2")));
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("2"), any(Time.class), any(Time.class)))
             .thenReturn(List.of());
         when(parkingReservationRepository.save(any(ParkingReservation.class)))
@@ -442,6 +487,49 @@ class ParkingReservationServiceTest {
         verify(parkingNotificationService).notifyDecision(approved, true);
     }
 
+    @Test
+    void saveParkingSpot_createsNewCatalogEntry() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingSpotUpdateDTO request = new ParkingSpotUpdateDTO();
+        request.setSpotLabel("W1");
+        request.setDisplayLabel("41");
+        request.setSpotType("STANDARD");
+        request.setActive(true);
+        request.setCovered(true);
+        request.setManuallyBlocked(false);
+
+        when(parkingSpotRepository.findById("W1")).thenReturn(java.util.Optional.empty());
+        when(parkingSpotRepository.save(any(ParkingSpot.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ParkingSpot saved = service.saveParkingSpot(request);
+
+        assertThat(saved.getSpotLabel()).isEqualTo("W1");
+        assertThat(saved.getDisplayLabel()).isEqualTo("41");
+        assertThat(saved.isActive()).isTrue();
+        assertThat(saved.isCovered()).isTrue();
+        assertThat(saved.getSpotType()).isEqualTo(ParkingSpotType.STANDARD);
+    }
+
+    @Test
+    void setSpotActive_deactivatesExistingSpot() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingSpot spot = activeSpot("32");
+        spot.setManuallyBlocked(true);
+        when(parkingSpotRepository.findById("32")).thenReturn(java.util.Optional.of(spot));
+        when(parkingSpotRepository.save(any(ParkingSpot.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ParkingSpot saved = service.setSpotActive("32", false);
+
+        assertThat(saved.isActive()).isFalse();
+        assertThat(saved.isManuallyBlocked()).isFalse();
+    }
+
     private void authenticateAs(int userId, String email, boolean admin) {
         Authentication auth = mock(Authentication.class);
         when(auth.getName()).thenReturn(email);
@@ -458,5 +546,14 @@ class ParkingReservationServiceTest {
             user.setRoles(java.util.List.of(role));
         }
         when(userRepository.findByEmail(anyString())).thenReturn(user);
+    }
+
+    private ParkingSpot activeSpot(final String label) {
+        ParkingSpot spot = new ParkingSpot();
+        spot.setSpotLabel(label);
+        spot.setDisplayLabel(label);
+        spot.setSpotType(ParkingSpotType.STANDARD);
+        spot.setActive(true);
+        return spot;
     }
 }

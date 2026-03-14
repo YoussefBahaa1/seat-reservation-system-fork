@@ -10,4 +10,7 @@ import com.desk_sharing.entities.ParkingSpot;
 @Repository
 public interface ParkingSpotRepository extends JpaRepository<ParkingSpot, String> {
     List<ParkingSpot> findBySpotLabelIn(List<String> spotLabels);
+    List<ParkingSpot> findBySpotLabelInAndActiveTrue(List<String> spotLabels);
+    List<ParkingSpot> findByActiveTrueOrderBySpotLabelAsc();
+    List<ParkingSpot> findAllByOrderBySpotLabelAsc();
 }

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.desk_sharing.entities.ParkingReservation;
@@ -20,6 +21,7 @@ import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
 import com.desk_sharing.model.ParkingMyReservationDTO;
 import com.desk_sharing.model.ParkingReviewItemDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
+import com.desk_sharing.model.ParkingSpotUpdateDTO;
 import com.desk_sharing.services.ParkingReservationService;
 
 import java.sql.Date;
@@ -73,6 +75,32 @@ public class ParkingController {
     public ResponseEntity<ParkingSpot> unblockSpot(@PathVariable("spotLabel") String spotLabel) {
         logger.info("parkingUnblockSpot( {} )", spotLabel);
         return new ResponseEntity<>(parkingReservationService.setSpotManualBlocked(spotLabel, false), HttpStatus.OK);
+    }
+
+    @GetMapping("/spots")
+    public ResponseEntity<List<ParkingSpot>> getSpots(
+        @RequestParam(name = "includeInactive", defaultValue = "false") boolean includeInactive
+    ) {
+        logger.info("parkingGetSpots( {} )", includeInactive);
+        return new ResponseEntity<>(parkingReservationService.getParkingSpots(includeInactive), HttpStatus.OK);
+    }
+
+    @PostMapping("/spots")
+    public ResponseEntity<ParkingSpot> saveSpot(@RequestBody ParkingSpotUpdateDTO request) {
+        logger.info("parkingSaveSpot( {} )", request);
+        return new ResponseEntity<>(parkingReservationService.saveParkingSpot(request), HttpStatus.OK);
+    }
+
+    @PostMapping("/spots/{spotLabel}/activate")
+    public ResponseEntity<ParkingSpot> activateSpot(@PathVariable("spotLabel") String spotLabel) {
+        logger.info("parkingActivateSpot( {} )", spotLabel);
+        return new ResponseEntity<>(parkingReservationService.setSpotActive(spotLabel, true), HttpStatus.OK);
+    }
+
+    @PostMapping("/spots/{spotLabel}/deactivate")
+    public ResponseEntity<ParkingSpot> deactivateSpot(@PathVariable("spotLabel") String spotLabel) {
+        logger.info("parkingDeactivateSpot( {} )", spotLabel);
+        return new ResponseEntity<>(parkingReservationService.setSpotActive(spotLabel, false), HttpStatus.OK);
     }
 
     @GetMapping("/review/pending")

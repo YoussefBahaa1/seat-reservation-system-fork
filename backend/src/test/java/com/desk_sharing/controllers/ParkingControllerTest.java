@@ -8,6 +8,7 @@ import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
 import com.desk_sharing.model.ParkingMyReservationDTO;
 import com.desk_sharing.model.ParkingReviewItemDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
+import com.desk_sharing.model.ParkingSpotUpdateDTO;
 import com.desk_sharing.services.ParkingReservationService;
 import com.desk_sharing.services.UserService;
 import org.junit.jupiter.api.Test;
@@ -177,6 +178,59 @@ class ParkingControllerTest {
         ResponseEntity<ParkingSpot> resp = controller.unblockSpot("32");
 
         verify(parkingReservationService).setSpotManualBlocked("32", false);
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isSameAs(spot);
+    }
+
+    @Test
+    void getSpots_returnsOkAndDelegates() {
+        List<ParkingSpot> body = List.of(new ParkingSpot());
+        when(parkingReservationService.getParkingSpots(true)).thenReturn(body);
+
+        ResponseEntity<List<ParkingSpot>> resp = controller.getSpots(true);
+
+        verify(parkingReservationService).getParkingSpots(true);
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isSameAs(body);
+    }
+
+    @Test
+    void saveSpot_returnsOkAndDelegates() {
+        ParkingSpotUpdateDTO request = new ParkingSpotUpdateDTO();
+        request.setSpotLabel("W1");
+        ParkingSpot saved = new ParkingSpot();
+        saved.setSpotLabel("W1");
+        when(parkingReservationService.saveParkingSpot(request)).thenReturn(saved);
+
+        ResponseEntity<ParkingSpot> resp = controller.saveSpot(request);
+
+        verify(parkingReservationService).saveParkingSpot(request);
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isSameAs(saved);
+    }
+
+    @Test
+    void activateSpot_returnsOkAndDelegates() {
+        ParkingSpot spot = new ParkingSpot();
+        spot.setSpotLabel("W1");
+        when(parkingReservationService.setSpotActive("W1", true)).thenReturn(spot);
+
+        ResponseEntity<ParkingSpot> resp = controller.activateSpot("W1");
+
+        verify(parkingReservationService).setSpotActive("W1", true);
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isSameAs(spot);
+    }
+
+    @Test
+    void deactivateSpot_returnsOkAndDelegates() {
+        ParkingSpot spot = new ParkingSpot();
+        spot.setSpotLabel("W1");
+        when(parkingReservationService.setSpotActive("W1", false)).thenReturn(spot);
+
+        ResponseEntity<ParkingSpot> resp = controller.deactivateSpot("W1");
+
+        verify(parkingReservationService).setSpotActive("W1", false);
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isSameAs(spot);
     }

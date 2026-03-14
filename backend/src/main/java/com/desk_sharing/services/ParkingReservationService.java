@@ -34,6 +34,7 @@ import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
 import com.desk_sharing.model.ParkingMyReservationDTO;
 import com.desk_sharing.model.ParkingReviewItemDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
+import com.desk_sharing.model.ParkingSpotUpdateDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
 import com.desk_sharing.repositories.ParkingSpotRepository;
 import com.desk_sharing.repositories.UserRepository;
@@ -134,6 +135,10 @@ public class ParkingReservationService {
         return spot.getSpotType();
     }
 
+    private static boolean isSpotActive(final ParkingSpot spot) {
+        return spot != null && spot.isActive();
+    }
+
     private static boolean effectiveCovered(final ParkingSpot spot) {
         return spot != null && spot.isCovered();
     }
@@ -213,11 +218,19 @@ public class ParkingReservationService {
             .distinct()
             .toList();
 
-        final Set<String> occupiedLabels = new HashSet<>(
-            parkingReservationRepository.findOccupiedSpotLabels(day, requestedLabels, begin, end)
-        );
         final Map<String, ParkingSpot> spotByLabel = new HashMap<>();
-        parkingSpotRepository.findBySpotLabelIn(requestedLabels).forEach(spot -> spotByLabel.put(spot.getSpotLabel(), spot));
+        parkingSpotRepository.findBySpotLabelInAndActiveTrue(requestedLabels).forEach(spot -> spotByLabel.put(spot.getSpotLabel(), spot));
+
+        final List<String> activeRequestedLabels = requestedLabels.stream()
+            .filter(spotByLabel::containsKey)
+            .toList();
+        if (activeRequestedLabels.isEmpty()) {
+            return List.of();
+        }
+
+        final Set<String> occupiedLabels = new HashSet<>(
+            parkingReservationRepository.findOccupiedSpotLabels(day, activeRequestedLabels, begin, end)
+        );
 
         final Set<String> myOccupiedLabels = new HashSet<>();
         final Map<String, Long> myReservationIdByLabel = new HashMap<>();
@@ -246,7 +259,7 @@ public class ParkingReservationService {
             }
         }
         final Map<String, ParkingReservation> rejectedOverlapForMeByLabel = new HashMap<>();
-        parkingReservationRepository.findRejectedOverlapsForUser(day, requestedLabels, begin, end, myUserId).stream()
+        parkingReservationRepository.findRejectedOverlapsForUser(day, activeRequestedLabels, begin, end, myUserId).stream()
             .sorted((a, b) -> a.getBegin().compareTo(b.getBegin()))
             .forEach(res -> rejectedOverlapForMeByLabel.putIfAbsent(res.getSpotLabel(), res));
 
@@ -256,7 +269,7 @@ public class ParkingReservationService {
         final Map<Integer, UserEntity> userCache = new HashMap<>();
         userRepository.findAllById(userIdsForDisplay).forEach(u -> userCache.put(u.getId(), u));
 
-        return requestedLabels.stream().map(label -> {
+        return activeRequestedLabels.stream().map(label -> {
             final ParkingSpot spot = spotByLabel.get(label);
             final ParkingSpotType spotType = effectiveSpotType(spot, label);
             final boolean covered = effectiveCovered(spot);
@@ -326,7 +339,11 @@ public class ParkingReservationService {
         }
 
         final String spotLabel = request.getSpotLabel().trim();
-        final ParkingSpot existingSpot = parkingSpotRepository.findById(spotLabel).orElse(null);
+        final ParkingSpot existingSpot = parkingSpotRepository.findById(spotLabel)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking spot not found"));
+        if (!isSpotActive(existingSpot)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Parking spot is not active");
+        }
         final ParkingSpotType spotType = effectiveSpotType(existingSpot, spotLabel);
         if (spotType == ParkingSpotType.SPECIAL_CASE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This spot is blocked");
@@ -463,14 +480,10 @@ public class ParkingReservationService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "spotLabel must not be empty");
         }
         final String spotLabel = spotLabelRaw.trim();
-        ParkingSpot spot = parkingSpotRepository.findById(spotLabel).orElse(null);
-        if (spot == null) {
-            spot = new ParkingSpot();
-            spot.setSpotLabel(spotLabel);
-            spot.setSpotType(defaultSpotTypeForLabel(spotLabel));
-            spot.setCovered(false);
-            spot.setChargingKw(null);
-            spot.setManuallyBlocked(false);
+        final ParkingSpot spot = parkingSpotRepository.findById(spotLabel)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking spot not found"));
+        if (!spot.isActive()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Inactive spots cannot be blocked or unblocked");
         }
 
         final ParkingSpotType spotType = effectiveSpotType(spot, spotLabel);
@@ -479,6 +492,81 @@ public class ParkingReservationService {
         }
 
         spot.setManuallyBlocked(blocked);
+        return parkingSpotRepository.save(spot);
+    }
+
+    public List<ParkingSpot> getParkingSpots(final boolean includeInactive) {
+        requireAdmin();
+        return includeInactive
+            ? parkingSpotRepository.findAllByOrderBySpotLabelAsc()
+            : parkingSpotRepository.findByActiveTrueOrderBySpotLabelAsc();
+    }
+
+    public ParkingSpot saveParkingSpot(final ParkingSpotUpdateDTO request) {
+        requireAdmin();
+        if (request == null || request.getSpotLabel() == null || request.getSpotLabel().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "spotLabel must not be empty");
+        }
+
+        final String spotLabel = request.getSpotLabel().trim();
+        final ParkingSpot spot = parkingSpotRepository.findById(spotLabel).orElseGet(() -> {
+            final ParkingSpot created = new ParkingSpot();
+            created.setSpotLabel(spotLabel);
+            created.setDisplayLabel(spotLabel);
+            created.setSpotType(defaultSpotTypeForLabel(spotLabel));
+            created.setActive(true);
+            created.setCovered(false);
+            created.setManuallyBlocked(false);
+            created.setChargingKw(null);
+            return created;
+        });
+
+        if (request.getDisplayLabel() != null) {
+            final String trimmedDisplayLabel = request.getDisplayLabel().trim();
+            spot.setDisplayLabel(trimmedDisplayLabel.isEmpty() ? null : trimmedDisplayLabel);
+        }
+        if (request.getSpotType() != null && !request.getSpotType().isBlank()) {
+            try {
+                spot.setSpotType(ParkingSpotType.valueOf(request.getSpotType().trim().toUpperCase()));
+            } catch (IllegalArgumentException ex) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parking spot type");
+            }
+        }
+        if (request.getActive() != null) {
+            spot.setActive(request.getActive());
+        }
+        if (request.getCovered() != null) {
+            spot.setCovered(request.getCovered());
+        }
+        if (request.getManuallyBlocked() != null) {
+            spot.setManuallyBlocked(request.getManuallyBlocked());
+        }
+
+        final ParkingSpotType effectiveType = effectiveSpotType(spot, spotLabel);
+        if (effectiveType == ParkingSpotType.E_CHARGING_STATION) {
+            spot.setChargingKw(request.getChargingKw());
+        } else {
+            spot.setChargingKw(null);
+        }
+        if (!spot.isActive()) {
+            spot.setManuallyBlocked(false);
+        }
+
+        return parkingSpotRepository.save(spot);
+    }
+
+    public ParkingSpot setSpotActive(final String spotLabelRaw, final boolean active) {
+        requireAdmin();
+        if (spotLabelRaw == null || spotLabelRaw.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "spotLabel must not be empty");
+        }
+        final String spotLabel = spotLabelRaw.trim();
+        final ParkingSpot spot = parkingSpotRepository.findById(spotLabel)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking spot not found"));
+        spot.setActive(active);
+        if (!active) {
+            spot.setManuallyBlocked(false);
+        }
         return parkingSpotRepository.save(spot);
     }
 

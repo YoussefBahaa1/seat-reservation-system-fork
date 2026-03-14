@@ -61,7 +61,8 @@ class ParkingAvailabilityTest {
 
         when(parkingReservationRepository.findOccupiedSpotLabels(any(Date.class), any(List.class), any(Time.class), any(Time.class)))
                 .thenReturn(List.of("1", "2", "3"));
-        when(parkingSpotRepository.findBySpotLabelIn(any(List.class))).thenReturn(List.of());
+        when(parkingSpotRepository.findBySpotLabelInAndActiveTrue(any(List.class)))
+            .thenReturn(List.of(activeSpot("23"), activeSpot("1"), activeSpot("2"), activeSpot("3")));
 
         ParkingReservation mine = new ParkingReservation();
         mine.setId(555L);
@@ -139,11 +140,12 @@ class ParkingAvailabilityTest {
         ParkingSpot blocked = new ParkingSpot();
         blocked.setSpotLabel("5");
         blocked.setSpotType(ParkingSpotType.STANDARD);
+        blocked.setActive(true);
         blocked.setCovered(true);
         blocked.setManuallyBlocked(true);
         when(parkingReservationRepository.findOccupiedSpotLabels(any(Date.class), any(List.class), any(Time.class), any(Time.class)))
             .thenReturn(List.of());
-        when(parkingSpotRepository.findBySpotLabelIn(any(List.class))).thenReturn(List.of(blocked));
+        when(parkingSpotRepository.findBySpotLabelInAndActiveTrue(any(List.class))).thenReturn(List.of(blocked));
 
         List<ParkingAvailabilityResponseDTO> resp = service.getAvailability(request);
 
@@ -186,7 +188,7 @@ class ParkingAvailabilityTest {
             .thenReturn(List.of("9"));
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("9"), any(Time.class), any(Time.class)))
             .thenReturn(List.of(pending, approved));
-        when(parkingSpotRepository.findBySpotLabelIn(any(List.class))).thenReturn(List.of());
+        when(parkingSpotRepository.findBySpotLabelInAndActiveTrue(any(List.class))).thenReturn(List.of(activeSpot("9")));
 
         List<ParkingAvailabilityResponseDTO> resp = service.getAvailability(request);
 
@@ -217,7 +219,7 @@ class ParkingAvailabilityTest {
 
         when(parkingReservationRepository.findOccupiedSpotLabels(any(Date.class), any(List.class), any(Time.class), any(Time.class)))
             .thenReturn(List.of());
-        when(parkingSpotRepository.findBySpotLabelIn(any(List.class))).thenReturn(List.of());
+        when(parkingSpotRepository.findBySpotLabelInAndActiveTrue(any(List.class))).thenReturn(List.of(activeSpot("12")));
         when(parkingReservationRepository.findRejectedOverlapsForUser(any(Date.class), any(List.class), any(Time.class), any(Time.class), eq(42)))
             .thenReturn(List.of(rejectedMine));
 
@@ -246,6 +248,7 @@ class ParkingAvailabilityTest {
         ParkingSpot chargingSpot = new ParkingSpot();
         chargingSpot.setSpotLabel("14");
         chargingSpot.setSpotType(ParkingSpotType.E_CHARGING_STATION);
+        chargingSpot.setActive(true);
         chargingSpot.setCovered(true);
         chargingSpot.setChargingKw(22);
         chargingSpot.setManuallyBlocked(false);
@@ -268,7 +271,7 @@ class ParkingAvailabilityTest {
             .thenReturn(List.of("14"));
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("14"), any(Time.class), any(Time.class)))
             .thenReturn(List.of(overlap));
-        when(parkingSpotRepository.findBySpotLabelIn(any(List.class))).thenReturn(List.of(chargingSpot));
+        when(parkingSpotRepository.findBySpotLabelInAndActiveTrue(any(List.class))).thenReturn(List.of(chargingSpot));
         when(userRepository.findAllById(any())).thenReturn(List.of(overlapUser));
 
         List<ParkingAvailabilityResponseDTO> resp = service.getAvailability(request);
@@ -282,5 +285,20 @@ class ParkingAvailabilityTest {
         assertThat(row.getReservedBegin()).isEqualTo("10:00");
         assertThat(row.getReservedEnd()).isEqualTo("10:30");
         assertThat(row.getReservedByUser()).isEqualTo("Jane Doe (jane@example.com)");
+    }
+
+    private ParkingSpot activeSpot(final String label) {
+        ParkingSpot spot = new ParkingSpot();
+        spot.setSpotLabel(label);
+        spot.setDisplayLabel(label);
+        if ("23".equals(label)) {
+            spot.setSpotType(ParkingSpotType.SPECIAL_CASE);
+        } else if ("30".equals(label)) {
+            spot.setSpotType(ParkingSpotType.ACCESSIBLE);
+        } else {
+            spot.setSpotType(ParkingSpotType.STANDARD);
+        }
+        spot.setActive(true);
+        return spot;
     }
 }
