@@ -5,19 +5,29 @@ import {
     Box,
     Button,
     Checkbox,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Divider,
     FormControl,
+    IconButton,
     InputLabel,
     ListItemText,
+    Menu,
     MenuItem,
     Select,
+    TextField,
     Typography,
 } from '@mui/material';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import CreateDatePicker from '../misc/CreateDatePicker';
 import CreateTimePicker from '../misc/CreateTimePicker';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { toast } from 'react-toastify';
-import {postRequest, getRequest} from '../RequestFunctions/RequestFunctions';
+import {postRequest, getRequest, putRequest, deleteRequest} from '../RequestFunctions/RequestFunctions';
 import {DeskTable} from '../misc/DesksTable';
 import bookingPostRequest from '../misc/bookingPostRequest';
 import LayoutPage from '../Templates/LayoutPage';
@@ -29,6 +39,9 @@ import {
 } from '../misc/workstationMetadata';
 
 const FILTER_STORAGE_KEY = 'freeDesksAdvancedFilters';
+const BUILDING_STORAGE_KEY = 'freeDesksSelectedBuilding';
+const MAX_PRESET_NAME_LENGTH = 40;
+const MAX_PRESETS = 5;
 const emptyFilters = Object.freeze({
     types: [],
     monitorCounts: [],
@@ -61,11 +74,46 @@ const parseStoredFilters = () => {
     }
 };
 
+const parseStoredBuilding = () => {
+    try {
+        const storedBuilding = sessionStorage.getItem(BUILDING_STORAGE_KEY);
+        return storedBuilding === null ? null : String(storedBuilding);
+    } catch {
+        return null;
+    }
+};
+
+const normalizeBuildingValue = (buildingValue, buildings = [], allBuildingsValue = '0') => {
+    const normalized = buildingValue == null ? allBuildingsValue : String(buildingValue).trim();
+    if (!normalized || normalized === allBuildingsValue) {
+        return allBuildingsValue;
+    }
+    if (!Array.isArray(buildings) || buildings.length === 0) {
+        return normalized;
+    }
+    return buildings.some((building) => String(building.id) === normalized) ? normalized : allBuildingsValue;
+};
+
+const normalizePresetForComparison = (preset) => {
+    const normalizedFilters = normalizeFilters(preset?.filters);
+    return JSON.stringify({
+        buildingId: String(preset?.buildingId ?? '0'),
+        filters: {
+            types: [...normalizedFilters.types].sort(),
+            monitorCounts: [...normalizedFilters.monitorCounts].sort((left, right) => left - right),
+            deskHeightAdjustable: [...normalizedFilters.deskHeightAdjustable].sort((left, right) => Number(left) - Number(right)),
+            technologySelections: [...normalizedFilters.technologySelections].sort(),
+            specialFeatures: [...normalizedFilters.specialFeatures].sort((left, right) => Number(left) - Number(right)),
+        },
+    });
+};
+
 const FreeDesks = () => {
     const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
     const { t, i18n } = useTranslation();
     const valueForAllBuildings = useRef('0');
-    const [selectedBuilding, setSelectedBuilding] = useState(valueForAllBuildings.current);
+    const shouldPersistSelectedBuilding = useRef(parseStoredBuilding() !== null);
+    const [selectedBuilding, setSelectedBuilding] = useState(parseStoredBuilding() ?? valueForAllBuildings.current);
     const [possibleDesks, setPossibleDesks] = useState([]);
     const [bookingDate, setBookingDate] = useState(new Date());
     const [repaint, setRepaint] = useState(false);
@@ -73,6 +121,15 @@ const FreeDesks = () => {
     const [reportDefectDeskId, setReportDefectDeskId] = useState(null);
     const [isReportDefectOpen, setIsReportDefectOpen] = useState(false);
     const [filters, setFilters] = useState(parseStoredFilters);
+    const [savedPresets, setSavedPresets] = useState([]);
+    const [presetsMenuPosition, setPresetsMenuPosition] = useState(null);
+    const [isSavePresetOpen, setIsSavePresetOpen] = useState(false);
+    const [isReplacePresetOpen, setIsReplacePresetOpen] = useState(false);
+    const [presetPendingReplace, setPresetPendingReplace] = useState(null);
+    const [presetReplaceReason, setPresetReplaceReason] = useState('name');
+    const [presetPendingDelete, setPresetPendingDelete] = useState(null);
+    const [presetName, setPresetName] = useState('');
+    const [presetNameError, setPresetNameError] = useState('');
 
     const roundUpToNextHalfHour = (d) => {
         const copy = new Date(d);
@@ -205,15 +262,166 @@ const FreeDesks = () => {
 
     const resetFilters = () => setFilters({ ...emptyFilters });
 
+    const validatePresetName = (value) => {
+        const trimmedValue = String(value || '').trim();
+        if (!trimmedValue) {
+            return t('workstationPresetNameRequired');
+        }
+        if (trimmedValue.length > MAX_PRESET_NAME_LENGTH) {
+            return t('workstationPresetNameTooLong', { max: MAX_PRESET_NAME_LENGTH });
+        }
+        const existingPreset = savedPresets.find(
+            (preset) => preset.name?.trim().toLocaleLowerCase() === trimmedValue.toLocaleLowerCase()
+        );
+        if (!existingPreset && savedPresets.length >= MAX_PRESETS) {
+            return t('workstationPresetLimitReached', { max: MAX_PRESETS });
+        }
+        return '';
+    };
+
+    const closeSavePresetDialog = () => {
+        setIsSavePresetOpen(false);
+        setPresetPendingReplace(null);
+        setPresetReplaceReason('name');
+        setPresetName('');
+        setPresetNameError('');
+    };
+
+    const openSavePresetDialog = () => {
+        setPresetsMenuPosition(null);
+        setPresetName('');
+        setPresetNameError('');
+        setPresetPendingReplace(null);
+        setPresetReplaceReason('name');
+        setIsSavePresetOpen(true);
+    };
+
+    const buildPresetPayload = (name) => ({
+        name,
+        buildingId: String(selectedBuilding ?? valueForAllBuildings.current),
+        filters,
+    });
+
+    const submitCreatePreset = (name) => {
+        postRequest(
+            `${process.env.REACT_APP_BACKEND_URL}/users/me/workstation-search-presets`,
+            headers.current,
+            (createdPreset) => {
+                setSavedPresets((prev) => [createdPreset, ...prev.filter((preset) => preset.id !== createdPreset.id)]);
+                closeSavePresetDialog();
+                toast.success(t('workstationPresetSaved'));
+            },
+            () => {
+                toast.error(t('workstationPresetSaveFailed'));
+            },
+            JSON.stringify(buildPresetPayload(name))
+        );
+    };
+
+    const submitReplacePreset = () => {
+        if (!presetPendingReplace) {
+            setIsReplacePresetOpen(false);
+            return;
+        }
+        const trimmedName = String(presetName || '').trim();
+        putRequest(
+            `${process.env.REACT_APP_BACKEND_URL}/users/me/workstation-search-presets/${presetPendingReplace.id}`,
+            headers.current,
+            (updatedPreset) => {
+                setSavedPresets((prev) => [
+                    updatedPreset,
+                    ...prev.filter((preset) => preset.id !== updatedPreset.id),
+                ]);
+                setIsReplacePresetOpen(false);
+                closeSavePresetDialog();
+                toast.success(
+                    t(presetReplaceReason === 'content'
+                        ? 'workstationPresetRenamedFromDuplicate'
+                        : 'workstationPresetReplaced')
+                );
+            },
+            () => {
+                toast.error(t('workstationPresetSaveFailed'));
+            },
+            JSON.stringify(buildPresetPayload(trimmedName))
+        );
+    };
+
+    const handleSavePreset = () => {
+        const trimmedName = String(presetName || '').trim();
+        const validationError = validatePresetName(trimmedName);
+        if (validationError) {
+            setPresetNameError(validationError);
+            return;
+        }
+        const existingPreset = savedPresets.find(
+            (preset) => preset.name?.trim().toLocaleLowerCase() === trimmedName.toLocaleLowerCase()
+        );
+        if (existingPreset) {
+            setPresetPendingReplace(existingPreset);
+            setPresetReplaceReason('name');
+            setIsReplacePresetOpen(true);
+            return;
+        }
+
+        const currentPresetSignature = normalizePresetForComparison({
+            buildingId: selectedBuilding,
+            filters,
+        });
+        const existingContentPreset = savedPresets.find((preset) =>
+            normalizePresetForComparison(preset) === currentPresetSignature
+        );
+        if (existingContentPreset) {
+            setPresetPendingReplace(existingContentPreset);
+            setPresetReplaceReason('content');
+            setIsReplacePresetOpen(true);
+            return;
+        }
+        submitCreatePreset(trimmedName);
+    };
+
+    const applyPreset = (preset) => {
+        setSelectedBuilding(
+            normalizeBuildingValue(preset?.buildingId, buildings, valueForAllBuildings.current)
+        );
+        setFilters(normalizeFilters(preset?.filters));
+        setPresetsMenuPosition(null);
+    };
+
+    const confirmDeletePreset = () => {
+        if (!presetPendingDelete) {
+            return;
+        }
+        deleteRequest(
+            `${process.env.REACT_APP_BACKEND_URL}/users/me/workstation-search-presets/${presetPendingDelete.id}`,
+            headers.current,
+            () => {
+                setSavedPresets((prev) => prev.filter((preset) => preset.id !== presetPendingDelete.id));
+                setPresetPendingDelete(null);
+                toast.success(t('workstationPresetDeleted'));
+            },
+            () => {
+                toast.error(t('workstationPresetDeleteFailed'));
+            }
+        );
+    };
+
     useEffect(()=>{
         getRequest(
             `${process.env.REACT_APP_BACKEND_URL}/buildings/all`,
             headers.current,
             buildings=>{
                 setBuildings(buildings);
-                setSelectedBuilding(valueForAllBuildings.current);
+                const storedBuilding = parseStoredBuilding();
+                if (storedBuilding !== null) {
+                    shouldPersistSelectedBuilding.current = true;
+                    setSelectedBuilding(normalizeBuildingValue(storedBuilding, buildings, valueForAllBuildings.current));
+                    return;
+                }
                 const userId = localStorage.getItem('userId');
                 if (!userId) {
+                    shouldPersistSelectedBuilding.current = true;
+                    setSelectedBuilding(valueForAllBuildings.current);
                     console.log('userId is null');
                     return;
                 }
@@ -221,11 +429,16 @@ const FreeDesks = () => {
                     `${process.env.REACT_APP_BACKEND_URL}/defaults/getDefaultFloorForUserId/${userId}`,
                     headers.current,
                     received_defaultFloor => {
+                        shouldPersistSelectedBuilding.current = true;
                         if (received_defaultFloor && received_defaultFloor.building && received_defaultFloor.building.id) {
-                            setSelectedBuilding(received_defaultFloor.building.id);
+                            setSelectedBuilding(String(received_defaultFloor.building.id));
+                        } else {
+                            setSelectedBuilding(valueForAllBuildings.current);
                         }
                     },
                     () => {
+                        shouldPersistSelectedBuilding.current = true;
+                        setSelectedBuilding(valueForAllBuildings.current);
                         console.log('Error fetching default building and floor in FloorSelector.js');
                     }
                 );
@@ -236,8 +449,33 @@ const FreeDesks = () => {
     }, []);
 
     useEffect(() => {
+        getRequest(
+            `${process.env.REACT_APP_BACKEND_URL}/users/me/workstation-search-presets`,
+            headers.current,
+            (presets) => {
+                setSavedPresets(Array.isArray(presets) ? presets : []);
+            },
+            (status) => {
+                if (status !== 401) {
+                    toast.error(t('workstationPresetLoadFailed'));
+                }
+            }
+        );
+    }, [t]);
+
+    useEffect(() => {
         sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
     }, [filters]);
+
+    useEffect(() => {
+        if (!shouldPersistSelectedBuilding.current) {
+            return;
+        }
+        sessionStorage.setItem(
+            BUILDING_STORAGE_KEY,
+            String(selectedBuilding ?? valueForAllBuildings.current)
+        );
+    }, [selectedBuilding]);
 
     useEffect(() => {
         if (startTime > endTime) {
@@ -316,13 +554,13 @@ const FreeDesks = () => {
                         value={selectedBuilding}
                         label={t('building')}
                         onChange={(e)=>{
-                            setSelectedBuilding(e.target.value);
+                            setSelectedBuilding(String(e.target.value));
                         }}
                     >
                         {[
                             <MenuItem id='createSeries_building_all' key={valueForAllBuildings.current} value={valueForAllBuildings.current}>{t('any')}</MenuItem>,
                             ...buildings.map(e => (
-                                <MenuItem id={`createSeries_building_${e.id}`} key={e.id} value={e.id}>
+                                <MenuItem id={`createSeries_building_${e.id}`} key={e.id} value={String(e.id)}>
                                     {e.name}
                                 </MenuItem>
                             ))
@@ -373,6 +611,21 @@ const FreeDesks = () => {
                     <Button id='freeDesks_resetFilters' variant='outlined' onClick={resetFilters}>
                         {t('resetFilters')}
                     </Button>
+                    <Button
+                        id='freeDesks_savedPresets'
+                        variant='contained'
+                        color='success'
+                        endIcon={<KeyboardArrowDownIcon />}
+                        onClick={(event) => {
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            setPresetsMenuPosition({
+                                top: Math.round(rect.bottom + window.scrollY),
+                                left: Math.round(rect.left + window.scrollX),
+                            });
+                        }}
+                    >
+                        {t('savedPresets')}
+                    </Button>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 2, gap: 2, flexWrap: 'wrap' }}>
                     <Typography id='freeDesks_spacesFound' variant='subtitle2'>
@@ -420,6 +673,112 @@ const FreeDesks = () => {
                 onClose={() => setIsReportDefectOpen(false)}
                 deskId={reportDefectDeskId}
             />
+            <Menu
+                anchorReference='anchorPosition'
+                anchorPosition={presetsMenuPosition}
+                open={Boolean(presetsMenuPosition)}
+                onClose={() => setPresetsMenuPosition(null)}
+            >
+                <MenuItem id='freeDesks_saveCurrentPreset' onClick={openSavePresetDialog}>
+                    {t('saveCurrent')}
+                </MenuItem>
+                <Divider />
+                {savedPresets.length > 0 ? savedPresets.map((preset) => (
+                    <MenuItem
+                        key={preset.id}
+                        id={`freeDesks_preset_${preset.id}`}
+                        onClick={() => applyPreset(preset)}
+                        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, minWidth: 250 }}
+                    >
+                        <Typography
+                            variant='body2'
+                            sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexGrow: 1 }}
+                        >
+                            {preset.name}
+                        </Typography>
+                        <IconButton
+                            edge='end'
+                            size='small'
+                            aria-label={t('delete')}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                setPresetsMenuPosition(null);
+                                setPresetPendingDelete(preset);
+                            }}
+                        >
+                            <DeleteOutlineIcon fontSize='small' />
+                        </IconButton>
+                    </MenuItem>
+                )) : (
+                    <MenuItem disabled>{t('noSavedPresets')}</MenuItem>
+                )}
+            </Menu>
+            <Dialog open={isSavePresetOpen} onClose={closeSavePresetDialog} fullWidth maxWidth='xs'>
+                <DialogTitle>{t('saveCurrentPresetTitle')}</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        margin='dense'
+                        label={t('presetName')}
+                        value={presetName}
+                        onChange={(event) => {
+                            setPresetName(event.target.value);
+                            if (presetNameError) {
+                                setPresetNameError('');
+                            }
+                        }}
+                        inputProps={{ maxLength: MAX_PRESET_NAME_LENGTH }}
+                        error={Boolean(presetNameError)}
+                        helperText={presetNameError || t('workstationPresetNameCounter', {
+                            count: presetName.length,
+                            max: MAX_PRESET_NAME_LENGTH,
+                        })}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeSavePresetDialog}>{t('cancel')}</Button>
+                    <Button id='freeDesks_confirmSavePreset' onClick={handleSavePreset}>
+                        {t('savePreset')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog open={isReplacePresetOpen} onClose={() => setIsReplacePresetOpen(false)} fullWidth maxWidth='xs'>
+                <DialogTitle>{t('workstationPresetReplaceTitle')}</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        {t(
+                            presetReplaceReason === 'content'
+                                ? 'workstationPresetReplaceDuplicateContentMessage'
+                                : 'workstationPresetReplaceMessage',
+                            {
+                                name: presetPendingReplace?.name || String(presetName || '').trim(),
+                                newName: String(presetName || '').trim(),
+                            }
+                        )}
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setIsReplacePresetOpen(false)}>{t('cancel')}</Button>
+                    <Button id='freeDesks_confirmReplacePreset' onClick={submitReplacePreset}>
+                        {t('replace')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog open={Boolean(presetPendingDelete)} onClose={() => setPresetPendingDelete(null)} fullWidth maxWidth='xs'>
+                <DialogTitle>{t('workstationPresetDeleteTitle')}</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        {t('workstationPresetDeleteMessage', { name: presetPendingDelete?.name || '' })}
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPresetPendingDelete(null)}>{t('cancel')}</Button>
+                    <Button id='freeDesks_confirmDeletePreset' onClick={confirmDeletePreset}>
+                        {t('delete')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </>
     );
 };

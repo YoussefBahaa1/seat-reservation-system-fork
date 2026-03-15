@@ -1,8 +1,15 @@
 package com.desk_sharing.services;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.time.Instant;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.desk_sharing.repositories.UserRepository;
 import com.desk_sharing.security.JWTGenerator;
 import com.desk_sharing.repositories.BookingRepository;
+import com.desk_sharing.repositories.BuildingRepository;
 import com.desk_sharing.repositories.FloorRepository;
 import com.desk_sharing.repositories.RoleRepository;
 import com.desk_sharing.repositories.SeriesRepository;
@@ -40,6 +48,9 @@ import com.desk_sharing.entities.Role;
 import com.desk_sharing.entities.Series;
 import com.desk_sharing.entities.VisibilityMode;
 import com.desk_sharing.model.WorkstationSearchFiltersDTO;
+import com.desk_sharing.model.WorkstationSearchPresetDTO;
+import com.desk_sharing.model.WorkstationSearchPresetUpsertDTO;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -51,12 +62,18 @@ import org.slf4j.helpers.MessageFormatter;
 @RequiredArgsConstructor
 public class UserService  {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    private static final int MAX_WORKSTATION_SEARCH_PRESETS = 5;
+    private static final int MAX_WORKSTATION_SEARCH_PRESET_NAME_LENGTH = 40;
+    private static final String ALL_BUILDINGS_VALUE = "0";
+    private static final Set<String> ALLOWED_WORKSTATION_TYPES = Set.of("Standard", "Silent", "Ergonomic", "Premium");
+    private static final Set<String> ALLOWED_TECHNOLOGY_SELECTIONS = Set.of("dockingStation", "webcam", "headset");
     // The url of the ldap/AD server.
     @Value("${LDAP_DIR_CONTEXT_URL:}")  
     private String LDAP_DIR_CONTEXT_URL;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final FloorRepository floorRepository;
+    private final BuildingRepository buildingRepository;
     private final BookingRepository bookingRepository;
     private final SeriesRepository seriesRepository;
     private final RoleRepository roleRepository;
@@ -120,7 +137,7 @@ public class UserService  {
         }
         try {
             WorkstationSearchFiltersDTO parsed = objectMapper.readValue(raw, WorkstationSearchFiltersDTO.class);
-            return parsed == null ? new WorkstationSearchFiltersDTO() : parsed;
+            return normalizeWorkstationSearchFilters(parsed);
         } catch (JsonProcessingException ex) {
             loggingErr("Failed to parse workstation search filters for user {}: {}", user.getId(), ex.getMessage());
             return new WorkstationSearchFiltersDTO();
@@ -129,7 +146,7 @@ public class UserService  {
 
     public WorkstationSearchFiltersDTO updateCurrentUserWorkstationSearchFilters(WorkstationSearchFiltersDTO filters) {
         UserEntity user = getCurrentUserOrThrow();
-        WorkstationSearchFiltersDTO safeFilters = filters == null ? new WorkstationSearchFiltersDTO() : filters;
+        WorkstationSearchFiltersDTO safeFilters = normalizeWorkstationSearchFilters(filters);
         try {
             user.setWorkstationSearchFilters(objectMapper.writeValueAsString(safeFilters));
         } catch (JsonProcessingException ex) {
@@ -137,6 +154,240 @@ public class UserService  {
         }
         userRepository.save(user);
         return safeFilters;
+    }
+
+    public List<WorkstationSearchPresetDTO> getCurrentUserWorkstationSearchPresets() {
+        UserEntity user = getCurrentUserOrThrow();
+        return readWorkstationSearchPresets(user);
+    }
+
+    public WorkstationSearchPresetDTO createCurrentUserWorkstationSearchPreset(WorkstationSearchPresetUpsertDTO request) {
+        UserEntity user = getCurrentUserOrThrow();
+        List<WorkstationSearchPresetDTO> presets = readWorkstationSearchPresets(user);
+        WorkstationSearchPresetUpsertDTO normalizedRequest = normalizePresetRequest(request);
+        ensurePresetNameUnique(presets, normalizedRequest.getName(), null);
+        if (presets.size() >= MAX_WORKSTATION_SEARCH_PRESETS) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Preset limit reached");
+        }
+
+        WorkstationSearchPresetDTO preset = new WorkstationSearchPresetDTO(
+            UUID.randomUUID().toString(),
+            normalizedRequest.getName(),
+            normalizedRequest.getBuildingId(),
+            normalizedRequest.getFilters(),
+            Instant.now().toString()
+        );
+        presets.add(preset);
+        saveWorkstationSearchPresets(user, presets);
+        return preset;
+    }
+
+    public WorkstationSearchPresetDTO updateCurrentUserWorkstationSearchPreset(String presetId, WorkstationSearchPresetUpsertDTO request) {
+        UserEntity user = getCurrentUserOrThrow();
+        List<WorkstationSearchPresetDTO> presets = readWorkstationSearchPresets(user);
+        WorkstationSearchPresetDTO existing = presets.stream()
+            .filter(preset -> Objects.equals(preset.getId(), presetId))
+            .findFirst()
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Preset not found"));
+        WorkstationSearchPresetUpsertDTO normalizedRequest = normalizePresetRequest(request);
+        ensurePresetNameUnique(presets, normalizedRequest.getName(), presetId);
+
+        existing.setName(normalizedRequest.getName());
+        existing.setBuildingId(normalizedRequest.getBuildingId());
+        existing.setFilters(normalizedRequest.getFilters());
+        existing.setUpdatedAt(Instant.now().toString());
+
+        saveWorkstationSearchPresets(user, presets);
+        return existing;
+    }
+
+    public void deleteCurrentUserWorkstationSearchPreset(String presetId) {
+        UserEntity user = getCurrentUserOrThrow();
+        List<WorkstationSearchPresetDTO> presets = readWorkstationSearchPresets(user);
+        boolean removed = presets.removeIf(preset -> Objects.equals(preset.getId(), presetId));
+        if (!removed) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Preset not found");
+        }
+        saveWorkstationSearchPresets(user, presets);
+    }
+
+    private List<WorkstationSearchPresetDTO> readWorkstationSearchPresets(UserEntity user) {
+        String raw = user.getWorkstationSearchPresets();
+        if (raw == null || raw.isBlank()) {
+            return new ArrayList<>();
+        }
+        try {
+            List<WorkstationSearchPresetDTO> parsed = objectMapper.readValue(
+                raw,
+                new TypeReference<List<WorkstationSearchPresetDTO>>() {}
+            );
+            if (parsed == null) {
+                return new ArrayList<>();
+            }
+            return parsed.stream()
+                .filter(Objects::nonNull)
+                .map(this::sanitizeStoredPreset)
+                .sorted(Comparator.comparing(WorkstationSearchPresetDTO::getUpdatedAt, Comparator.nullsLast(String::compareTo)).reversed())
+                .collect(Collectors.toCollection(ArrayList::new));
+        } catch (JsonProcessingException ex) {
+            loggingErr("Failed to parse workstation search presets for user {}: {}", user.getId(), ex.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    private WorkstationSearchPresetDTO sanitizeStoredPreset(WorkstationSearchPresetDTO preset) {
+        if (preset == null) {
+            return null;
+        }
+        String trimmedName = preset.getName() == null ? "" : preset.getName().trim();
+        if (trimmedName.isBlank()) {
+            return null;
+        }
+        if (trimmedName.length() > MAX_WORKSTATION_SEARCH_PRESET_NAME_LENGTH) {
+            trimmedName = trimmedName.substring(0, MAX_WORKSTATION_SEARCH_PRESET_NAME_LENGTH).trim();
+        }
+
+        WorkstationSearchPresetDTO sanitized = new WorkstationSearchPresetDTO();
+        sanitized.setId(
+            preset.getId() == null || preset.getId().isBlank()
+                ? UUID.randomUUID().toString()
+                : preset.getId()
+        );
+        sanitized.setName(trimmedName);
+        sanitized.setBuildingId(normalizeStoredBuildingId(preset.getBuildingId()));
+        sanitized.setFilters(normalizeWorkstationSearchFilters(preset.getFilters()));
+        sanitized.setUpdatedAt(
+            preset.getUpdatedAt() == null || preset.getUpdatedAt().isBlank()
+                ? Instant.EPOCH.toString()
+                : preset.getUpdatedAt()
+        );
+        return sanitized;
+    }
+
+    private void saveWorkstationSearchPresets(UserEntity user, List<WorkstationSearchPresetDTO> presets) {
+        List<WorkstationSearchPresetDTO> sanitized = presets == null
+            ? new ArrayList<>()
+            : presets.stream()
+                .filter(Objects::nonNull)
+                .map(this::sanitizeStoredPreset)
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(WorkstationSearchPresetDTO::getUpdatedAt, Comparator.nullsLast(String::compareTo)).reversed())
+                .collect(Collectors.toCollection(ArrayList::new));
+        try {
+            user.setWorkstationSearchPresets(objectMapper.writeValueAsString(sanitized));
+        } catch (JsonProcessingException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid workstation search presets");
+        }
+        userRepository.save(user);
+    }
+
+    private WorkstationSearchPresetUpsertDTO normalizePresetRequest(WorkstationSearchPresetUpsertDTO request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing preset request");
+        }
+        String name = request.getName() == null ? "" : request.getName().trim();
+        if (name.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Preset name is required");
+        }
+        if (name.length() > MAX_WORKSTATION_SEARCH_PRESET_NAME_LENGTH) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Preset name is too long");
+        }
+
+        WorkstationSearchPresetUpsertDTO normalized = new WorkstationSearchPresetUpsertDTO();
+        normalized.setName(name);
+        normalized.setBuildingId(normalizeBuildingId(request.getBuildingId()));
+        normalized.setFilters(normalizeWorkstationSearchFilters(request.getFilters()));
+        return normalized;
+    }
+
+    private void ensurePresetNameUnique(List<WorkstationSearchPresetDTO> presets, String candidateName, String currentPresetId) {
+        String normalizedCandidate = candidateName.toLowerCase(Locale.ROOT);
+        boolean duplicateExists = presets.stream()
+            .anyMatch(preset ->
+                !Objects.equals(preset.getId(), currentPresetId)
+                && preset.getName() != null
+                && preset.getName().trim().toLowerCase(Locale.ROOT).equals(normalizedCandidate)
+            );
+        if (duplicateExists) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Preset name already exists");
+        }
+    }
+
+    private String normalizeBuildingId(String buildingId) {
+        String normalized = buildingId == null ? ALL_BUILDINGS_VALUE : buildingId.trim();
+        if (normalized.isBlank() || ALL_BUILDINGS_VALUE.equals(normalized)) {
+            return ALL_BUILDINGS_VALUE;
+        }
+        try {
+            Long parsed = Long.valueOf(normalized);
+            if (!buildingRepository.existsById(parsed)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid building id");
+            }
+            return String.valueOf(parsed);
+        } catch (NumberFormatException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid building id");
+        }
+    }
+
+    private String normalizeStoredBuildingId(String buildingId) {
+        if (buildingId == null || buildingId.isBlank() || ALL_BUILDINGS_VALUE.equals(buildingId.trim())) {
+            return ALL_BUILDINGS_VALUE;
+        }
+        try {
+            Long parsed = Long.valueOf(buildingId.trim());
+            return buildingRepository.existsById(parsed) ? String.valueOf(parsed) : ALL_BUILDINGS_VALUE;
+        } catch (NumberFormatException ex) {
+            return ALL_BUILDINGS_VALUE;
+        }
+    }
+
+    private WorkstationSearchFiltersDTO normalizeWorkstationSearchFilters(WorkstationSearchFiltersDTO filters) {
+        WorkstationSearchFiltersDTO source = filters == null ? new WorkstationSearchFiltersDTO() : filters;
+        WorkstationSearchFiltersDTO normalized = new WorkstationSearchFiltersDTO();
+        normalized.setTypes(normalizeStringList(source.getTypes(), ALLOWED_WORKSTATION_TYPES));
+        normalized.setMonitorCounts(
+            source.getMonitorCounts() == null
+                ? new ArrayList<>()
+                : source.getMonitorCounts().stream()
+                    .filter(Objects::nonNull)
+                    .map(Integer::intValue)
+                    .filter(value -> value >= 0 && value <= 3)
+                    .distinct()
+                    .collect(Collectors.toCollection(ArrayList::new))
+        );
+        normalized.setDeskHeightAdjustable(
+            source.getDeskHeightAdjustable() == null
+                ? new ArrayList<>()
+                : source.getDeskHeightAdjustable().stream()
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toCollection(ArrayList::new))
+        );
+        normalized.setTechnologySelections(normalizeStringList(source.getTechnologySelections(), ALLOWED_TECHNOLOGY_SELECTIONS));
+        normalized.setSpecialFeatures(
+            source.getSpecialFeatures() == null
+                ? new ArrayList<>()
+                : source.getSpecialFeatures().stream()
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toCollection(ArrayList::new))
+        );
+        return normalized;
+    }
+
+    private ArrayList<String> normalizeStringList(List<String> values, Set<String> allowedValues) {
+        if (values == null) {
+            return new ArrayList<>();
+        }
+        return values.stream()
+            .filter(Objects::nonNull)
+            .map(String::trim)
+            .filter(value -> !value.isBlank())
+            .filter(allowedValues::contains)
+            .collect(Collectors.collectingAndThen(
+                Collectors.toCollection(LinkedHashSet::new),
+                ArrayList::new
+            ));
     }
 
     public AuthResponseDTO login(final String email, final String password) throws LdapUserNotFoundException, DaoUserNotFoundException, BadCredentialsException {
