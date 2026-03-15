@@ -30,6 +30,10 @@ export default function AddWorkstation({ isOpen, onClose }) {
       toast.error(t('selectRoomError'));
       return false;
     }
+    if (!String(remark || '').trim()) {
+      toast.error(t('fields_not_empty'));
+      return false;
+    }
     const roomId = room.id;
     
     if(!roomId){
@@ -46,7 +50,7 @@ export default function AddWorkstation({ isOpen, onClose }) {
       () => {console.log('Failed to create a new desk in AddWorkstation.js.');},
       JSON.stringify({
         'roomId': roomId,
-        'remark': remark,
+        'remark': remark.trim(),
         'fixed': Boolean(fixed),
         'workstationType': workstationType,
         'monitorsQuantity': monitorsQuantity,

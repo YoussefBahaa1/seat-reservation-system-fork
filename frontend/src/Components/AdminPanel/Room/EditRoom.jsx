@@ -26,6 +26,10 @@ export default function EditRoom({ isOpen, onClose }) {
     // console.log(room.id,newRoomStatus, newRoomType, newRoomRemark);
     if (!room || room === '')
       return;
+    if (!String(newRoomRemark || '').trim()) {
+      toast.error(t('fields_not_empty'));
+      return;
+    }
     putRequest( 
       `${process.env.REACT_APP_BACKEND_URL}/admin/rooms`,
       headers.current,
@@ -39,7 +43,7 @@ export default function EditRoom({ isOpen, onClose }) {
           'room_id': room.id,
           'status': newRoomStatus.roomStatusName,
           'type': newRoomType.roomTypeName,
-          'remark': newRoomRemark
+          'remark': newRoomRemark.trim()
         }
       )
     );

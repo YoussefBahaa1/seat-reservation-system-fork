@@ -23,7 +23,7 @@ export default function AddRoom({ isOpen, onClose }) {
       toast.error(t('x_y_not_empty'));
       return false;
     }
-    if (!floor || !type || !status) {
+    if (!floor || !type || !status || !String(remark || '').trim()) {
       toast.error(t('fields_not_empty'));
       return false;
     }
@@ -44,7 +44,7 @@ export default function AddRoom({ isOpen, onClose }) {
         'x': x,
         'y': y,
         'status': status.roomStatusName,
-        'remark': remark,
+        'remark': remark.trim(),
 
       })
     );

@@ -1,6 +1,7 @@
 package com.desk_sharing.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.desk_sharing.entities.Desk;
 import com.desk_sharing.entities.Room;
@@ -103,6 +105,32 @@ class DeskServiceTest {
         assertThat(saved.getTechnologyWebcam()).isFalse();
         assertThat(saved.getTechnologyHeadset()).isFalse();
         assertThat(saved.getSpecialFeatures()).isEmpty();
+    }
+
+    @Test
+    void saveDesk_rejectsBlankRemark() {
+        DeskDTO dto = deskDto(10L, "   ", false);
+        Room room = room(10L);
+
+        when(roomRepository.findById(10L)).thenReturn(Optional.of(room));
+
+        assertThatThrownBy(() -> deskService.saveDesk(dto))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("Desk remark is required");
+    }
+
+    @Test
+    void updateDesk_rejectsBlankRemark() {
+        Desk existingDesk = desk(5L, false);
+        DeskDTO dto = new DeskDTO();
+        dto.setDeskId(5L);
+        dto.setRemark("   ");
+
+        when(deskRepository.findById(5L)).thenReturn(Optional.of(existingDesk));
+
+        assertThatThrownBy(() -> deskService.updateDesk(5L, dto))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("Desk remark is required");
     }
 
     @Test

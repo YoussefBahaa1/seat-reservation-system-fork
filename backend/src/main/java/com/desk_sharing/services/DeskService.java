@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.desk_sharing.entities.Desk;
 import com.desk_sharing.entities.Room;
@@ -68,8 +70,15 @@ public class DeskService {
         return trimmed.substring(0, SPECIAL_FEATURES_MAX_LENGTH);
     }
 
+    private String normalizeRequiredRemark(String remark) {
+        if (remark == null || remark.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Desk remark is required");
+        }
+        return remark.trim();
+    }
+
     private void applyDeskMetadata(Desk desk, DeskDTO deskDto) {
-        desk.setRemark(deskDto.getRemark());
+        desk.setRemark(normalizeRequiredRemark(deskDto.getRemark()));
         desk.setWorkstationType(normalizeWorkstationType(deskDto.getWorkstationType()));
         desk.setMonitorsQuantity(normalizeMonitorsQuantity(deskDto.getMonitorsQuantity()));
         desk.setDeskHeightAdjustable(Boolean.TRUE.equals(deskDto.getDeskHeightAdjustable()));

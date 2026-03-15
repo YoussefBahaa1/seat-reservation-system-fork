@@ -116,12 +116,13 @@ export default function WorkStationDefinition({
                 </Select>
             </FormControl>
             <br/><br/>
-            <FormControl id='workStationDefinition_setRemark' required={false} size='small' fullWidth variant='standard'>
+            <FormControl id='workStationDefinition_setRemark' required size='small' fullWidth variant='standard'>
                 <TextField
                     disabled={disabled}
                     id='textfield_desk_remark'
                     data-testid='textfield_desk_remark'
                     label={t('deskRemark')}
+                    required
                     size='small'
                     type={'string'}
                     value={remark}

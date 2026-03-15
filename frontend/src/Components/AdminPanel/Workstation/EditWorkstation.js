@@ -28,6 +28,10 @@ export default function EditWorkstation({ isOpen, onClose }) {
 
   async function updateWorkstation() {
     if (selectedDesk?.id) {
+      if (!String(remark || '').trim()) {
+        toast.error(t('fields_not_empty'));
+        return;
+      }
       putRequest(
         `${process.env.REACT_APP_BACKEND_URL}/admin/desks/updateDesk`,
         headers.current,
@@ -38,7 +42,7 @@ export default function EditWorkstation({ isOpen, onClose }) {
         () => {console.log('Failed to update workstation in EditWorkstation.js');},
         JSON.stringify({
           'deskId': selectedDesk.id,
-          'remark': remark,
+          'remark': remark.trim(),
           'fixed': Boolean(fixed),
           'workstationType': workstationType,
           'monitorsQuantity': monitorsQuantity,
