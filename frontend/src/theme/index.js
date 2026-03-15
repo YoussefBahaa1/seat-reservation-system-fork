@@ -393,6 +393,9 @@ export const appTheme = createTheme({
       secondary: alpha(rawColors.base.dark, 0.6),
     },
   },
+  typography: {
+    fontFamily: "'Source Sans Pro', sans-serif",
+  },
   components: {
     MuiCssBaseline: {
       styleOverrides: {
