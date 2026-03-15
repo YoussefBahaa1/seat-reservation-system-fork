@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class BookingRulesTest {
 
     private final BookingService bookingService =
-        new BookingService(null, null, null, null, null, null, null, null, null);
+        new BookingService(null, null, null, null, null, null, null, null, null, null);
 
     private void invokeValidate(Date day, Time begin, Time end, BookingSettings settings) throws Exception {
         var method = BookingService.class.getDeclaredMethod(

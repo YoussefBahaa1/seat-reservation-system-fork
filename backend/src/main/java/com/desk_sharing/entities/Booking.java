@@ -68,7 +68,7 @@ public class Booking {
      * This time offset in minutes is added to the timestamp 
      * during the creation of the booking.
      */
-    public final static int LOCKEXPIRYTIMEOFFSET = 5;
+    public final static int LOCKEXPIRYTIMEOFFSET = 3;
 
     @Column(name = "begin", nullable = false)
     private Time begin; // hh:mm:ss

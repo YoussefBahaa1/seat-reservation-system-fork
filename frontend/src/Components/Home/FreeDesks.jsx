@@ -270,6 +270,21 @@ const FreeDesks = () => {
             return;
         }
 
+        const lockRequestDTO = {
+            deskId: selectedDesk.id,
+            day: moment(bookingDate).format('YYYY-MM-DD'),
+        };
+
+        const releaseLock = () => {
+            postRequest(
+                `${process.env.REACT_APP_BACKEND_URL}/booking-locks/release`,
+                headers.current,
+                () => {},
+                () => {},
+                JSON.stringify(lockRequestDTO)
+            );
+        };
+
         const bookingDTO = {
             userId: localStorage.getItem('userId'),
             roomId: selectedDesk.room.id,
@@ -278,7 +293,32 @@ const FreeDesks = () => {
             begin: normalizeTimeToSql(startTime),
             end: normalizeTimeToSql(endTime)
         };
-        bookingPostRequest('FreeDesks.jsx', bookingDTO, selectedDesk.remark, headers, t, (_)=>{setRepaint(!repaint);});
+        postRequest(
+            `${process.env.REACT_APP_BACKEND_URL}/booking-locks/acquire`,
+            headers.current,
+            () => {
+                bookingPostRequest(
+                    'FreeDesks.jsx',
+                    bookingDTO,
+                    selectedDesk.remark,
+                    headers,
+                    t,
+                    (_)=>{setRepaint(!repaint);},
+                    {
+                        onCancel: releaseLock,
+                        onError: releaseLock,
+                    }
+                );
+            },
+            (status, data) => {
+                if (status === 409 || (typeof data?.error === 'string' && data.error.toLowerCase().includes('currently being booked'))) {
+                    toast.warning(t('currentlyBeingBooked'));
+                    return;
+                }
+                toast.error((typeof data?.error === 'string' && data.error) || t('httpOther'));
+            },
+            JSON.stringify(lockRequestDTO)
+        );
     }
 
     function CreateContent() {

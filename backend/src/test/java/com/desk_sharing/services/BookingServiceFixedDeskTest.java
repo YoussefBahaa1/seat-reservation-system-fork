@@ -37,6 +37,7 @@ class BookingServiceFixedDeskTest {
     @Mock ApplicationEventPublisher eventPublisher;
     @Mock CalendarNotificationService calendarNotificationService;
     @Mock BookingSettingsService bookingSettingsService;
+    @Mock BookingLockService bookingLockService;
 
     @InjectMocks BookingService bookingService;
 
@@ -62,9 +63,9 @@ class BookingServiceFixedDeskTest {
         desk.setId(11L);
         desk.setFixed(true);
 
-        when(userService.getUser(7)).thenReturn(user);
+        when(userService.getCurrentUser()).thenReturn(user);
         when(roomService.getRoomById(10L)).thenReturn(Optional.of(room));
-        when(deskService.getDeskById(11L)).thenReturn(Optional.of(desk));
+        when(deskRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(desk));
         assertThatThrownBy(() -> bookingService.createBooking(dto))
             .isInstanceOf(ResponseStatusException.class)
             .hasMessageContaining("not available");

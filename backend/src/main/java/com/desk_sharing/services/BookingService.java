@@ -1,6 +1,7 @@
 package com.desk_sharing.services;
 
 import com.desk_sharing.entities.Booking;
+import com.desk_sharing.entities.BookingLock;
 import com.desk_sharing.entities.Desk;
 import com.desk_sharing.entities.Room;
 import com.desk_sharing.entities.VisibilityMode;
@@ -59,6 +60,7 @@ public class BookingService {
     private final ApplicationEventPublisher eventPublisher;
     private final CalendarNotificationService calendarNotificationService;
     private final BookingSettingsService bookingSettingsService;
+    private final BookingLockService bookingLockService;
 
     /**
      * Find and return bookings of visible colleagues (non-anonymous) for the requested date.
@@ -321,22 +323,25 @@ public class BookingService {
      * @param roomDTO   The definition of the new room.
      * @return  The newly created room.
      */
+    @Transactional
     public Booking createBooking(final BookingDTO bookingData) {
-        final UserEntity user = userService.getUser(bookingData.getUserId());
+        if (bookingData == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing booking payload");
+        }
+
+        final UserEntity user = userService.getCurrentUser();
         final Long roomId = bookingData.getRoomId();
         if (roomId == null) {
-            System.err.println("roomId is null in BookingService.createBooking()");
-            return null;
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing room id");
         }
         final Room room = roomService.getRoomById(roomId)
             .orElseThrow(() -> new IllegalArgumentException("Room not found with id: " + bookingData.getRoomId()));
         final Long deskId = bookingData.getDeskId();
         if (deskId == null) {
-            System.err.println("deskId is null in BookingService.createBooking()");
-            return null;
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing desk id");
         }
 
-        final Desk desk = deskService.getDeskById(deskId)
+        final Desk desk = deskRepository.findByIdForUpdate(deskId)
             .orElseThrow(() -> new IllegalArgumentException("Desk not found with id: " + bookingData.getDeskId()));
 
         if (desk.isHidden() || desk.isFixed()) {
@@ -349,8 +354,16 @@ public class BookingService {
         
         // Backend validation: do not trust frontend/UI for booking rules
         validateBookingTimes(bookingData.getDay(), bookingData.getBegin(), bookingData.getEnd(), bookingSettingsService.getCurrentSettings());
-        
-        final LocalDateTime now = LocalDateTime.now();
+
+        final Optional<BookingLock> activeLockOpt = bookingLockService.findActiveLock(bookingData.getDeskId(), bookingData.getDay());
+        if (activeLockOpt.isPresent()) {
+            final BookingLock activeLock = activeLockOpt.get();
+            final int ownerId = activeLock.getUser() == null ? -1 : activeLock.getUser().getId();
+            if (ownerId != user.getId()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Currently being booked");
+            }
+        }
+
         final List<Booking> existingBookings = bookingRepository.getAllBookingsForPreventDuplicates(
             bookingData.getRoomId(), 
             bookingData.getDeskId(),
@@ -358,25 +371,25 @@ public class BookingService {
             bookingData.getBegin(), 
             bookingData.getEnd()
         );
-        
-        /**
-         * Checks if some other user is currently booking the desk and
-         * the 
-         */
-        final boolean anyLockedBooking = existingBookings.stream()
-                .anyMatch(booking -> booking.isBookingInProgress() && now.isBefore(booking.getLockExpiryTime()));
-        if (existingBookings.isEmpty() || !anyLockedBooking) {
-            final Booking newBooking = new Booking(user, room, desk, bookingData.getDay(), bookingData.getBegin(), bookingData.getEnd());
-            /**
-             * Set the lockExpiryTime.
-             * We add a defined amount of minutes to the current timestamp.
-             */
-            newBooking.setLockExpiryTime(LocalDateTime.now().plusMinutes(Booking.LOCKEXPIRYTIMEOFFSET));
-            newBooking.setBookingInProgress(true);
-            return addBooking(newBooking);
-        } else {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "This workstation is currently being booked by another user. Please try again shortly.");
+
+        if (existingBookings != null && !existingBookings.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This slot overlaps with another booking for this desk");
         }
+
+        final Booking newBooking = new Booking(user, room, desk, bookingData.getDay(), bookingData.getBegin(), bookingData.getEnd());
+        newBooking.setBookingInProgress(false);
+        newBooking.setLockExpiryTime(null);
+        if (newBooking.getCalendarUid() == null) {
+            newBooking.setCalendarUid(java.util.UUID.randomUUID().toString());
+            newBooking.setCalendarSequence(0);
+        }
+
+        final Booking saved = addBooking(newBooking);
+        if (saved != null) {
+            eventPublisher.publishEvent(new BookingNotificationEvent(saved.getId(), NotificationAction.CREATE));
+            bookingLockService.releaseLockForUser(saved.getDesk().getId(), saved.getDay(), user.getId());
+        }
+        return saved;
     }
 
     public Booking addBooking(final Booking newBooking) {
@@ -405,7 +418,11 @@ public class BookingService {
     }
 
     public void deleteBooking(@NonNull final Long id) {
-        bookingRepository.findById(id).ifPresent(calendarNotificationService::sendBookingCancelled);
+        bookingRepository.findById(id).ifPresent(booking -> {
+            if (!booking.isBookingInProgress()) {
+                calendarNotificationService.sendBookingCancelled(booking);
+            }
+        });
         bookingRepository.deleteById(id);
     }
 
@@ -478,6 +495,9 @@ public class BookingService {
 		Optional<Booking> bookingById = getBookingById(bookingId);
 		if(bookingById.isPresent()) {
 			Booking booking = bookingById.get();
+            if (!booking.isBookingInProgress()) {
+                return booking;
+            }
 			if (booking.getDesk() != null && (booking.getDesk().isHidden() || booking.getDesk().isFixed())) {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"This workstation is not available for booking.");
@@ -486,6 +506,29 @@ public class BookingService {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"This workstation was blocked due to a defect since your booking started. Cannot confirm.");
 			}
+            final UserEntity currentUser = userService.getCurrentUser();
+            final Optional<BookingLock> activeLockOpt = bookingLockService.findActiveLock(
+                booking.getDesk().getId(),
+                booking.getDay()
+            );
+            if (activeLockOpt.isPresent()) {
+                final BookingLock activeLock = activeLockOpt.get();
+                if (activeLock.getUser() == null || activeLock.getUser().getId() != currentUser.getId()) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Currently being booked");
+                }
+            } else {
+                final List<Booking> overlaps = bookingRepository.getAllBookings(
+                    booking.getId(),
+                    booking.getRoom().getId(),
+                    booking.getDesk().getId(),
+                    booking.getDay(),
+                    booking.getBegin(),
+                    booking.getEnd()
+                );
+                if (overlaps != null && !overlaps.isEmpty()) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "This slot overlaps with another booking for this desk");
+                }
+            }
 			booking.setBookingInProgress(false);
 			booking.setLockExpiryTime(null);
             if (booking.getCalendarUid() == null) {
@@ -494,6 +537,7 @@ public class BookingService {
             }
 			Booking saved = bookingRepository.save(booking);
             eventPublisher.publishEvent(new BookingNotificationEvent(saved.getId(), NotificationAction.CREATE));
+            bookingLockService.releaseLockForUser(saved.getDesk().getId(), saved.getDay(), currentUser.getId());
 			return saved;
 		}
 		return null;

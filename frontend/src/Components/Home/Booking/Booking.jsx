@@ -22,7 +22,7 @@ import { FaStar, FaRegStar } from 'react-icons/fa';
 import CloseIcon from '@mui/icons-material/Close';
 
 import LayoutPage from '../../Templates/LayoutPage.jsx';
-import { getRequest, postRequest, putRequest, deleteRequest } from '../../RequestFunctions/RequestFunctions';
+import { getRequest, postRequest, deleteRequest } from '../../RequestFunctions/RequestFunctions';
 import bookingPostRequest from '../../misc/bookingPostRequest.js';
 import ReportDefectModal from '../../Defects/ReportDefectModal';
 import { DeskTable } from '../../misc/DesksTable.jsx';
@@ -76,6 +76,7 @@ const Booking = () => {
   const hasValidDate = parsedDate instanceof Date && !Number.isNaN(parsedDate.valueOf());
   const initialDate = hasValidDate ? parsedDate : new Date();
   const contextDateIso = hasValidDate ? parsedDate.toISOString() : null;
+  const bookingDay = hasValidDate ? moment(parsedDate).format('YYYY-MM-DD') : moment(new Date()).format('YYYY-MM-DD');
 
   //Safe selection of desks
   const selectionKey = `bookingSelection:${roomId ?? 'none'}:${hasValidDate ? moment(parsedDate).format('YYYY-MM-DD') : ''}`;
@@ -88,6 +89,7 @@ const Booking = () => {
   const [isBookingPending, setIsBookingPending] = useState(false);
   const [clickedDeskId, setClickedDeskId] = useState(null);
   const [clickedDeskRemark, setClickedDeskRemark] = useState('');
+  const [activeDeskLock, setActiveDeskLock] = useState(null);
   const [isFavourite, setIsFavourite] = useState(false);
   const [bookingSettings, setBookingSettings] = useState({
     leadTimeMinutes: 30,
@@ -103,11 +105,163 @@ const Booking = () => {
   const eventsRef = useRef(events);
   const bookingPendingRef = useRef(false);
   const pendingSlotSuggestionRef = useRef(null);
+  const activeDeskLockRef = useRef(null);
+  const lockExpiryTimeoutRef = useRef(null);
 
   const setBookingPending = useCallback((value) => {
     bookingPendingRef.current = value;
     setIsBookingPending(value);
   }, []);
+
+  const clearLockExpiryTimer = useCallback(() => {
+    if (lockExpiryTimeoutRef.current) {
+      clearTimeout(lockExpiryTimeoutRef.current);
+      lockExpiryTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearDeskSelection = useCallback(() => {
+    setClickedDeskId(null);
+    setClickedDeskRemark('');
+    setEvents([]);
+    setEvent({});
+    pendingSlotSuggestionRef.current = null;
+    sessionStorage.removeItem(selectionKey);
+  }, [selectionKey]);
+
+  const clearLocalDeskLock = useCallback(() => {
+    clearLockExpiryTimer();
+    setActiveDeskLock(null);
+  }, [clearLockExpiryTimer]);
+
+  const releaseDeskLockByPayload = useCallback((lockPayload, onDone) => {
+    if (!lockPayload?.deskId || !lockPayload?.day) {
+      if (typeof onDone === 'function') onDone();
+      return;
+    }
+    postRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/booking-locks/release`,
+      headers.current,
+      () => {
+        if (typeof onDone === 'function') onDone();
+      },
+      () => {
+        if (typeof onDone === 'function') onDone();
+      },
+      JSON.stringify({
+        deskId: lockPayload.deskId,
+        day: lockPayload.day,
+      })
+    );
+  }, []);
+
+  const onDeskLockExpired = useCallback(() => {
+    const lock = activeDeskLockRef.current;
+    if (!lock) return;
+    clearLocalDeskLock();
+    clearDeskSelection();
+    toast.warning(t('bookingLockExpired'));
+  }, [clearDeskSelection, clearLocalDeskLock, t]);
+
+  const armDeskLockExpiry = useCallback((expiresAt) => {
+    clearLockExpiryTimer();
+    if (!expiresAt) return;
+    const expiryTs = new Date(expiresAt).getTime();
+    const delay = expiryTs - Date.now();
+    if (!Number.isFinite(delay) || delay <= 0) {
+      onDeskLockExpired();
+      return;
+    }
+    lockExpiryTimeoutRef.current = setTimeout(() => {
+      onDeskLockExpired();
+    }, delay);
+  }, [clearLockExpiryTimer, onDeskLockExpired]);
+
+  const acquireDeskLockAndSelect = useCallback((desk) => {
+    if (!desk?.id) return;
+
+    const acquire = () => {
+      postRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/booking-locks/acquire`,
+        headers.current,
+        (data) => {
+          const lockPayload = {
+            deskId: desk.id,
+            day: bookingDay,
+            expiresAt: data?.expiresAt || new Date(Date.now() + 3 * 60 * 1000).toISOString(),
+          };
+          setActiveDeskLock(lockPayload);
+          armDeskLockExpiry(lockPayload.expiresAt);
+          setClickedDeskId(desk.id);
+          setClickedDeskRemark(desk.remark || '');
+          sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: desk.id }));
+        },
+        (status, data) => {
+          if (status === 409 || (typeof data?.error === 'string' && data.error.toLowerCase().includes('currently being booked'))) {
+            toast.warning(t('currentlyBeingBooked'));
+          } else {
+            toast.error((typeof data?.error === 'string' && data.error) || t('httpOther'));
+          }
+        },
+        JSON.stringify({
+          deskId: desk.id,
+          day: bookingDay,
+        })
+      );
+    };
+
+    const currentLock = activeDeskLockRef.current;
+    if (currentLock && (currentLock.deskId !== desk.id || currentLock.day !== bookingDay)) {
+      clearLocalDeskLock();
+      releaseDeskLockByPayload(currentLock, acquire);
+      return;
+    }
+    acquire();
+  }, [armDeskLockExpiry, bookingDay, clearLocalDeskLock, releaseDeskLockByPayload, selectionKey, t]);
+
+  const ensureDeskLockForDay = useCallback((deskId, day, onSuccess, onFail) => {
+    if (!deskId || !day) {
+      if (typeof onFail === 'function') onFail();
+      return;
+    }
+
+    const currentLock = activeDeskLockRef.current;
+    if (currentLock?.deskId === deskId && currentLock?.day === day) {
+      if (typeof onSuccess === 'function') onSuccess();
+      return;
+    }
+
+    const previousLock = currentLock && currentLock?.deskId && currentLock?.day
+      ? { deskId: currentLock.deskId, day: currentLock.day }
+      : null;
+
+    postRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/booking-locks/acquire`,
+      headers.current,
+      (data) => {
+        const nextLock = {
+          deskId,
+          day,
+          expiresAt: data?.expiresAt || new Date(Date.now() + 3 * 60 * 1000).toISOString(),
+        };
+        setActiveDeskLock(nextLock);
+        armDeskLockExpiry(nextLock.expiresAt);
+        if (previousLock && (previousLock.deskId !== deskId || previousLock.day !== day)) {
+          releaseDeskLockByPayload(previousLock);
+        }
+        if (typeof onSuccess === 'function') onSuccess();
+      },
+      (status, data) => {
+        if (status === 409 || (typeof data?.error === 'string' && data.error.toLowerCase().includes('currently being booked'))) {
+          toast.warning(t('currentlyBeingBooked'));
+        } else {
+          toast.error((typeof data?.error === 'string' && data.error) || t('httpOther'));
+        }
+        if (typeof onFail === 'function') onFail(status, data);
+      },
+      JSON.stringify({ deskId, day })
+    );
+  }, [armDeskLockExpiry, releaseDeskLockByPayload, t]);
 
   const minStartTime = 6;
   const maxEndTime = 22;
@@ -269,26 +423,58 @@ const Booking = () => {
       end: endMoment.format('HH:mm:ss'),
     };
 
-    // Close suggestions popup first so the booking confirmation modal is visible.
-    closeAlternativeDeskDialog();
+    const lockRequestDTO = {
+      deskId: desk.id,
+      day: bookingDTO.day,
+    };
+    const releaseAlternativeLock = () => {
+      postRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/booking-locks/release`,
+        headers.current,
+        () => {},
+        () => {},
+        JSON.stringify(lockRequestDTO)
+      );
+    };
+
     setBookingPending(true);
-    bookingPostRequest(
-      'Booking.jsx',
-      bookingDTO,
-      desk?.remark || '',
-      headers,
-      t,
-      (booking) => {
+    postRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/booking-locks/acquire`,
+      headers.current,
+      () => {
+        // Close suggestions popup first so the booking confirmation modal is visible.
         closeAlternativeDeskDialog();
-        navigate('/home', { state: { booking }, replace: true });
-      },
-      {
-        onFinish: () => {
-          setBookingPending(false);
-        },
+        bookingPostRequest(
+          'Booking.jsx',
+          bookingDTO,
+          desk?.remark || '',
+          headers,
+          t,
+          (booking) => {
+            clearLocalDeskLock();
+            navigate('/home', { state: { booking }, replace: true });
+          },
+          {
+            onCancel: releaseAlternativeLock,
+            onError: releaseAlternativeLock,
+            onFinish: () => {
+              setBookingPending(false);
+            },
+          }
+        );
       }
+      ,
+      (status, data) => {
+        if (status === 409 || (typeof data?.error === 'string' && data.error.toLowerCase().includes('currently being booked'))) {
+          toast.warning(t('currentlyBeingBooked'));
+        } else {
+          toast.error((typeof data?.error === 'string' && data.error) || t('httpOther'));
+        }
+        setBookingPending(false);
+      },
+      JSON.stringify(lockRequestDTO)
     );
-  }, [closeAlternativeDeskDialog, navigate, roomId, setBookingPending, t]);
+  }, [clearLocalDeskLock, closeAlternativeDeskDialog, navigate, roomId, setBookingPending, t]);
 
   const loadBookings = useCallback(() => {
     if (!clickedDeskId) return;
@@ -403,9 +589,12 @@ const Booking = () => {
     ]);
 
     setEvent(newEvent);
+    if (clickedDeskId) {
+      ensureDeskLockForDay(clickedDeskId, moment(startTime).format('YYYY-MM-DD'));
+    }
     pendingSlotSuggestionRef.current = null;
 
-  }, [editBooking, isEditMode, t, bookingSettings, openAlternativeDeskDialogForSlot]);
+  }, [bookingSettings, clickedDeskId, editBooking, ensureDeskLockForDay, isEditMode, openAlternativeDeskDialogForSlot, t]);
 
   /** ----- EVENT FUNCTIONS ----- */
   const booking = async () => {
@@ -437,17 +626,37 @@ const Booking = () => {
 
     if (!isEditMode) {
       setBookingPending(true);
-      bookingPostRequest(
-        'Booking.jsx',
-        bookingDTO,
-        clickedDeskRemark,
-        headers,
-        t,
-        (booking) => navigate('/home', { state: { booking }, replace: true }),
-        {
-          onFinish: () => {
-            setBookingPending(false);
-          },
+      ensureDeskLockForDay(
+        clickedDeskId,
+        bookingDTO.day,
+        () => {
+          bookingPostRequest(
+            'Booking.jsx',
+            bookingDTO,
+            clickedDeskRemark,
+            headers,
+            t,
+            (booking) => {
+              clearLocalDeskLock();
+              navigate('/home', { state: { booking }, replace: true });
+            },
+            {
+              onCancel: () => {
+                const lock = activeDeskLockRef.current;
+                clearLocalDeskLock();
+                clearDeskSelection();
+                if (lock?.deskId && lock?.day) {
+                  releaseDeskLockByPayload(lock);
+                }
+              },
+              onFinish: () => {
+                setBookingPending(false);
+              },
+            }
+          );
+        },
+        () => {
+          setBookingPending(false);
         }
       );
       return;
@@ -480,25 +689,18 @@ const Booking = () => {
       end: originalEnd,
     };
 
-    const createAndConfirm = (dto, onSuccess, onFail) => {
+    const createBookingEntry = (dto, onSuccess, onFail) => {
       postRequest(
         `${process.env.REACT_APP_BACKEND_URL}/bookings`,
         headers.current,
-        (data) => {
-          putRequest(
-            `${process.env.REACT_APP_BACKEND_URL}/bookings/confirm/${data.id}`,
-            headers.current,
-            (dat) => onSuccess(dat),
-            () => onFail()
-          );
-        },
-        () => onFail(),
+        (data) => onSuccess(data),
+        (status, data) => onFail(status, data),
         JSON.stringify(dto)
       );
     };
 
     const tryRestoreOld = () => {
-      createAndConfirm(
+      createBookingEntry(
         oldBookingDTO,
         () => {},
         () => {}
@@ -506,13 +708,14 @@ const Booking = () => {
     };
 
     const handleCreateThenDelete = () => {
-      createAndConfirm(
+      createBookingEntry(
         bookingDTO,
         () => {
           deleteRequest(
             `${process.env.REACT_APP_BACKEND_URL}/bookings/${editBooking.bookingId}`,
             headers.current,
             () => {
+              clearLocalDeskLock();
               setBookingPending(false);
               navigate('/mybookings', { replace: true });
             },
@@ -535,9 +738,10 @@ const Booking = () => {
         `${process.env.REACT_APP_BACKEND_URL}/bookings/${editBooking.bookingId}`,
         headers.current,
         () => {
-          createAndConfirm(
+          createBookingEntry(
             bookingDTO,
             () => {
+              clearLocalDeskLock();
               setBookingPending(false);
               navigate('/mybookings', { replace: true });
             },
@@ -570,11 +774,20 @@ const Booking = () => {
           onClick: () => {
             if (bookingPendingRef.current) return;
             setBookingPending(true);
-            if (overlapsOld) {
-              handleDeleteThenCreate();
-            } else {
-              handleCreateThenDelete();
-            }
+            ensureDeskLockForDay(
+              clickedDeskId,
+              bookingDTO.day,
+              () => {
+                if (overlapsOld) {
+                  handleDeleteThenCreate();
+                } else {
+                  handleCreateThenDelete();
+                }
+              },
+              () => {
+                setBookingPending(false);
+              }
+            );
           },
         },
         {
@@ -593,6 +806,18 @@ const Booking = () => {
 
   useEffect(()=>{eventsRef.current=events},[events])
 
+  useEffect(() => {
+    activeDeskLockRef.current = activeDeskLock;
+  }, [activeDeskLock]);
+
+  useEffect(() => () => {
+    const lock = activeDeskLockRef.current;
+    clearLockExpiryTimer();
+    if (lock?.deskId && lock?.day) {
+      releaseDeskLockByPayload(lock);
+    }
+  }, [clearLockExpiryTimer, releaseDeskLockByPayload]);
+
   // Fetch desks when roomId changes
   useEffect(() => { if (roomId) fetchDesks(); }, [roomId, fetchDesks]);
 
@@ -603,9 +828,7 @@ const Booking = () => {
       if (isEditMode && editBooking?.deskId) {
         const match = desks.find((desk) => desk.id === editBooking.deskId);
         if (match) {
-          setClickedDeskId(match.id);
-          setClickedDeskRemark(match.remark || '');
-          sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: match.id }));
+          acquireDeskLockAndSelect(match);
           return;
         }
       }
@@ -613,14 +836,13 @@ const Booking = () => {
       if (saved?.deskId) {
         const match = desks.find((desk) => desk.id === saved.deskId);
         if (match) {
-          setClickedDeskId(match.id);
-          setClickedDeskRemark(match.remark || '');
+          acquireDeskLockAndSelect(match);
         }
       }
     } catch {
       // ignore invalid stored value
     }
-  }, [desks, editBooking, isEditMode, selectionKey]);
+  }, [acquireDeskLockAndSelect, desks, editBooking, isEditMode, selectionKey]);
 
   const refreshFavouriteStatus = useCallback(() => {
     const userId = localStorage.getItem('userId');
@@ -791,9 +1013,16 @@ const Booking = () => {
                         toast.warning(t('defectAlreadyOpen'));
                         return;
                       }
-                      setClickedDeskId(desk.id);
-                      setClickedDeskRemark(desk.remark);
-                      sessionStorage.setItem(selectionKey, JSON.stringify({ deskId: desk.id }));
+                      if (desk.id === clickedDeskId) {
+                        const lock = activeDeskLockRef.current;
+                        clearLocalDeskLock();
+                        clearDeskSelection();
+                        if (lock?.deskId && lock?.day) {
+                          releaseDeskLockByPayload(lock);
+                        }
+                        return;
+                      }
+                      acquireDeskLockAndSelect(desk);
                     }}
                   >
                     <Typography sx={{ ...typography_sx, margin: 0 }}>{desk.remark}</Typography>

@@ -161,6 +161,8 @@
     "minimum": "Aufenthaltsdauer mindestens 2 Stunden",
     "maximum": "Aufenthaltsdauer maximal 9 Stunden",
     "overlap": "Die Auswahl überschneidet sich mit einer anderen Buchung für diesen Arbeitsplatz",
+    "currentlyBeingBooked": "Wird derzeit gebucht",
+    "bookingLockExpired": "Die Arbeitsplatzsperre ist nach 3 Minuten abgelaufen. Bitte wählen Sie den Arbeitsplatz erneut.",
     "otherFreeDesksForSelectedTimeSlots": "Andere freie Arbeitsplaetze fuer den ausgewaehlten Zeitraum",
     "noFreeDesksForSelectedTimeSlotInBuilding": "Fuer dieses Zeitfenster gibt es in diesem Gebaeude keine freien Arbeitsplaetze.",
     "booked": "Buchung erfolgreich",

@@ -24,7 +24,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 	+ "from bookings " 
 	+ "join desks on bookings.desk_id = desks.desk_id "
 	+ "join users on bookings.user_id=users.id "
-	+ "where bookings.desk_id=:desk_id "
+	+ "where bookings.desk_id=:desk_id and bookings.booking_in_progress = 0 "
 	,nativeQuery = true)
 	public List<Object[]> getBookingsForDesk(@Param("desk_id") Long desk_id);
 
@@ -32,7 +32,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 		+ " FROM bookings b join users u on u.id = b.user_id join rooms r on b.room_id = r.room_id join desks d on b.desk_id = d.desk_id WHERE email IN (:colleaguesEmails) ", nativeQuery = true)
 	public List<Object[]> getColleaguesBookings(final List<String> colleaguesEmails);*/
 
-	@Query(value = "SELECT * FROM bookings WHERE booking_id != :id AND room_id = :roomId AND desk_id=:deskId AND day=:day AND "
+	@Query(value = "SELECT * FROM bookings WHERE booking_id != :id AND room_id = :roomId AND desk_id=:deskId AND day=:day AND booking_in_progress = 0 AND "
 			+ "((:startTime BETWEEN begin AND end) OR (:endTime BETWEEN begin AND end) OR "
 			+ "(begin >= :startTime AND begin < :endTime) OR (end > :startTime AND end <= :endTime))"
 			, nativeQuery = true)
@@ -40,7 +40,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 			@Param("day") Date day, @Param("startTime") Time startTime,
 			@Param("endTime") Time endTime);
 	
-	@Query(value = "SELECT * FROM bookings WHERE room_id = :roomId AND desk_id=:deskId AND day=:day AND "
+	@Query(value = "SELECT * FROM bookings WHERE room_id = :roomId AND desk_id=:deskId AND day=:day AND booking_in_progress = 0 AND "
 			+ "((:startTime BETWEEN begin AND end) OR (:endTime BETWEEN begin AND end) OR "
 			+ "(begin >= :startTime AND begin < :endTime) OR (end > :startTime AND end <= :endTime))"
 			, nativeQuery = true)
@@ -51,7 +51,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
 	List<Booking> findAllByBookingInProgress(boolean inProg);
 
-	@Query(value="select * from bookings where day=:myDate", nativeQuery = true)
+	@Query(value="select * from bookings where day=:myDate and booking_in_progress = 0", nativeQuery = true)
 	List<Booking> getBookingForDate(@Param("myDate") Date myDate);
 
     /**

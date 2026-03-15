@@ -52,9 +52,14 @@ public class BookingController {
 
     @PostMapping
     public ResponseEntity<?> addBooking(@RequestBody BookingDTO bookingData) {
-        logger.info("addBooking( {} )", bookingData.toString());
+        logger.info("addBooking( {} )", bookingData);
         try {
             final Booking savedBooking = bookingService.createBooking(bookingData);
+            if (savedBooking == null) {
+                Map<String, String> body = new HashMap<>();
+                body.put("error", "Booking failed");
+                return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+            }
             final BookingDTO bookingDTO = new BookingDTO(savedBooking);
             return new ResponseEntity<>(bookingDTO, HttpStatus.CREATED);
         } catch (ResponseStatusException e) {
@@ -71,10 +76,16 @@ public class BookingController {
     }
     
     @PutMapping("/confirm/{id}")
-    public ResponseEntity<Booking> confirmBooking(@PathVariable("id") long bookingId) {
+    public ResponseEntity<?> confirmBooking(@PathVariable("id") long bookingId) {
         logger.info("confirmBooking( {} )", bookingId);
-        Booking updatedBooking = bookingService.confirmBooking(bookingId);
-        return new ResponseEntity<>(updatedBooking, HttpStatus.OK);
+        try {
+            Booking updatedBooking = bookingService.confirmBooking(bookingId);
+            return new ResponseEntity<>(updatedBooking, HttpStatus.OK);
+        } catch (ResponseStatusException e) {
+            Map<String, String> body = new HashMap<>();
+            body.put("error", e.getReason() == null ? "Booking confirmation failed" : e.getReason());
+            return new ResponseEntity<>(body, e.getStatusCode());
+        }
     }
 
     @GetMapping("/{id}")
