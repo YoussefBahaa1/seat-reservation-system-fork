@@ -2,6 +2,7 @@ package com.desk_sharing.controllers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -13,6 +14,8 @@ import java.util.Dictionary;
 import java.util.HashMap;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.web.server.ResponseStatusException;
@@ -31,8 +34,13 @@ import com.desk_sharing.model.BookingProjectionDTO;
 import com.desk_sharing.model.BookingsForDeskDTO;
 import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.model.ColleagueBookingsDTO;
+import com.desk_sharing.model.BookingOverlapCheckRequestDTO;
+import com.desk_sharing.model.BookingOverlapCheckResponseDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.services.BookingService;
+import com.desk_sharing.services.UserService;
+import com.desk_sharing.services.calendar.BookingCalendarFormatter;
+import com.desk_sharing.services.calendar.CalendarNotificationService;
 
 import lombok.AllArgsConstructor;
 
@@ -43,6 +51,8 @@ public class BookingController {
     private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
     private final BookingService bookingService;
     private final BookingRepository bookingRepository;
+    private final UserService userService;
+    private final CalendarNotificationService calendarNotificationService;
 
     @PostMapping("getBookingsFromColleaguesOnDate/{date}")
     public ResponseEntity<List<ColleagueBookingsDTO>> getBookingsFromColleaguesOnDate(@RequestBody List<String> emailStrings, @PathVariable("date") Date date) {
@@ -77,12 +87,50 @@ public class BookingController {
         return new ResponseEntity<>(updatedBooking, HttpStatus.OK);
     }
 
+    @PostMapping("/overlap-check")
+    public ResponseEntity<?> checkBookingOverlap(@RequestBody BookingOverlapCheckRequestDTO request) {
+        logger.info("checkBookingOverlap( {} )", request);
+        try {
+            if (request == null || request.getBookingId() == null) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+            BookingOverlapCheckResponseDTO response = bookingService.checkConfirmedOverlapWithOtherDesk(
+                request.getBookingId(),
+                request.getIgnoreBookingId()
+            );
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (ResponseStatusException e) {
+            Map<String, String> body = new HashMap<>();
+            body.put("error", e.getReason() == null ? "Overlap check failed" : e.getReason());
+            return new ResponseEntity<>(body, e.getStatusCode());
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Booking> getBookingById(@NonNull @PathVariable("id") Long id) {
         logger.info("getBookingById( {} )", id);
         Optional<Booking> booking = bookingService.getBookingById(id);
         return booking.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+
+    @GetMapping(value = "/{id}/ics", produces = "text/calendar;charset=UTF-8")
+    public ResponseEntity<byte[]> exportBookingIcs(@NonNull @PathVariable("id") Long id) {
+        logger.info("exportBookingIcs( {} )", id);
+
+        final var currentUser = userService.getCurrentUser();
+        final Booking booking = bookingService.getBookingById(id)
+            .filter(value -> value.getUser() != null && value.getUser().getId() == currentUser.getId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        final boolean german = BookingCalendarFormatter.isGermanLanguage(currentUser.getPreferredLanguage());
+        final byte[] body = calendarNotificationService.buildRequestIcsForExport(booking, german)
+            .getBytes(StandardCharsets.UTF_8);
+
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("text/calendar;charset=UTF-8"))
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"booking-" + id + ".ics\"")
+            .body(body);
     }
 
     @PutMapping("/edit")

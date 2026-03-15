@@ -1,7 +1,20 @@
 package com.desk_sharing.services;
 
+import com.desk_sharing.entities.Booking;
+import com.desk_sharing.entities.Desk;
 import com.desk_sharing.entities.BookingSettings;
+import com.desk_sharing.entities.UserEntity;
+import com.desk_sharing.model.BookingOverlapCheckResponseDTO;
+import com.desk_sharing.repositories.BookingRepository;
+import com.desk_sharing.repositories.DeskRepository;
+import com.desk_sharing.repositories.RoomRepository;
+import com.desk_sharing.services.calendar.CalendarNotificationService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.lang.reflect.InvocationTargetException;
@@ -9,18 +22,33 @@ import java.sql.Date;
 import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for booking time validation rules.
- * Uses reflection to invoke the private validateBookingTimes method with explicit settings.
+ * Unit tests for BookingService validation and overlap-warning rules.
  */
+@ExtendWith(MockitoExtension.class)
 class BookingRulesTest {
 
-    private final BookingService bookingService =
-        new BookingService(null, null, null, null, null, null, null, null, null);
+    @Mock BookingRepository bookingRepository;
+    @Mock RoomRepository roomRepository;
+    @Mock DeskRepository deskRepository;
+    @Mock UserService userService;
+    @Mock RoomService roomService;
+    @Mock DeskService deskService;
+    @Mock ApplicationEventPublisher eventPublisher;
+    @Mock CalendarNotificationService calendarNotificationService;
+    @Mock BookingSettingsService bookingSettingsService;
+
+    @InjectMocks
+    private BookingService bookingService;
 
     private void invokeValidate(Date day, Time begin, Time end, BookingSettings settings) throws Exception {
         var method = BookingService.class.getDeclaredMethod(
@@ -108,5 +136,75 @@ class BookingRulesTest {
         assertDoesNotThrow(() -> invokeValidate(within, start, end, limited));
         assertThrows(ResponseStatusException.class, () -> invokeValidate(beyond, start, end, limited));
         assertDoesNotThrow(() -> invokeValidate(beyond, start, end, unlimited));
+    }
+
+    @Test
+    void overlapCheck_returnsTrueForConfirmedOverlapOnOtherDesk() {
+        Booking candidate = createBooking(10L, 7, 11L, false);
+        Booking overlap = createBooking(20L, 7, 12L, false);
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(candidate));
+        when(bookingRepository.findConfirmedOverlapsForUserOtherDesk(
+            7, 11L, 10L, null, candidate.getDay(), candidate.getBegin(), candidate.getEnd()
+        )).thenReturn(List.of(overlap));
+
+        BookingOverlapCheckResponseDTO response = bookingService.checkConfirmedOverlapWithOtherDesk(10L, null);
+
+        assertThat(response.isHasOverlap()).isTrue();
+    }
+
+    @Test
+    void overlapCheck_returnsFalseWhenNoOverlapExists() {
+        Booking candidate = createBooking(10L, 7, 11L, true);
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(candidate));
+        when(bookingRepository.findConfirmedOverlapsForUserOtherDesk(
+            7, 11L, 10L, null, candidate.getDay(), candidate.getBegin(), candidate.getEnd()
+        )).thenReturn(List.of());
+
+        BookingOverlapCheckResponseDTO response = bookingService.checkConfirmedOverlapWithOtherDesk(10L, null);
+
+        assertThat(response.isHasOverlap()).isFalse();
+    }
+
+    @Test
+    void overlapCheck_passesIgnoredBookingIdForEditMode() {
+        Booking candidate = createBooking(10L, 7, 11L, true);
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(candidate));
+        when(bookingRepository.findConfirmedOverlapsForUserOtherDesk(
+            7, 11L, 10L, 55L, candidate.getDay(), candidate.getBegin(), candidate.getEnd()
+        )).thenReturn(List.of());
+
+        BookingOverlapCheckResponseDTO response = bookingService.checkConfirmedOverlapWithOtherDesk(10L, 55L);
+
+        assertThat(response.isHasOverlap()).isFalse();
+    }
+
+    @Test
+    void overlapCheck_throwsWhenBookingDoesNotExist() {
+        when(bookingRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> bookingService.checkConfirmedOverlapWithOtherDesk(10L, null))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("Booking not found");
+    }
+
+    private Booking createBooking(Long bookingId, int userId, Long deskId, boolean inProgress) {
+        UserEntity user = new UserEntity();
+        user.setId(userId);
+
+        Desk desk = new Desk();
+        desk.setId(deskId);
+
+        Booking booking = new Booking();
+        booking.setId(bookingId);
+        booking.setUser(user);
+        booking.setDesk(desk);
+        booking.setDay(Date.valueOf(LocalDate.now().plusDays(1)));
+        booking.setBegin(Time.valueOf("09:00:00"));
+        booking.setEnd(Time.valueOf("11:00:00"));
+        booking.setBookingInProgress(inProgress);
+        return booking;
     }
 }

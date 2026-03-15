@@ -22,6 +22,7 @@ class VisibilityServiceTest {
     @Mock UserRepository userRepository;
     @Mock PasswordEncoder passwordEncoder;
     @Mock FloorRepository floorRepository;
+    @Mock BuildingRepository buildingRepository;
     @Mock BookingRepository bookingRepository;
     @Mock SeriesRepository seriesRepository;
     @Mock RoleRepository roleRepository;
@@ -35,7 +36,7 @@ class VisibilityServiceTest {
     @BeforeEach
     void setup() {
         userService = new UserService(userRepository, passwordEncoder, floorRepository,
-                bookingRepository, seriesRepository, roleRepository, jwtGenerator, authenticationManager, ldapService, objectMapper);
+                buildingRepository, bookingRepository, seriesRepository, roleRepository, jwtGenerator, authenticationManager, ldapService, objectMapper);
     }
 
     @Test

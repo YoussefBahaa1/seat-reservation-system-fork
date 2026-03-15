@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './MyBookings.css';
-import {getRequest, deleteRequest} from '../RequestFunctions/RequestFunctions';
+import { getRequest, deleteRequest, downloadRequest } from '../RequestFunctions/RequestFunctions';
 import LayoutPage from '../Templates/LayoutPage';
 import LayoutModal from '../Templates/LayoutModal';
 import { toast } from 'react-toastify';
@@ -162,56 +162,21 @@ const MyBookings = () => {
     );
   };
 
-  const escapeIcsText = (text) => {
-    if (!text) return '';
-    return String(text)
-      .replace(/\\/g, '\\\\')
-      .replace(/\n/g, '\\n')
-      .replace(/;/g, '\\;')
-      .replace(/,/g, '\\,');
-  };
-
   const exportIcs = () => {
     if (!selectedBookingEvent) return;
-    const hasMatchingDetails = theBookingEvent?.id === selectedBookingEvent?.id;
-    const booking = hasMatchingDetails ? theBookingEvent : selectedBookingEvent;
-    const start = moment(selectedBookingEvent.start);
-    const end = moment(selectedBookingEvent.end);
-    const deskRemark = booking?.desk?.remark || selectedBookingEvent?.desk?.remark || '';
-    const roomRemark = booking?.room?.remark || selectedBookingEvent?.room || selectedBookingEvent?.desk?.room?.remark || '';
-    const summary = `${t('desk')} ${deskRemark}`.trim();
-    const uid = `booking-${booking?.id || selectedBookingEvent?.id || 'unknown'}@desksharing`;
-    const dtstamp = moment().utc().format('YYYYMMDDTHHmmss[Z]');
-    const dtstart = start.format('YYYYMMDDTHHmmss');
-    const dtend = end.format('YYYYMMDDTHHmmss');
+    const bookingId = theBookingEvent?.id === selectedBookingEvent?.id
+      ? theBookingEvent.id
+      : selectedBookingEvent.id;
 
-    const lines = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//Desk Sharing Tool//MyBookings//EN',
-      'CALSCALE:GREGORIAN',
-      'BEGIN:VEVENT',
-      `UID:${uid}`,
-      `DTSTAMP:${dtstamp}`,
-      `DTSTART:${dtstart}`,
-      `DTEND:${dtend}`,
-      `SUMMARY:${escapeIcsText(summary)}`,
-      roomRemark ? `LOCATION:${escapeIcsText(`${t('room')}: ${roomRemark}`)}` : null,
-      `DESCRIPTION:${escapeIcsText(`${t('desk')}: ${deskRemark}${roomRemark ? `, ${t('room')}: ${roomRemark}` : ''}`)}`,
-      'END:VEVENT',
-      'END:VCALENDAR',
-    ].filter(Boolean);
-
-    const icsContent = lines.join('\r\n');
-    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-    const filename = `booking_${start.format('YYYYMMDD')}.ics`;
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
+    downloadRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/bookings/${bookingId}/ics`,
+      headers.current,
+      `booking-${bookingId}.ics`,
+      () => {
+        console.log('Failed to export booking ICS');
+        toast.error(t('httpOther'));
+      }
+    );
   };
 
   const editBooking = () => {

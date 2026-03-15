@@ -30,6 +30,7 @@ export default function RoomDefinition({t, defaultRoomType, setDefaultRoomType, 
             <TextField
                 id='textfield_remark'
                 label={t('roomRemark')}
+                required
                 size='small'
                 type={'text'}
                 value={remark}

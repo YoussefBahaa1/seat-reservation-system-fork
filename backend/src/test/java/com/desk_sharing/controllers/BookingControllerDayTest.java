@@ -4,6 +4,7 @@ import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.services.BookingService;
 import com.desk_sharing.services.UserService;
+import com.desk_sharing.services.calendar.CalendarNotificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -27,6 +28,7 @@ class BookingControllerDayTest {
     @Mock BookingService bookingService;
     @Mock BookingRepository bookingRepository;
     @Mock UserService userService;
+    @Mock CalendarNotificationService calendarNotificationService;
     @InjectMocks BookingController controller;
 
     @Test

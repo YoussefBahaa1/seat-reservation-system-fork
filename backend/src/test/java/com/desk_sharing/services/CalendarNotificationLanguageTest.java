@@ -24,6 +24,7 @@ import com.desk_sharing.entities.Desk;
 import com.desk_sharing.entities.Room;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.repositories.BookingRepository;
+import com.desk_sharing.services.calendar.BookingCalendarFormatter;
 import com.desk_sharing.services.calendar.CalendarNotificationService;
 import com.desk_sharing.services.calendar.NotificationAction;
 
@@ -40,10 +41,12 @@ class CalendarNotificationLanguageTest {
     @BeforeEach
     void setUp() {
         mailSender = new CapturingMailSender();
-        service = new CalendarNotificationService(mailSender, bookingRepositoryStub());
+        BookingCalendarFormatter formatter = new BookingCalendarFormatter();
+        ReflectionTestUtils.setField(formatter, "mailFrom", "no-reply@test.local");
+        ReflectionTestUtils.setField(formatter, "frontendBaseUrl", "http://frontend.local");
+        service = new CalendarNotificationService(mailSender, bookingRepositoryStub(), formatter);
         ReflectionTestUtils.setField(service, "notificationsEnabled", true);
         ReflectionTestUtils.setField(service, "mailFrom", "no-reply@test.local");
-        ReflectionTestUtils.setField(service, "frontendBaseUrl", "http://frontend.local");
     }
 
     @Test
@@ -55,7 +58,14 @@ class CalendarNotificationLanguageTest {
         assertThat(mailSender.sentMessages).hasSize(1);
         MimeMessage sent = mailSender.sentMessages.get(0);
         assertThat(sent.getSubject()).contains("Buchung bestätigt");
-        assertThat(extractBodyText(sent)).contains("Ihre Schreibtischbuchung wurde bestätigt.");
+        assertThat(extractBodyText(sent))
+            .contains("Ihre Schreibtischbuchung wurde bestätigt.")
+            .contains("Ausstattung:")
+            .contains("  Ergonomie: Ergonomisch")
+            .contains("  Monitore: 2")
+            .contains("  Tischtyp: Höhenverstellbar")
+            .contains("  Technik: Dockingstation, Webcam")
+            .contains("  Besondere Merkmale: Nein");
     }
 
     @Test
@@ -67,7 +77,30 @@ class CalendarNotificationLanguageTest {
         assertThat(mailSender.sentMessages).hasSize(1);
         MimeMessage sent = mailSender.sentMessages.get(0);
         assertThat(sent.getSubject()).contains("Desk booking confirmed");
-        assertThat(extractBodyText(sent)).contains("Your desk booking was confirmed.");
+        assertThat(extractBodyText(sent))
+            .contains("Your desk booking was confirmed.")
+            .contains("Equipment:")
+            .contains("  Ergonomics: Ergonomic")
+            .contains("  Monitors: 2")
+            .contains("  Desk type: Height Adjustable")
+            .contains("  Technology: Docking station, Webcam")
+            .contains("  Special features: No");
+    }
+
+    @Test
+    void cancelMail_usesLocalizedEquipmentBlock() throws Exception {
+        Booking booking = baseBooking("de");
+        booking.getUser().setNotifyBookingCancel(true);
+
+        service.sendBookingCancelled(booking);
+
+        assertThat(mailSender.sentMessages).hasSize(1);
+        MimeMessage sent = mailSender.sentMessages.get(0);
+        assertThat(sent.getSubject()).contains("Buchung storniert");
+        assertThat(extractBodyText(sent))
+            .contains("Ihre Schreibtischbuchung wurde storniert.")
+            .contains("Ausstattung:")
+            .contains("  Besondere Merkmale: Nein");
     }
 
     private Booking baseBooking(String language) {
@@ -79,6 +112,11 @@ class CalendarNotificationLanguageTest {
 
         Desk desk = new Desk();
         desk.setRemark("Desk A1");
+        desk.setWorkstationType("Ergonomic");
+        desk.setMonitorsQuantity(2);
+        desk.setDeskHeightAdjustable(true);
+        desk.setTechnologyDockingStation(true);
+        desk.setTechnologyWebcam(true);
         booking.setDesk(desk);
 
         Room room = new Room();

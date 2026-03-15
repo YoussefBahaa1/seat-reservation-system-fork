@@ -17,13 +17,12 @@ import 'react-confirm-alert/src/react-confirm-alert.css';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { confirmAlert } from 'react-confirm-alert';
 import { FaStar, FaRegStar } from 'react-icons/fa';
 import CloseIcon from '@mui/icons-material/Close';
 
 import LayoutPage from '../../Templates/LayoutPage.jsx';
 import { getRequest, postRequest, putRequest, deleteRequest } from '../../RequestFunctions/RequestFunctions';
-import bookingPostRequest from '../../misc/bookingPostRequest.js';
+import bookingPostRequest, { checkDeskBookingOverlap, showDeskBookingConfirmation } from '../../misc/bookingPostRequest.js';
 import ReportDefectModal from '../../Defects/ReportDefectModal';
 import { DeskTable } from '../../misc/DesksTable.jsx';
 //import { buildFullDaySlots } from './buildFullDaySlots.js';
@@ -480,46 +479,112 @@ const Booking = () => {
       end: originalEnd,
     };
 
-    const createAndConfirm = (dto, onSuccess, onFail) => {
+    const createDraftBooking = (dto, onSuccess, onFail) => {
       postRequest(
         `${process.env.REACT_APP_BACKEND_URL}/bookings`,
         headers.current,
-        (data) => {
-          putRequest(
-            `${process.env.REACT_APP_BACKEND_URL}/bookings/confirm/${data.id}`,
-            headers.current,
-            (dat) => onSuccess(dat),
-            () => onFail()
-          );
-        },
+        (data) => onSuccess(data),
         () => onFail(),
         JSON.stringify(dto)
       );
     };
 
+    const confirmDraftBooking = (draftBookingId, onSuccess, onFail) => {
+      putRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/bookings/confirm/${draftBookingId}`,
+        headers.current,
+        (dat) => onSuccess(dat),
+        () => onFail()
+      );
+    };
+
+    const deleteBookingById = (bookingId, onSuccess, onFail) => {
+      deleteRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/bookings/${bookingId}`,
+        headers.current,
+        () => onSuccess(),
+        () => onFail()
+      );
+    };
+
     const tryRestoreOld = () => {
-      createAndConfirm(
+      createDraftBooking(
         oldBookingDTO,
-        () => {},
+        (draft) => {
+          confirmDraftBooking(draft.id, () => {}, () => {});
+        },
         () => {}
       );
     };
 
+    const showEditConfirmation = (hasOverlap, onContinue, onCancel) => {
+      showDeskBookingConfirmation({
+        t,
+        deskRemark: clickedDeskRemark,
+        bookingData: {
+          day: newDay,
+          begin: newBegin,
+          end: newEnd,
+        },
+        hasOverlap,
+        onConfirm: onContinue,
+        onCancel,
+        title: t('editBooking'),
+      });
+    };
+
     const handleCreateThenDelete = () => {
-      createAndConfirm(
+      createDraftBooking(
         bookingDTO,
-        () => {
-          deleteRequest(
-            `${process.env.REACT_APP_BACKEND_URL}/bookings/${editBooking.bookingId}`,
-            headers.current,
-            () => {
-              setBookingPending(false);
-              navigate('/mybookings', { replace: true });
+        (draft) => {
+          checkDeskBookingOverlap(
+            headers,
+            draft.id,
+            editBooking.bookingId,
+            t,
+            (hasOverlap) => {
+              showEditConfirmation(
+                hasOverlap,
+                () => {
+                  confirmDraftBooking(
+                    draft.id,
+                    () => {
+                      deleteBookingById(
+                        editBooking.bookingId,
+                        () => {
+                          setBookingPending(false);
+                          navigate('/mybookings', { replace: true });
+                        },
+                        () => {
+                          toast.error(t('httpOther'));
+                          setBookingPending(false);
+                          navigate('/mybookings', { replace: true });
+                        }
+                      );
+                    },
+                    () => {
+                      toast.error(t('httpOther'));
+                      deleteBookingById(draft.id, () => {}, () => {});
+                      setBookingPending(false);
+                    }
+                  );
+                },
+                () => {
+                  deleteBookingById(
+                    draft.id,
+                    () => {
+                      setBookingPending(false);
+                    },
+                    () => {
+                      setBookingPending(false);
+                    }
+                  );
+                }
+              );
             },
             () => {
-              toast.error(t('httpOther'));
+              deleteBookingById(draft.id, () => {}, () => {});
               setBookingPending(false);
-              navigate('/mybookings', { replace: true });
             }
           );
         },
@@ -531,15 +596,56 @@ const Booking = () => {
     };
 
     const handleDeleteThenCreate = () => {
-      deleteRequest(
-        `${process.env.REACT_APP_BACKEND_URL}/bookings/${editBooking.bookingId}`,
-        headers.current,
+      deleteBookingById(
+        editBooking.bookingId,
         () => {
-          createAndConfirm(
+          createDraftBooking(
             bookingDTO,
-            () => {
-              setBookingPending(false);
-              navigate('/mybookings', { replace: true });
+            (draft) => {
+              checkDeskBookingOverlap(
+                headers,
+                draft.id,
+                editBooking.bookingId,
+                t,
+                (hasOverlap) => {
+                  showEditConfirmation(
+                    hasOverlap,
+                    () => {
+                      confirmDraftBooking(
+                        draft.id,
+                        () => {
+                          setBookingPending(false);
+                          navigate('/mybookings', { replace: true });
+                        },
+                        () => {
+                          tryRestoreOld();
+                          toast.error(t('httpOther'));
+                          deleteBookingById(draft.id, () => {}, () => {});
+                          setBookingPending(false);
+                        }
+                      );
+                    },
+                    () => {
+                      deleteBookingById(
+                        draft.id,
+                        () => {
+                          tryRestoreOld();
+                          setBookingPending(false);
+                        },
+                        () => {
+                          tryRestoreOld();
+                          setBookingPending(false);
+                        }
+                      );
+                    }
+                  );
+                },
+                () => {
+                  deleteBookingById(draft.id, () => {}, () => {});
+                  tryRestoreOld();
+                  setBookingPending(false);
+                }
+              );
             },
             () => {
               tryRestoreOld();
@@ -561,28 +667,12 @@ const Booking = () => {
       (moment(newBegin, 'HH:mm:ss').isSameOrBefore(moment(originalEnd, 'HH:mm:ss')) &&
         moment(newEnd, 'HH:mm:ss').isSameOrAfter(moment(originalBegin, 'HH:mm:ss')));
 
-    confirmAlert({
-      title: t('editBooking'),
-      message: `${t('date')} ${newDay} ${t('from')} ${newBegin} ${t('to')} ${newEnd}`,
-      buttons: [
-        {
-          label: t('yes'),
-          onClick: () => {
-            if (bookingPendingRef.current) return;
-            setBookingPending(true);
-            if (overlapsOld) {
-              handleDeleteThenCreate();
-            } else {
-              handleCreateThenDelete();
-            }
-          },
-        },
-        {
-          label: t('no'),
-          onClick: () => {},
-        },
-      ],
-    });
+    setBookingPending(true);
+    if (overlapsOld) {
+      handleDeleteThenCreate();
+    } else {
+      handleCreateThenDelete();
+    }
   };
   /** ----- EFFECTS ----- */
   // Fetch room once

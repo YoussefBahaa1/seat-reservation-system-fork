@@ -24,6 +24,7 @@ const GenericBackButton = () => {
         position: 'fixed',
         top: '10px',
         right: '10px',
+        zIndex: 1300,
         '&:hover': {
           backgroundColor: '#006633',
         },

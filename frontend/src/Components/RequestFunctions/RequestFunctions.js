@@ -5,6 +5,7 @@ import i18n from '../../i18n';
 function clearAuthStorage() {
   try {
     sessionStorage.removeItem('freeDesksAdvancedFilters');
+    sessionStorage.removeItem('freeDesksSelectedBuilding');
     sessionStorage.removeItem('headers');
     sessionStorage.removeItem('accessToken');
   } catch {
@@ -119,10 +120,73 @@ async function request(type, url, headers, successFunction, failFunction, body =
   }
 }
 
+function extractFilename(contentDisposition, fallbackFilename) {
+  if (!contentDisposition || typeof contentDisposition !== 'string') {
+    return fallbackFilename;
+  }
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match && utf8Match[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      return utf8Match[1];
+    }
+  }
+
+  const quotedMatch = contentDisposition.match(/filename="([^"]+)"/i);
+  if (quotedMatch && quotedMatch[1]) {
+    return quotedMatch[1];
+  }
+
+  const plainMatch = contentDisposition.match(/filename=([^;]+)/i);
+  if (plainMatch && plainMatch[1]) {
+    return plainMatch[1].trim();
+  }
+
+  return fallbackFilename;
+}
+
+async function downloadRequest(url, headers, fallbackFilename, failFunction) {
+  try {
+    const response = await axios({
+      method: 'GET',
+      url,
+      headers: resolveHeaders(headers),
+      responseType: 'blob',
+    });
+
+    const filename = extractFilename(response.headers?.['content-disposition'], fallbackFilename);
+    const blobUrl = window.URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        if (error.response.status === 401) {
+          handleUnauthorized(url);
+        }
+        failFunction(error.response.status, error.response.data ?? null);
+      } else {
+        console.error(`Netzwerk- oder Serverfehler bei GET ${url}:`, error.message);
+        failFunction(null, null);
+      }
+    } else {
+      console.error(`Unbekannter Fehler bei GET ${url}:`, error);
+      failFunction(null, null);
+    }
+  }
+}
+
 // Vordefinierte Methoden wie vorher
 const getRequest = request.bind(null, 'GET');
 const postRequest = request.bind(null, 'POST');
 const putRequest = request.bind(null, 'PUT');
 const deleteRequest = request.bind(null, 'DELETE');
 
-export { getRequest, postRequest, putRequest, deleteRequest };
+export { getRequest, postRequest, putRequest, deleteRequest, downloadRequest };

@@ -47,6 +47,24 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 	List<Booking> getAllBookingsForPreventDuplicates(@Param("roomId") Long roomId,@Param("deskId") Long deskId, 
 			@Param("day") Date day, @Param("startTime") Time startTime,
 			@Param("endTime") Time endTime);
+
+	@Query(value = "SELECT * FROM bookings WHERE user_id = :userId "
+			+ "AND day = :day "
+			+ "AND booking_in_progress = 0 "
+			+ "AND booking_id <> :bookingId "
+			+ "AND (:ignoreBookingId IS NULL OR booking_id <> :ignoreBookingId) "
+			+ "AND desk_id <> :deskId "
+			+ "AND (:startTime < end AND :endTime > begin)",
+			nativeQuery = true)
+	List<Booking> findConfirmedOverlapsForUserOtherDesk(
+		@Param("userId") int userId,
+		@Param("deskId") Long deskId,
+		@Param("bookingId") Long bookingId,
+		@Param("ignoreBookingId") Long ignoreBookingId,
+		@Param("day") Date day,
+		@Param("startTime") Time startTime,
+		@Param("endTime") Time endTime
+	);
 	
 
 	List<Booking> findAllByBookingInProgress(boolean inProg);

@@ -9,6 +9,7 @@ import com.desk_sharing.model.BookingEditDTO;
 import com.desk_sharing.model.BookingProjectionDTO;
 import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.model.ColleagueBookingsDTO;
+import com.desk_sharing.model.BookingOverlapCheckResponseDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
 import com.desk_sharing.repositories.RoomRepository;
@@ -439,6 +440,27 @@ public class BookingService {
     public List<BookingDayEventDTO> getBookingEventsForDate(Date date) {
         List<Booking> bookings = bookingRepository.getBookingForDate(date);
         return bookings.stream().map(BookingDayEventDTO::new).toList();
+    }
+
+    public BookingOverlapCheckResponseDTO checkConfirmedOverlapWithOtherDesk(final long bookingId, final Long ignoreBookingId) {
+        final Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+
+        if (booking.getUser() == null || booking.getDesk() == null || booking.getDay() == null
+            || booking.getBegin() == null || booking.getEnd() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking is missing overlap-check data");
+        }
+
+        final List<Booking> overlaps = bookingRepository.findConfirmedOverlapsForUserOtherDesk(
+            booking.getUser().getId(),
+            booking.getDesk().getId(),
+            booking.getId(),
+            ignoreBookingId,
+            booking.getDay(),
+            booking.getBegin(),
+            booking.getEnd()
+        );
+        return new BookingOverlapCheckResponseDTO(overlaps != null && !overlaps.isEmpty());
     }
 
 	@Transactional

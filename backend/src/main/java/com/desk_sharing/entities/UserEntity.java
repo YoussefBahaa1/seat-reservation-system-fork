@@ -57,6 +57,9 @@ public class UserEntity {
 
     @Column(name = "workstation_search_filters", nullable = true, columnDefinition = "TEXT")
     private String workstationSearchFilters;
+
+    @Column(name = "workstation_search_presets", nullable = true, columnDefinition = "TEXT")
+    private String workstationSearchPresets;
     
     // Department field (free-text)
     @Column(name = "department", nullable = true)
@@ -112,6 +115,7 @@ public class UserEntity {
         this.active = other.isActive();
         this.preferredLanguage = other.getPreferredLanguage();
         this.workstationSearchFilters = other.getWorkstationSearchFilters();
+        this.workstationSearchPresets = other.getWorkstationSearchPresets();
     }
 
     @PrePersist

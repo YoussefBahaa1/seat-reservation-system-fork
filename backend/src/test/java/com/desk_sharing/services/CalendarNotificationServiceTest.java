@@ -3,6 +3,7 @@ package com.desk_sharing.services;
 import com.desk_sharing.entities.Booking;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.repositories.BookingRepository;
+import com.desk_sharing.services.calendar.BookingCalendarFormatter;
 import com.desk_sharing.services.calendar.CalendarNotificationService;
 import com.desk_sharing.services.calendar.NotificationAction;
 
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.sql.Date;
 import java.sql.Time;
@@ -34,7 +36,9 @@ class CalendarNotificationServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
-        service = new CalendarNotificationService(mailSender, bookingRepository);
+        BookingCalendarFormatter formatter = new BookingCalendarFormatter();
+        ReflectionTestUtils.setField(formatter, "mailFrom", "no-reply@test.local");
+        service = new CalendarNotificationService(mailSender, bookingRepository, formatter);
     }
 
     @Test

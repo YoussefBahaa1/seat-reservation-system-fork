@@ -1,7 +1,105 @@
 import { formatDate_yyyymmdd_to_ddmmyyyy } from './formatDate';
-import { postRequest, putRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
+import { postRequest, putRequest, deleteRequest, downloadRequest } from '../RequestFunctions/RequestFunctions';
 import { toast } from 'react-toastify';
 import { confirmAlert } from 'react-confirm-alert';
+
+const overlapWarningBoxStyles = {
+    marginTop: '12px',
+    padding: '12px 14px',
+    borderRadius: '8px',
+    backgroundColor: '#fff4e5',
+    border: '1px solid #f0b36a',
+    textAlign: 'left',
+};
+
+const overlapWarningTitleStyles = {
+    margin: '0 0 4px 0',
+    fontWeight: 700,
+    color: '#8a3b00',
+};
+
+const overlapWarningTextStyles = {
+    margin: 0,
+    color: '#8a3b00',
+    lineHeight: 1.4,
+};
+
+function renderOverlapWarningBox(t) {
+    return (
+        <div style={overlapWarningBoxStyles}>
+            <p style={overlapWarningTitleStyles}>{t('warning')}</p>
+            <p style={overlapWarningTextStyles}>{t('bookingOverlapOtherDeskWarning')}</p>
+        </div>
+    );
+}
+
+export function checkDeskBookingOverlap(headers, bookingId, ignoreBookingId, t, onSuccess, onFail) {
+    postRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/bookings/overlap-check`,
+        headers.current,
+        (data) => {
+            onSuccess(Boolean(data?.hasOverlap));
+        },
+        () => {
+            toast.error(t('bookingOverlapCheckFailed'));
+            if (typeof onFail === 'function') {
+                onFail();
+            }
+        },
+        JSON.stringify({
+            bookingId,
+            ignoreBookingId: ignoreBookingId ?? null,
+        })
+    );
+}
+
+export function showDeskBookingConfirmation({
+    t,
+    deskRemark,
+    bookingData,
+    hasOverlap,
+    onConfirm,
+    onCancel,
+    title,
+}) {
+    confirmAlert({
+        customUI: ({ onClose }) => (
+            <div className='react-confirm-alert-body'>
+                <h1>{title || `${t('desk')} ${deskRemark}`}</h1>
+                <p>
+                    {t('date')} {formatDate_yyyymmdd_to_ddmmyyyy(bookingData.day)} {t('from')} {bookingData.begin} {t('to')} {bookingData.end}
+                </p>
+                {hasOverlap && (
+                    renderOverlapWarningBox(t)
+                )}
+                <div className='react-confirm-alert-button-group'>
+                    <button
+                        type='button'
+                        onClick={() => {
+                            if (typeof onConfirm === 'function') {
+                                onConfirm();
+                            }
+                            onClose();
+                        }}
+                    >
+                        {hasOverlap ? t('continue') : t('yes')}
+                    </button>
+                    <button
+                        type='button'
+                        onClick={() => {
+                            if (typeof onCancel === 'function') {
+                                onCancel();
+                            }
+                            onClose();
+                        }}
+                    >
+                        {hasOverlap ? t('cancel') : t('no')}
+                    </button>
+                </div>
+            </div>
+        )
+    });
+}
 
 function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBookingFunction, options = {}) {
     const { onStart, onFinish } = options || {};
@@ -35,139 +133,115 @@ function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBooki
         onStart();
     }
 
-    const escapeIcsText = (text) => {
-        if (!text) return '';
-        return String(text)
-            .replace(/\\/g, '\\\\')
-            .replace(/\n/g, '\\n')
-            .replace(/;/g, '\\;')
-            .replace(/,/g, '\\,');
-    };
-
-    const normalizeTime = (timeValue) => {
-        if (!timeValue) return '000000';
-        const parts = String(timeValue).split(':');
-        const hours = (parts[0] || '00').padStart(2, '0');
-        const minutes = (parts[1] || '00').padStart(2, '0');
-        const seconds = (parts[2] || '00').padStart(2, '0');
-        return `${hours}${minutes}${seconds}`;
-    };
-
-    const formatIcsDateTime = (day, timeValue) => {
-        const dayPart = String(day || '').replace(/-/g, '');
-        return `${dayPart}T${normalizeTime(timeValue)}`;
-    };
-
-    const exportIcs = () => {
-        const dtstamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
-        const dtstart = formatIcsDateTime(bookingData.day, bookingData.begin);
-        const dtend = formatIcsDateTime(bookingData.day, bookingData.end);
-        const summary = `${t('desk')} ${deskRemark}`.trim();
-
-        const lines = [
-            'BEGIN:VCALENDAR',
-            'VERSION:2.0',
-            'PRODID:-//Desk Sharing Tool//Booking//EN',
-            'CALSCALE:GREGORIAN',
-            'BEGIN:VEVENT',
-            `UID:booking-${bookingData.userId}-${dtstart}@desksharing`,
-            `DTSTAMP:${dtstamp}`,
-            `DTSTART:${dtstart}`,
-            `DTEND:${dtend}`,
-            `SUMMARY:${escapeIcsText(summary)}`,
-            `DESCRIPTION:${escapeIcsText(`${t('desk')}: ${deskRemark}`)}`,
-            'END:VEVENT',
-            'END:VCALENDAR',
-        ];
-
-        const icsContent = lines.join('\r\n');
-        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-        const filename = `booking_${bookingData.day}.ics`;
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-    };
-
     postRequest(
         `${process.env.REACT_APP_BACKEND_URL}/bookings`,
         headers.current,
         (data) => {
-            confirmAlert({
-                customUI: ({ onClose }) => (
-                    <div className='react-confirm-alert-body'>
-                        <h1>{t('desk')} {deskRemark}</h1>
-                        <p>
-                            {t('date')} {formatDate_yyyymmdd_to_ddmmyyyy(bookingData.day)} {t('from')} {bookingData.begin} {t('to')} {bookingData.end}
-                        </p>
-                        <div className='react-confirm-alert-button-group'>
-                            <button
-                                type='button'
-                                onClick={() => {
-                                    if (!startAction()) return;
-                                    putRequest(
-                                        `${process.env.REACT_APP_BACKEND_URL}/bookings/confirm/${data.id}`,
-                                        headers.current,
-                                        (dat) => {
-                                            toast.success(t('booked'));
-                                            const booking = {
-                                                id: dat.id,
-                                                title: `Desk ${dat.deskId}`,
-                                                start: new Date(`${dat.day}T${dat.begin}`),
-                                                end: new Date(`${dat.day}T${dat.end}`)
-                                            }
-                                            try {
-                                                if (typeof postBookingFunction === 'function') {
-                                                    postBookingFunction(booking);
+            checkDeskBookingOverlap(
+                headers,
+                data.id,
+                null,
+                t,
+                (hasOverlap) => {
+                    confirmAlert({
+                        customUI: ({ onClose }) => (
+                            <div className='react-confirm-alert-body'>
+                                <h1>{t('desk')} {deskRemark}</h1>
+                                <p>
+                                    {t('date')} {formatDate_yyyymmdd_to_ddmmyyyy(bookingData.day)} {t('from')} {bookingData.begin} {t('to')} {bookingData.end}
+                                </p>
+                                {hasOverlap && (
+                                    renderOverlapWarningBox(t)
+                                )}
+                                <div className='react-confirm-alert-button-group'>
+                                    <button
+                                        type='button'
+                                        onClick={() => {
+                                            if (!startAction()) return;
+                                            putRequest(
+                                                `${process.env.REACT_APP_BACKEND_URL}/bookings/confirm/${data.id}`,
+                                                headers.current,
+                                                (dat) => {
+                                                    toast.success(t('booked'));
+                                                    const booking = {
+                                                        id: dat.id,
+                                                        title: `Desk ${dat.deskId}`,
+                                                        start: new Date(`${dat.day}T${dat.begin}`),
+                                                        end: new Date(`${dat.day}T${dat.end}`)
+                                                    };
+                                                    try {
+                                                        if (typeof postBookingFunction === 'function') {
+                                                            postBookingFunction(booking);
+                                                        }
+                                                    } finally {
+                                                        finishOnce();
+                                                    }
+                                                },
+                                                () => {
+                                                    console.log(`Failed to confirm booking in ${name}`);
+                                                    finishOnce();
                                                 }
-                                            } finally {
-                                                finishOnce();
-                                            }
-                                        },
-                                        () => {
-                                            console.log(`Failed to confirm booking in ${name}`);
-                                            finishOnce();
-                                        }
-                                    );
-                                    onClose();
-                                }}
-                            >
-                                {t('yes')}
-                            </button>
-                            <button
-                                type='button'
-                                onClick={() => {
-                                    if (!startAction()) return;
-                                    deleteRequest(
-                                        `${process.env.REACT_APP_BACKEND_URL}/bookings/${data.id}`,
-                                        headers.current,
-                                        (_) => {
-                                            finishOnce();
-                                        },
-                                        () => {
-                                            console.log('Failed to delete bookings in FreeDesks.jsx.');
-                                            finishOnce();
-                                        }
-                                    );
-                                    onClose();
-                                }}
-                            >
-                                {t('no')}
-                            </button>
-                            <button
-                                type='button'
-                                onClick={() => exportIcs()}
-                            >
-                                {t('exportIcs')}
-                            </button>
-                        </div>
-                    </div>
-                )
-            })
-
+                                            );
+                                            onClose();
+                                        }}
+                                    >
+                                        {hasOverlap ? t('continue') : t('yes')}
+                                    </button>
+                                    <button
+                                        type='button'
+                                        onClick={() => {
+                                            if (!startAction()) return;
+                                            deleteRequest(
+                                                `${process.env.REACT_APP_BACKEND_URL}/bookings/${data.id}`,
+                                                headers.current,
+                                                (_) => {
+                                                    finishOnce();
+                                                },
+                                                () => {
+                                                    console.log('Failed to delete bookings in FreeDesks.jsx.');
+                                                    finishOnce();
+                                                }
+                                            );
+                                            onClose();
+                                        }}
+                                    >
+                                        {hasOverlap ? t('cancel') : t('no')}
+                                    </button>
+                                    <button
+                                        type='button'
+                                        onClick={() => {
+                                            downloadRequest(
+                                                `${process.env.REACT_APP_BACKEND_URL}/bookings/${data.id}/ics`,
+                                                headers.current,
+                                                `booking-${data.id}.ics`,
+                                                () => {
+                                                    console.log(`Failed to export booking ICS in ${name}`);
+                                                    toast.error(t('httpOther'));
+                                                }
+                                            );
+                                        }}
+                                    >
+                                        {t('exportIcs')}
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    });
+                },
+                () => {
+                    if (!startAction()) return;
+                    deleteRequest(
+                        `${process.env.REACT_APP_BACKEND_URL}/bookings/${data.id}`,
+                        headers.current,
+                        () => {
+                            finishOnce();
+                        },
+                        () => {
+                            finishOnce();
+                        }
+                    );
+                }
+            );
         },
         (status, data) => {
             console.log('Failed to post booking in Booking.jsx.', status, data);
