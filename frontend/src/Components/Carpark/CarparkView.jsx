@@ -600,7 +600,11 @@ const CarparkView = ({
       svgRef.current = svg;
       cleanupRef.current = localCleanup;
       containerRef.current?.appendChild(svg);
-      refreshSpotCatalog();
+      refreshSpotCatalog(() => {
+        if (!cancelled) {
+          refreshAvailability();
+        }
+      });
     };
 
     load().catch((err) => {
@@ -629,7 +633,7 @@ const CarparkView = ({
     for (const rect of spotRectsByLabelRef.current.values()) {
       rect.dataset.spotAdminEditMode = adminEditMode && isAdminUser ? 'true' : 'false';
     }
-    refreshSpotCatalog();
+    refreshSpotCatalog(() => refreshAvailability());
   }, [adminEditMode, isAdminUser]);
 
   const addPageNotification = useCallback((severity, message, notificationKey) => {
