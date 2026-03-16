@@ -255,7 +255,7 @@ const Home = () => {
 
   const sanitizeDeskFilterValues = useCallback((values) => {
     const rawValues = Array.isArray(values) ? values : [];
-    const allowedValues = rawValues
+    let allowedValues = rawValues
       .filter((value) => typeof value === 'string')
       .filter((value) => {
         if (value.startsWith('building:')) return true;
@@ -263,6 +263,13 @@ const Home = () => {
         if (value.startsWith('type:')) return true;
         return false;
       });
+    const buildingValues = allowedValues.filter((value) => value.startsWith('building:'));
+    if (buildingValues.length > 1) {
+      const selectedBuildingValue = buildingValues[buildingValues.length - 1];
+      allowedValues = allowedValues.filter(
+        (value) => !value.startsWith('building:') || value === selectedBuildingValue
+      );
+    }
     const selectedBuildingSet = new Set(
       allowedValues
         .filter((value) => value.startsWith('building:'))
@@ -401,6 +408,15 @@ const Home = () => {
       setSelectedDeskFilters((prev) => {
         if (!value.startsWith('building:') && !value.startsWith('room:') && !value.startsWith('type:')) {
           return prev;
+        }
+        if (value.startsWith('building:')) {
+          const currentlySelectedBuilding = prev.find((item) => item.startsWith('building:'));
+          if (currentlySelectedBuilding === value) {
+            const next = prev.filter((item) => item !== value);
+            return sanitizeDeskFilterValues(next);
+          }
+          const withoutBuildings = prev.filter((item) => !item.startsWith('building:'));
+          return sanitizeDeskFilterValues([...withoutBuildings, value]);
         }
         const next = prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value];
         return sanitizeDeskFilterValues(next);
