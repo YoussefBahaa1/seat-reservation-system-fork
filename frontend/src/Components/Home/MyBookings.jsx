@@ -57,6 +57,35 @@ const bookingEquipmentSummary = (desk, t) => {
   return labels.join(', ');
 };
 
+const bookingEquipmentSummary = (desk, t) => {
+  if (!desk) return '';
+
+  const hasSpecialFeatures = desk?.specialFeatures != null && String(desk.specialFeatures).trim() !== '';
+  const monitorCount = desk?.monitorsQuantity ?? 1;
+  const labels = [
+    t(`workstationType${desk?.workstationType || 'Standard'}`),
+    `${monitorCount} ${t(monitorCount === 1 ? 'monitorSingular' : 'monitors')}`,
+  ];
+
+  if (desk?.deskHeightAdjustable === true) {
+    labels.push(t('adjustableHeight'));
+  }
+  if (desk?.technologyDockingStation === true) {
+    labels.push(t('technologyDockingStation'));
+  }
+  if (desk?.technologyWebcam === true) {
+    labels.push(t('technologyWebcam'));
+  }
+  if (desk?.technologyHeadset === true) {
+    labels.push(t('technologyHeadset'));
+  }
+  if (hasSpecialFeatures) {
+    labels.push(`${t('specialFeatures')}: ${String(desk.specialFeatures).trim()}`);
+  }
+
+  return labels.join(', ');
+};
+
 const MyBookings = () => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const { t, i18n } = useTranslation();
@@ -394,6 +423,7 @@ const MyBookings = () => {
                   fontSize: '14px',
                   textTransform: 'none',
                   alignSelf: 'flex-start',
+                  '&:hover': { backgroundColor: colorVars.brand.primaryPressed }
                   '&:hover': { backgroundColor: colorVars.brand.primaryPressed }
                 }}
                 onClick={() => navigate('/freedesks', { state: { date: currentDate } })}

@@ -1,5 +1,6 @@
 import { formatDate_yyyymmdd_to_ddmmyyyy } from './formatDate';
 import { deleteRequest, postRequest, putRequest } from '../RequestFunctions/RequestFunctions';
+import { deleteRequest, postRequest, putRequest } from '../RequestFunctions/RequestFunctions';
 import { toast } from 'react-toastify';
 import { confirmAlert } from 'react-confirm-alert';
 import { colorVars } from '../../theme';
@@ -103,6 +104,52 @@ const modalStyles = {
         boxShadow: 'none',
     },
 };
+
+const trimSeconds = (timeValue) => {
+    const [hours = '00', minutes = '00'] = String(timeValue || '').split(':');
+    return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+};
+
+const formatEquipmentSummary = (t, desk) => {
+    if (!desk) return '';
+
+    const hasSpecialFeatures = desk?.specialFeatures != null && String(desk.specialFeatures).trim() !== '';
+    const monitorCount = desk?.monitorsQuantity ?? 1;
+    const labels = [
+        t(`workstationType${desk?.workstationType || 'Standard'}`),
+        `${monitorCount} ${t(monitorCount === 1 ? 'monitorSingular' : 'monitors')}`,
+    ];
+
+    if (desk?.deskHeightAdjustable === true) {
+        labels.push(t('adjustableHeight'));
+    }
+    if (desk?.technologyDockingStation === true) {
+        labels.push(t('technologyDockingStation'));
+    }
+    if (desk?.technologyWebcam === true) {
+        labels.push(t('technologyWebcam'));
+    }
+    if (desk?.technologyHeadset === true) {
+        labels.push(t('technologyHeadset'));
+    }
+    if (hasSpecialFeatures) {
+        labels.push(`${t('specialFeatures')}: ${String(desk.specialFeatures).trim()}`);
+    }
+
+    return labels.join(', ');
+};
+
+const normalizeBookingForCalendar = (bookingData, bookingId, deskRemark) => ({
+    id: bookingId,
+    title: `${deskRemark ? `Desk ${deskRemark}` : `Desk ${bookingData.deskId}`}`.trim(),
+    start: new Date(`${bookingData.day}T${bookingData.begin}`),
+    end: new Date(`${bookingData.day}T${bookingData.end}`),
+});
+
+const renderBookingDetails = ({ t, bookingData, deskRemark, deskDetails }) => {
+    const equipment = formatEquipmentSummary(t, deskDetails);
+    const roomRemark = deskDetails?.room?.remark || '';
+    const buildingName = deskDetails?.room?.floor?.building?.name || '';
 
 const trimSeconds = (timeValue) => {
     const [hours = '00', minutes = '00'] = String(timeValue || '').split(':');
