@@ -81,7 +81,11 @@ const modalStyles = {
         color: colorVars.text.inverse,
         fontWeight: 700,
         fontSize: '14px',
+        fontFamily: "'Source Sans Pro', sans-serif",
+        lineHeight: 1.2,
+        textTransform: 'none',
         cursor: 'pointer',
+        boxShadow: 'none',
     },
     secondaryButton: {
         minWidth: '120px',
@@ -92,7 +96,11 @@ const modalStyles = {
         color: colorVars.brand.accent,
         fontWeight: 700,
         fontSize: '14px',
+        fontFamily: "'Source Sans Pro', sans-serif",
+        lineHeight: 1.2,
+        textTransform: 'none',
         cursor: 'pointer',
+        boxShadow: 'none',
     },
 };
 
@@ -144,17 +152,17 @@ const renderBookingDetails = ({ t, bookingData, deskRemark, deskDetails }) => {
 
     return (
         <div style={modalStyles.detailsGrid}>
-            <span style={modalStyles.detailLabel}>{t('date')}</span>
+            <span style={modalStyles.detailLabel}>{t('date')}:</span>
             <span style={modalStyles.detailValue}>{formatDate_yyyymmdd_to_ddmmyyyy(bookingData.day)}</span>
-            <span style={modalStyles.detailLabel}>{t('time')}</span>
+            <span style={modalStyles.detailLabel}>{t('time')}:</span>
             <span style={modalStyles.detailValue}>
                 {trimSeconds(bookingData.begin)} {t('to')} {trimSeconds(bookingData.end)}
             </span>
-            <span style={modalStyles.detailLabel}>{t('building')}</span>
+            <span style={modalStyles.detailLabel}>{t('building')}:</span>
             <span style={modalStyles.detailValue}>{buildingName || '-'}</span>
-            <span style={modalStyles.detailLabel}>{t('room')}</span>
+            <span style={modalStyles.detailLabel}>{t('room')}:</span>
             <span style={modalStyles.detailValue}>{roomRemark || '-'}</span>
-            <span style={modalStyles.detailLabel}>{t('equipment')}</span>
+            <span style={modalStyles.detailLabel}>{t('equipment')}:</span>
             <span style={modalStyles.detailValue}>{equipment || '-'}</span>
         </div>
     );
@@ -316,6 +324,18 @@ export function showDeskBookingConfirmation({
                 {hasOverlap ? renderOverlapWarningBox(t) : null}
                 <div style={modalStyles.footer}>
                     <div style={modalStyles.primaryActions}>
+                        <button
+                            type='button'
+                            style={modalStyles.primaryButton}
+                            onClick={() => {
+                                if (typeof onConfirm === 'function') {
+                                    onConfirm();
+                                }
+                                onClose();
+                            }}
+                        >
+                            {confirmLabel || t('confirm')}
+                        </button>
                         {showExportIcs ? (
                             <button
                                 type='button'
@@ -329,18 +349,6 @@ export function showDeskBookingConfirmation({
                                 {exportLabel || t('exportIcs')}
                             </button>
                         ) : null}
-                        <button
-                            type='button'
-                            style={modalStyles.primaryButton}
-                            onClick={() => {
-                                if (typeof onConfirm === 'function') {
-                                    onConfirm();
-                                }
-                                onClose();
-                            }}
-                        >
-                            {confirmLabel || t('confirm')}
-                        </button>
                     </div>
                     <button
                         type='button'

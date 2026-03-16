@@ -273,8 +273,8 @@
     "deskNotFound": "Tisch nicht gefunden",
     
     "deleteBooking": "Buchung Entfernen",
-    "editBooking": "Buchung Bearbeiten",
-    "exportIcs": "Als ICS exportieren",
+    "editBooking": "Buchung bearbeiten",
+    "exportIcs": "ICS exportieren",
     "overviewBooking": "Buchungsübersicht",
     "search": "Suchen",
     "roomID": "Tisch ID",

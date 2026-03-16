@@ -284,33 +284,33 @@ const MyBookings = () => {
             {selectedBookingEvent && 
               <div>
                 <div className="mybookings-details">
-                  <span className="mybookings-details-label">{t('day')}</span>
+                  <span className="mybookings-details-label">{t('day')}:</span>
                   <span className="mybookings-details-value">{moment(selectedBookingEvent.start).format('DD.MM.YYYY')}</span>
-                  <span className="mybookings-details-label">{t('start')}</span>
+                  <span className="mybookings-details-label">{t('start')}:</span>
                   <span className="mybookings-details-value">{moment(selectedBookingEvent.start).format('HH:mm')}</span>
-                  <span className="mybookings-details-label">{t('end')}</span>
+                  <span className="mybookings-details-label">{t('end')}:</span>
                   <span className="mybookings-details-value">{moment(selectedBookingEvent.end).format('HH:mm')}</span>
                 {theBookingEvent && theBookingEvent.id === selectedBookingEvent.id && theBookingEvent.room?.floor?.building?.name && (
                   <>
-                    <span className="mybookings-details-label">{t('building')}</span>
+                    <span className="mybookings-details-label">{t('building')}:</span>
                     <span className="mybookings-details-value">{theBookingEvent.room.floor.building.name}</span>
                   </>
                 )}
                 {theBookingEvent && theBookingEvent.id === selectedBookingEvent.id && theBookingEvent.room && (
                   <>
-                    <span className="mybookings-details-label">{t('room')}</span>
+                    <span className="mybookings-details-label">{t('room')}:</span>
                     <span className="mybookings-details-value">{theBookingEvent.room.remark}</span>
                   </>
                 )}
                 {theBookingEvent && theBookingEvent.id === selectedBookingEvent.id && theBookingEvent.desk && (
                   <>
-                    <span className="mybookings-details-label">{t('desk')}</span>
+                    <span className="mybookings-details-label">{t('desk')}:</span>
                     <span className="mybookings-details-value">{theBookingEvent.desk.remark}</span>
                   </>
                 )}
                 {theBookingEvent && theBookingEvent.id === selectedBookingEvent.id && theBookingEvent.desk && (
                   <>
-                    <span className="mybookings-details-label">{t('equipment')}</span>
+                    <span className="mybookings-details-label">{t('equipment')}:</span>
                     <span className="mybookings-details-value">{bookingEquipmentSummary(theBookingEvent.desk, t)}</span>
                   </>
                 )}
