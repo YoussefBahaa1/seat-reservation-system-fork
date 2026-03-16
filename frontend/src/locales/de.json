@@ -195,7 +195,7 @@
     "bookingConfirmationTitle": "Booking Confirmation for {{desk}}",
     "currentlyBeingBooked": "Wird derzeit gebucht",
     "bookingLockExpired": "Die Arbeitsplatzsperre ist nach 3 Minuten abgelaufen. Bitte wählen Sie den Arbeitsplatz erneut.",
-    "otherFreeDesksForSelectedTimeSlots": "Andere freie Arbeitsplaetze fuer den ausgewaehlten Zeitraum",
+    "otherFreeDesksForSelectedTimeSlots": "Andere freie Arbeitsplaetze von {{start}} bis {{end}}",
     "noFreeDesksForSelectedTimeSlotInBuilding": "Fuer dieses Zeitfenster gibt es in diesem Gebaeude keine freien Arbeitsplaetze.",
     "booked": "Buchung erfolgreich",
     "scheduledBlockingLabel": "Geplante Sperrung",
