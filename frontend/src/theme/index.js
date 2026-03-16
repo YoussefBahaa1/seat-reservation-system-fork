@@ -67,7 +67,7 @@ const rawColors = {
     deskAvailable: '#69be28',
     carparkHover: '#90caf9',
     carparkSelected: '#1976d2',
-    carparkAvailable: '#2e7d32',
+    carparkAvailable: '#69be28',
     carparkPending: '#f9a825',
     carparkOccupied: '#c62828',
     carparkBlocked: '#9e9e9e',
