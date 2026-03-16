@@ -71,7 +71,7 @@ const rawColors = {
     carparkPending: '#f9a825',
     carparkOccupied: '#c62828',
     carparkBlocked: '#9e9e9e',
-    carparkInactive: '#2e7d32',
+    carparkInactive: '#ffffff',
     calendarMine: '#0082c4',
     calendarMinePending: '#f9a825',
     calendarPendingOther: '#c9c9c9',

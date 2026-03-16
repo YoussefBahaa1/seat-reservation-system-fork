@@ -199,7 +199,7 @@ const getSpotMetaFromDataset = (rect) => ({
   reservedByUser: rect.dataset.spotReservedByUser || null,
 });
 
-const isSpotSelectableForCurrentUser = (rect) => {
+const isSpotSelectableForCurrentUser = (rect, allowUnavailableSelection = false) => {
   const adminEditModeActive =
     rect?.dataset?.spotAdminEditMode === 'true' && localStorage.getItem('admin') === 'true';
   if (adminEditModeActive) return true;
@@ -211,6 +211,7 @@ const isSpotSelectableForCurrentUser = (rect) => {
   const reservedByMe = rect?.dataset?.spotReservedByMe === 'true';
 
   if (status === 'AVAILABLE') return true;
+  if (allowUnavailableSelection && status !== 'INACTIVE') return true;
   if ((status === 'PENDING' || status === 'OCCUPIED' || status === 'BLOCKED') && reservedByMe) return true;
   return false;
 };
@@ -522,11 +523,12 @@ const CarparkView = ({
         );
 
         const setSelectedRect = () => {
-          if (!isSpotSelectableForCurrentUser(rect)) return;
+          if (!isSpotSelectableForCurrentUser(rect, allowSelectUnavailable)) return;
           const adminEditModeActive = rect.dataset.spotAdminEditMode === 'true' && localStorage.getItem('admin') === 'true';
           const status = rect.dataset.spotStatus;
-          if (!adminEditModeActive && !allowSelectUnavailable && status && status !== 'AVAILABLE') return;
-          if (!adminEditModeActive && status === 'BLOCKED') return;
+          const reservedByMe = rect.dataset.spotReservedByMe === 'true';
+          const canInspectUnavailable = allowSelectUnavailable || reservedByMe;
+          if (!adminEditModeActive && status && status !== 'AVAILABLE' && !canInspectUnavailable) return;
           if (selectedRectRef.current && selectedRectRef.current !== rect) {
             selectedRectRef.current.classList.remove('carpark-selected');
           }
@@ -600,9 +602,9 @@ const CarparkView = ({
 
       svgRef.current = svg;
       cleanupRef.current = localCleanup;
-      containerRef.current?.appendChild(svg);
       refreshSpotCatalog(() => {
         if (!cancelled) {
+          containerRef.current?.appendChild(svg);
           refreshAvailability();
         }
       });
