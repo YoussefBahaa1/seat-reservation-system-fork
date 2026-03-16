@@ -1,5 +1,4 @@
-import { Alert, Box, Button, Chip, Divider, Paper, Typography, Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import { Alert, Box, Button, Chip, Divider, Paper, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -257,6 +256,22 @@ const createGeneratedSpotLabel = (doc, svg, rect, spotLabel) => {
   return labelText;
 };
 
+const createGeneratedSpotIcon = (doc, svg, rect) => {
+  const x = parseFloatAttr(rect, 'x');
+  const y = parseFloatAttr(rect, 'y');
+  const width = parseFloatAttr(rect, 'width');
+  const height = parseFloatAttr(rect, 'height');
+  const iconText = doc.createElementNS(svg.namespaceURI, 'text');
+  iconText.setAttribute('x', String(x + width / 2));
+  iconText.setAttribute('y', String(y + height / 2));
+  iconText.setAttribute('text-anchor', 'middle');
+  iconText.setAttribute('dominant-baseline', 'middle');
+  iconText.setAttribute('class', 'font label small');
+  iconText.style.pointerEvents = 'none';
+  rect.parentNode?.appendChild(iconText);
+  return iconText;
+};
+
 const isPointInRect = (x, y, rectX, rectY, rectW, rectH) =>
   x >= rectX && x <= rectX + rectW && y >= rectY && y <= rectY + rectH;
 
@@ -295,6 +310,21 @@ const formatSpotCategory = (spotCategory) => {
   return 'standard';
 };
 
+const getSpotIconConfig = (spotCategory, isActive) => {
+  if (!isActive) return { text: '', fill: '#000000', fontSize: '28px', fontWeight: '700' };
+  const value = String(spotCategory || 'STANDARD').toUpperCase();
+  if (value === 'SPECIAL_CASE') {
+    return { text: 'S', fill: '#000000', fontSize: '32px', fontWeight: '700' };
+  }
+  if (value === 'ACCESSIBLE') {
+    return { text: '\u267F', fill: '#1565c0', fontSize: '42px', fontWeight: '400' };
+  }
+  if (value === 'STANDARD') {
+    return { text: 'LIT', fill: '#000000', fontSize: '26px', fontWeight: '700' };
+  }
+  return { text: '', fill: '#000000', fontSize: '28px', fontWeight: '700' };
+};
+
 const getSpotMetaFromDataset = (rect) => ({
   label: rect.dataset.spotLabel ?? '?',
   displayLabel: rect.dataset.spotDisplayLabel || rect.dataset.spotLabel || '?',
@@ -316,21 +346,13 @@ const getSpotMetaFromDataset = (rect) => ({
   reservedByUser: rect.dataset.spotReservedByUser || null,
 });
 
-const isSpotSelectableForCurrentUser = (rect, allowUnavailableSelection = false) => {
+const isSpotSelectableForCurrentUser = (rect) => {
   const adminEditModeActive =
     rect?.dataset?.spotAdminEditMode === 'true' && localStorage.getItem('admin') === 'true';
   if (adminEditModeActive) return true;
 
-  const isSelectable = rect?.dataset?.spotSelectable !== 'false';
-  if (!isSelectable) return false;
-
   const status = rect?.dataset?.spotStatus ?? 'UNKNOWN';
-  const reservedByMe = rect?.dataset?.spotReservedByMe === 'true';
-
-  if (status === 'AVAILABLE') return true;
-  if (allowUnavailableSelection && status !== 'INACTIVE') return true;
-  if ((status === 'PENDING' || status === 'OCCUPIED' || status === 'BLOCKED') && reservedByMe) return true;
-  return false;
+  return status !== 'INACTIVE';
 };
 
 const CarparkView = ({
@@ -350,6 +372,7 @@ const CarparkView = ({
   const headersRef = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const spotCatalogByLabelRef = useRef(new Map());
   const spotLabelTextByLabelRef = useRef(new Map());
+  const spotIconTextByLabelRef = useRef(new Map());
   const spotRectsByLabelRef = useRef(new Map());
   const initialSelectedDate = (() => {
     const fromState = location.state?.date ? new Date(location.state.date) : null;
@@ -375,6 +398,7 @@ const CarparkView = ({
   const [pageNotifications, setPageNotifications] = useState([]);
   const [adminEditMode, setAdminEditMode] = useState(false);
   const [dayParkingEvents, setDayParkingEvents] = useState([]);
+  const [hasExplicitTimeSelection, setHasExplicitTimeSelection] = useState(false);
   const [internalDate, setInternalDate] = useState(initialSelectedDate);
   const [startTime, setStartTime] = useState(initialTimeRangeRef.current.startTime);
   const [endTime, setEndTime] = useState(initialTimeRangeRef.current.endTime);
@@ -395,6 +419,7 @@ const CarparkView = ({
 
   const applyInactiveSpotPresentation = useCallback((label, rect) => {
     const labelText = spotLabelTextByLabelRef.current.get(label);
+    const iconText = spotIconTextByLabelRef.current.get(label);
     rect.classList.remove('carpark-status-available', 'carpark-status-pending', 'carpark-status-occupied', 'carpark-status-blocked');
     rect.classList.add('carpark-status-inactive');
     rect.dataset.spotActive = 'false';
@@ -413,6 +438,10 @@ const CarparkView = ({
       labelText.textContent = '';
       labelText.style.display = 'none';
     }
+    if (iconText) {
+      iconText.textContent = '';
+      iconText.style.display = 'none';
+    }
   }, [adminEditMode, isAdminUser]);
 
   const applyCatalogToMap = useCallback((spots) => {
@@ -429,6 +458,7 @@ const CarparkView = ({
       const catalogSpot = nextCatalog.get(label);
       const isActiveSpot = catalogSpot ? catalogSpot.active !== false : false;
       const labelText = spotLabelTextByLabelRef.current.get(label);
+      const iconText = spotIconTextByLabelRef.current.get(label);
       const displayLabel = String(catalogSpot?.displayLabel ?? (isActiveSpot ? label : '')).trim();
 
       rect.dataset.spotActive = isActiveSpot ? 'true' : 'false';
@@ -453,7 +483,7 @@ const CarparkView = ({
       }
 
       rect.classList.remove('carpark-status-inactive');
-      rect.dataset.spotSelectable = rect.dataset.spotSpecial === 'true' ? 'false' : 'true';
+      rect.dataset.spotSelectable = 'true';
       rect.setAttribute('tabindex', rect.dataset.spotSelectable === 'true' || (adminEditMode && isAdminUser) ? '0' : '-1');
       rect.setAttribute('role', rect.dataset.spotSelectable === 'true' || (adminEditMode && isAdminUser) ? 'button' : 'img');
       rect.style.cursor = rect.dataset.spotSelectable === 'true' || (adminEditMode && isAdminUser) ? 'pointer' : 'default';
@@ -461,6 +491,14 @@ const CarparkView = ({
       if (labelText) {
         labelText.textContent = displayLabel;
         labelText.style.display = displayLabel ? '' : 'none';
+      }
+      if (iconText) {
+        const iconConfig = getSpotIconConfig(rect.dataset.spotCategory, isActiveSpot);
+        iconText.textContent = iconConfig.text;
+        iconText.style.display = iconConfig.text ? '' : 'none';
+        iconText.style.fill = iconConfig.fill;
+        iconText.style.fontSize = iconConfig.fontSize;
+        iconText.style.fontWeight = iconConfig.fontWeight;
       }
     }
 
@@ -508,6 +546,7 @@ const CarparkView = ({
       selectedRectRef.current = null;
       svgRef.current = null;
       spotLabelTextByLabelRef.current = new Map();
+      spotIconTextByLabelRef.current = new Map();
       spotCatalogByLabelRef.current = new Map();
       if (containerRef.current) containerRef.current.replaceChildren();
     };
@@ -576,6 +615,9 @@ const CarparkView = ({
       for (const litText of litTexts) {
         litText.element.style.display = 'none';
       }
+      for (const accessibleText of accessibleTexts) {
+        accessibleText.element.style.display = 'none';
+      }
 
       const spotRects = Array.from(svg.querySelectorAll('rect')).filter((rect) => {
         const w = parseFloatAttr(rect, 'width');
@@ -602,7 +644,7 @@ const CarparkView = ({
         const spotLabel = candidateSpotLabel ?? closest?.value ?? `${idx + 1}`;
         const isSpecial = spotLabel === '23';
         const isInitiallyActive = !isCandidateSpot;
-        const isSelectable = isInitiallyActive && !isSpecial;
+        const isSelectable = isInitiallyActive;
 
         const isLit = false;
         const isAccessible = accessibleTexts.some((t) => isPointInRect(t.x, t.y, x, y, w, h));
@@ -634,6 +676,14 @@ const CarparkView = ({
         } else if (closest?.element) {
           spotLabelTextByLabelRef.current.set(spotLabel, closest.element);
         }
+        const generatedIcon = createGeneratedSpotIcon(doc, svg, rect);
+        const initialIconConfig = getSpotIconConfig(rect.dataset.spotCategory, isInitiallyActive);
+        generatedIcon.textContent = initialIconConfig.text;
+        generatedIcon.style.display = initialIconConfig.text ? '' : 'none';
+        generatedIcon.style.fill = initialIconConfig.fill;
+        generatedIcon.style.fontSize = initialIconConfig.fontSize;
+        generatedIcon.style.fontWeight = initialIconConfig.fontWeight;
+        spotIconTextByLabelRef.current.set(spotLabel, generatedIcon);
         rect.classList.add(
           isInitiallyActive ? (isSpecial ? 'carpark-status-blocked' : 'carpark-status-available') : 'carpark-status-inactive'
         );
@@ -649,12 +699,10 @@ const CarparkView = ({
         );
 
         const setSelectedRect = () => {
-          if (!isSpotSelectableForCurrentUser(rect, allowSelectUnavailable)) return;
+          if (!isSpotSelectableForCurrentUser(rect)) return;
           const adminEditModeActive = rect.dataset.spotAdminEditMode === 'true' && localStorage.getItem('admin') === 'true';
           const status = rect.dataset.spotStatus;
-          const reservedByMe = rect.dataset.spotReservedByMe === 'true';
-          const canInspectUnavailable = allowSelectUnavailable || reservedByMe;
-          if (!adminEditModeActive && status && status !== 'AVAILABLE' && !canInspectUnavailable) return;
+          if (!adminEditModeActive && status === 'INACTIVE') return;
           if (selectedRectRef.current && selectedRectRef.current !== rect) {
             selectedRectRef.current.classList.remove('carpark-selected');
           }
@@ -818,7 +866,7 @@ const CarparkView = ({
   }, [currentUserId, dayParkingEvents, selectedDate, selectedSpot?.label, t]);
 
   const timelineSelectionEvent = useMemo(() => {
-    if (!selectedDate || Number.isNaN(selectedDate.valueOf()) || !startTime || !endTime) return null;
+    if (!hasExplicitTimeSelection || !selectedDate || Number.isNaN(selectedDate.valueOf()) || !startTime || !endTime) return null;
     const start = buildDateTimeForDay(selectedDate, startTime);
     const end = buildDateTimeForDay(selectedDate, endTime);
     if (!start || !end || end <= start) return null;
@@ -826,14 +874,14 @@ const CarparkView = ({
       id: 'parking-selection',
       start,
       end,
-      title: `${formatTimeHHMM(start)} - ${formatTimeHHMM(end)} ${t('carparkSelectedRange')}`,
+      title: '',
       resource: {
         selection: true,
         status: 'SELECTION',
         reservedByMe: true,
       },
     };
-  }, [endTime, selectedDate, startTime, t]);
+  }, [endTime, hasExplicitTimeSelection, selectedDate, startTime, t]);
 
   const timelineEvents = useMemo(() => (
     timelineSelectionEvent ? [...timelineReservationEvents, timelineSelectionEvent] : timelineReservationEvents
@@ -982,6 +1030,7 @@ const CarparkView = ({
     const nextRange = getDefaultTimeRangeForDate(selectedDate);
     setStartTime(nextRange.startTime);
     setEndTime(nextRange.endTime);
+    setHasExplicitTimeSelection(false);
   }, [selectedDate]);
 
   useEffect(() => {
@@ -1032,6 +1081,7 @@ const CarparkView = ({
 
     setStartTime(nextStart);
     setEndTime(nextEnd);
+    setHasExplicitTimeSelection(true);
   }, [selectedDate, t, timelineReservationEvents, timelineSelectable]);
 
   const timelineEventPropGetter = useCallback((calendarEvent) => {
@@ -1265,7 +1315,7 @@ const CarparkView = ({
 
   const detailsBody = (
     <>
-      {detailsVariant === 'panel' && !spotForPanel && (
+      {!spotForPanel && (
         <Typography variant="body2" color="text.secondary">
           {t('carparkNoSelection')}
         </Typography>
@@ -1338,7 +1388,7 @@ const CarparkView = ({
           )}
         </>
       )}
-      {(detailsVariant === 'panel' || spotForPanel) && (
+      {(detailsVariant === 'panel' || detailsVariant === 'modal' || spotForPanel) && (
         <>
           <Divider sx={{ my: 2 }} />
           <Typography variant="body2" color="text.secondary">
@@ -1397,9 +1447,11 @@ const CarparkView = ({
             </Box>
           )}
         </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          {t('carparkSelectedRange')}: {startTime} - {endTime}
-        </Typography>
+        {hasExplicitTimeSelection && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {t('carparkSelectedRange')}: {startTime} - {endTime}
+          </Typography>
+        )}
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
           {t('carparkBufferHint', { minutes: CARPARK_OVERLAP_BUFFER_MINUTES })}
         </Typography>
@@ -1457,7 +1509,7 @@ const CarparkView = ({
             )}
           </Paper>
 
-          {detailsVariant === 'panel' && (
+          {(detailsVariant === 'panel' || detailsVariant === 'modal') && (
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>
                 {t('carparkDetails')}
@@ -1516,27 +1568,6 @@ const CarparkView = ({
           </Paper>
         </Box>
       </Box>
-
-      {detailsVariant === 'modal' && (
-        <Dialog
-          open={Boolean(selectedSpot)}
-          onClose={clearSelection}
-          maxWidth="xs"
-          fullWidth
-        >
-          <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h6" sx={{ flex: 1 }}>
-              {t('carparkDetails')}
-            </Typography>
-            <IconButton onClick={clearSelection} aria-label={t('close')}>
-              <CloseIcon />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent dividers>
-            {detailsBody}
-          </DialogContent>
-        </Dialog>
-      )}
     </>
   );
 };
