@@ -20,6 +20,11 @@ const BookingEvent = ({ event }) => (
   </div>
 );
 
+const normalizeCalendarView = (view) => {
+  const value = String(view || '').toLowerCase();
+  return ['day', 'week', 'month'].includes(value) ? value : null;
+};
+
 const isPastBookingDay = (bookingStart) =>
   moment(bookingStart).startOf('day').isBefore(moment().startOf('day'));
 
@@ -29,8 +34,8 @@ const MyBookings = () => {
   const [events, setEvents] = useState([]);
   const location = useLocation();
   const navigate = useNavigate();
-  // Defines which view is displayed per default. Either day, week or month.
-  const [defaultView, setDefaultView] = useState({ viewModeName: 'week' }); 
+  const locationView = normalizeCalendarView(location.state?.view);
+  const [currentView, setCurrentView] = useState(locationView);
   const [selectedBookingEvent, setSelectedBookingEvent] = useState(null);
   // The current booking object (with id, room, desk) 
   const [theBookingEvent, setTheBookingEvent] = useState(null);
@@ -89,10 +94,17 @@ const MyBookings = () => {
     getRequest(
         `${process.env.REACT_APP_BACKEND_URL}/defaults/getDefaultViewForUserId/${userId}`,
         headers.current,
-        setDefaultView,
+        (viewMode) => {
+          const normalizedView = normalizeCalendarView(viewMode?.viewModeName) || 'week';
+          if (!locationView) {
+            setCurrentView(normalizedView);
+          }
+        },
         (errorCode) => { 
           console.log('Error fetching default view mode:', errorCode);
-          setDefaultView({ viewModeName: 'week' });
+          if (!locationView) {
+            setCurrentView('week');
+          }
           toast.error(t('httpOther'));          
         },
     );
@@ -100,7 +112,13 @@ const MyBookings = () => {
     /*else {
       toast.error('Error fetching default viewmode in FloorSelector.js');
     }*/
-  },[t]);
+  },[locationView, t]);
+
+  useEffect(() => {
+    if (locationView) {
+      setCurrentView(locationView);
+    }
+  }, [locationView]);
 
   useEffect(() => {
     moment.locale(i18n.language === 'en' ? 'en-gb' : i18n.language);
@@ -213,7 +231,6 @@ const MyBookings = () => {
 
   // Get selected date and view from location state
   const selectedDate = location.state?.date ? new Date(location.state.date) : null;
-  const initialView = location.state?.view || defaultView?.viewModeName || 'week';
   const [currentDate, setCurrentDate] = useState(selectedDate || new Date());
   const isPastDayBooking = selectedBookingEvent
     ? moment(selectedBookingEvent.start).startOf('day').isBefore(moment().startOf('day'))
@@ -287,7 +304,7 @@ const MyBookings = () => {
             } 
           </div>
         </LayoutModal>
-          {initialView && (
+          {currentView && (
             <>
               <Button
                 id="mybookings_add_booking_btn"
@@ -327,13 +344,13 @@ const MyBookings = () => {
                 events={events}
                 startAccessor='start'
                 endAccessor='end'
-                //defaultView='week'
-                defaultView={initialView}
+                view={currentView}
                 defaultDate={selectedDate || new Date()}
                 min={new Date(0, 0, 0, 6, 0, 0)} // 6 am
                 max={new Date(0, 0, 0, 22, 0, 0)} // 10 pm
                 popup={true}
                 onSelectEvent={handleEventSelect}
+                onView={setCurrentView}
                 onNavigate={(date) => setCurrentDate(date)}
                 messages={{
                   next: t('next'),
