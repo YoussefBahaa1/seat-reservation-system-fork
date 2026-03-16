@@ -19,6 +19,7 @@ import CarparkView from '../Carpark/CarparkView.jsx';
 import { WORKSTATION_TYPE_VALUES } from '../misc/workstationMetadata';
 
 const PARKING_TYPE_VALUES = ['STANDARD', 'ACCESSIBLE', 'E_CHARGING_STATION', 'SPECIAL_CASE'];
+const MAX_SELECTED_FILTERS = 30;
 const toSentenceCase = (value) => {
   const normalized = String(value || '').toLowerCase();
   if (!normalized) return '';
@@ -73,6 +74,12 @@ const Home = () => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const lastRoomIdRef = useRef(null);
   const currentUserId = localStorage.getItem('userId');
+  const showMaxFiltersSelectedError = useCallback(() => {
+    toast.error(
+      t('maxNumberFiltersSelected', { max: MAX_SELECTED_FILTERS }),
+      { toastId: 'home-max-filters-selected' }
+    );
+  }, [t]);
 
   const handleSelectSlot = ({ start }) => {
     setSelectedDate(moment(start).startOf('day').toDate());
@@ -395,13 +402,23 @@ const Home = () => {
         ? event.target.value.split(',')
         : event.target.value;
     if (mode === 'desk') {
-      setSelectedDeskFilters(sanitizeDeskFilterValues(values));
+      const nextValues = sanitizeDeskFilterValues(values);
+      if (nextValues.length > MAX_SELECTED_FILTERS) {
+        showMaxFiltersSelectedError();
+        return;
+      }
+      setSelectedDeskFilters(nextValues);
     } else {
-      setSelectedParkingFilters(
-        values.filter((value) => value.startsWith('type:') || value.startsWith('covered:'))
+      const nextValues = values.filter(
+        (value) => value.startsWith('type:') || value.startsWith('covered:')
       );
+      if (nextValues.length > MAX_SELECTED_FILTERS) {
+        showMaxFiltersSelectedError();
+        return;
+      }
+      setSelectedParkingFilters(nextValues);
     }
-  }, [mode, sanitizeDeskFilterValues]);
+  }, [mode, sanitizeDeskFilterValues, showMaxFiltersSelectedError]);
 
   const toggleFilterValue = useCallback((value) => {
     if (mode === 'desk') {
@@ -416,18 +433,33 @@ const Home = () => {
             return sanitizeDeskFilterValues(next);
           }
           const withoutBuildings = prev.filter((item) => !item.startsWith('building:'));
-          return sanitizeDeskFilterValues([...withoutBuildings, value]);
+          const next = sanitizeDeskFilterValues([...withoutBuildings, value]);
+          if (next.length > MAX_SELECTED_FILTERS) {
+            showMaxFiltersSelectedError();
+            return prev;
+          }
+          return next;
         }
         const next = prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value];
-        return sanitizeDeskFilterValues(next);
+        const sanitizedNext = sanitizeDeskFilterValues(next);
+        if (sanitizedNext.length > MAX_SELECTED_FILTERS) {
+          showMaxFiltersSelectedError();
+          return prev;
+        }
+        return sanitizedNext;
       });
     } else {
       setSelectedParkingFilters((prev) => {
         if (!value.startsWith('type:') && !value.startsWith('covered:')) return prev;
-        return prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value];
+        const next = prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value];
+        if (next.length > MAX_SELECTED_FILTERS) {
+          showMaxFiltersSelectedError();
+          return prev;
+        }
+        return next;
       });
     }
-  }, [mode, sanitizeDeskFilterValues]);
+  }, [mode, sanitizeDeskFilterValues, showMaxFiltersSelectedError]);
 
   const timeBlocks = useMemo(() => {
     const blocks = [];
@@ -749,7 +781,6 @@ const Home = () => {
       )}
       <div className="home-calendar-footer">
         <div className="home-calendar-controls">
-          <span className="home-filter-label">{t('filters')}</span>
           <FormControl size="small" className="home-filter-select">
           <InputLabel>{t('filters')}</InputLabel>
           <Select
@@ -758,30 +789,32 @@ const Home = () => {
               onChange={handleFilterChange}
             label={t('filters')}
             renderValue={(selected) =>
-              selected
-                .map((value) => {
-                  if (value.startsWith('building:')) {
-                    const buildingId = value.replace('building:', '');
-                    const building = buildingOptions.find((option) => option.value === value);
-                    return building ? building.label : buildingId;
-                  }
-                  if (value.startsWith('room:')) {
-                    const roomId = value.replace('room:', '');
-                    const room = roomOptions.find((option) => option.value === value);
-                    return room ? room.label : roomId;
-                  }
-                  if (value.startsWith('type:')) {
-                    const typeValue = value.replace('type:', '');
-                    const type = typeOptions.find((option) => option.value === value);
-                    return type ? type.label : typeValue;
-                  }
-                  if (value.startsWith('covered:')) {
-                    const covered = coveredOptions.find((option) => option.value === value);
-                    return covered ? covered.label : value;
-                  }
-                  return value;
-                })
-                .join(', ')
+              <span className="home-filter-render-value">
+                {selected
+                  .map((value) => {
+                    if (value.startsWith('building:')) {
+                      const buildingId = value.replace('building:', '');
+                      const building = buildingOptions.find((option) => option.value === value);
+                      return building ? building.label : buildingId;
+                    }
+                    if (value.startsWith('room:')) {
+                      const roomId = value.replace('room:', '');
+                      const room = roomOptions.find((option) => option.value === value);
+                      return room ? room.label : roomId;
+                    }
+                    if (value.startsWith('type:')) {
+                      const typeValue = value.replace('type:', '');
+                      const type = typeOptions.find((option) => option.value === value);
+                      return type ? type.label : typeValue;
+                    }
+                    if (value.startsWith('covered:')) {
+                      const covered = coveredOptions.find((option) => option.value === value);
+                      return covered ? covered.label : value;
+                    }
+                    return value;
+                  })
+                  .join(', ')}
+              </span>
             }
           >
             {mode === 'desk' && (

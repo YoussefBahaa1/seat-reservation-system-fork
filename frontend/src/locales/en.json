@@ -325,6 +325,7 @@
     ,"bookingsSum":"Bookings sum"
     ,"noMatchingBookingsForSelectedFilter":"No matching bookings for selected filter."
     ,"filters":"Filters"
+    ,"maxNumberFiltersSelected":"Max number filters selected ({{max}})."
     ,"desksTitle":"Desks"
     ,"parkingsTitle":"Parkings"
     ,"filter":"Filter"

@@ -326,6 +326,7 @@
     ,"bookingsSum":"Buchungen Gesamt"
     ,"noMatchingBookingsForSelectedFilter":"Keine passenden Buchungen fuer den ausgewaehlten Filter."
     ,"filters":"Filter"
+    ,"maxNumberFiltersSelected":"Maximale Anzahl an Filtern ausgewaehlt ({{max}})."
     ,"desksTitle":"Arbeitsplaetze"
     ,"parkingsTitle":"Parkplaetze"
     ,"filter":"Filter"

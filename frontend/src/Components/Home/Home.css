@@ -128,6 +128,7 @@
   justify-content: flex-start;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .home-filter-label {
@@ -193,7 +194,22 @@
 }
 
 .home-filter-select {
-  min-width: 260px;
+  width: 520px;
+  max-width: 100%;
+  flex: 0 0 520px;
+}
+
+.home-filter-select .MuiSelect-select {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-filter-render-value {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .home-selected-date {
@@ -264,4 +280,24 @@
 
 .home-day-event-time {
   font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .home-calendar-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .home-calendar-controls {
+    width: 100%;
+  }
+
+  .home-filter-select {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .home-selected-date {
+    margin-right: 0;
+  }
 }
