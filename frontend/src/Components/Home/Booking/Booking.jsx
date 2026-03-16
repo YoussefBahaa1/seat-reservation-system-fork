@@ -1345,6 +1345,7 @@ const Booking = () => {
               name="booking_alternative_desks"
               desks={alternativeDesks}
               submit_function={handleAlternativeDeskSelection}
+              submitLabelKey="book"
             />
           ) : (
             <Typography>{t('noFreeDesksForSelectedTimeSlotInBuilding')}</Typography>
