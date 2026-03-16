@@ -33,6 +33,18 @@ public interface ScheduledBlockingRepository extends JpaRepository<ScheduledBloc
             LocalDateTime endDateTime,
             LocalDateTime startDateTime);
 
+    List<ScheduledBlocking> findByDeskIdAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+            Long deskId,
+            List<ScheduledBlockingStatus> statuses,
+            LocalDateTime endDateTime,
+            LocalDateTime startDateTime);
+
+    List<ScheduledBlocking> findByDeskIdInAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+            List<Long> deskIds,
+            List<ScheduledBlockingStatus> statuses,
+            LocalDateTime endDateTime,
+            LocalDateTime startDateTime);
+
     @Query("SELECT sb FROM ScheduledBlocking sb WHERE sb.desk.id = :deskId " +
            "AND sb.status IN :statuses " +
            "AND sb.startDateTime < :end AND sb.endDateTime > :start")

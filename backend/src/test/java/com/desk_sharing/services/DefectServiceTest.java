@@ -40,6 +40,7 @@ import com.desk_sharing.repositories.DefectInternalNoteRepository;
 import com.desk_sharing.repositories.DefectRepository;
 import com.desk_sharing.repositories.DeskRepository;
 import com.desk_sharing.repositories.RoleRepository;
+import com.desk_sharing.repositories.ScheduledBlockingRepository;
 import com.desk_sharing.repositories.UserRepository;
 import com.desk_sharing.services.calendar.CalendarNotificationService;
 
@@ -52,6 +53,7 @@ class DefectServiceTest {
     @Mock UserRepository userRepository;
     @Mock RoleRepository roleRepository;
     @Mock BookingRepository bookingRepository;
+    @Mock ScheduledBlockingRepository scheduledBlockingRepository;
     @Mock CalendarNotificationService calendarNotificationService;
     @Mock DefectNotificationService defectNotificationService;
     @Mock UserService userService;
@@ -293,6 +295,7 @@ class DefectServiceTest {
         Defect defect = baseDefect(44L, desk);
         defect.setStatus(DefectStatus.IN_PROGRESS);
         when(defectRepository.findById(44L)).thenReturn(Optional.of(defect));
+        when(scheduledBlockingRepository.findByDefectIdAndStatusIn(anyLong(), any())).thenReturn(List.of());
         when(defectRepository.save(defect)).thenReturn(defect);
 
         Defect updated = service.updateStatus(44L, "RESOLVED");
@@ -313,6 +316,7 @@ class DefectServiceTest {
         desk.setBlockedByDefectId(999L);
         Defect defect = baseDefect(44L, desk);
         when(defectRepository.findById(44L)).thenReturn(Optional.of(defect));
+        when(scheduledBlockingRepository.findByDefectIdAndStatusIn(anyLong(), any())).thenReturn(List.of());
         when(defectRepository.save(defect)).thenReturn(defect);
 
         service.updateStatus(44L, "RESOLVED");

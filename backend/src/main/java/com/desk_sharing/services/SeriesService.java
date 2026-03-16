@@ -8,7 +8,11 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import com.desk_sharing.entities.Booking;
 import com.desk_sharing.entities.Desk;
+import com.desk_sharing.entities.ScheduledBlocking;
 import com.desk_sharing.entities.Series;
 import com.desk_sharing.entities.ScheduledBlockingStatus;
 import com.desk_sharing.entities.UserEntity;
@@ -308,8 +313,56 @@ public class SeriesService {
             return List.of();
         }
 
+        if (dates == null || dates.isEmpty() || startTime == null || endTime == null) {
+            return desks;
+        }
+
+        final List<TimeWindow> windows = buildTimeWindows(dates, startTime, endTime);
+        if (windows.isEmpty()) {
+            return desks;
+        }
+
+        final List<Long> deskIds = desks.stream()
+            .map(Desk::getId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+        if (deskIds.isEmpty()) {
+            return desks;
+        }
+
+        final LocalDateTime queryStart = windows.stream()
+            .map(TimeWindow::start)
+            .min(Comparator.naturalOrder())
+            .orElseThrow();
+        final LocalDateTime queryEnd = windows.stream()
+            .map(TimeWindow::end)
+            .max(Comparator.naturalOrder())
+            .orElseThrow();
+
+        final List<ScheduledBlocking> overlappingBlockings = scheduledBlockingRepository
+            .findByDeskIdInAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                deskIds,
+                SERIES_BLOCKING_STATUSES,
+                queryEnd,
+                queryStart
+            );
+
+        final Map<Long, List<ScheduledBlocking>> blockingsByDeskId = new HashMap<>();
+        for (ScheduledBlocking blocking : overlappingBlockings) {
+            if (blocking.getDesk() == null || blocking.getDesk().getId() == null) {
+                continue;
+            }
+            blockingsByDeskId
+                .computeIfAbsent(blocking.getDesk().getId(), ignored -> new ArrayList<>())
+                .add(blocking);
+        }
+
         return desks.stream()
-            .filter(desk -> !hasScheduledBlockingOverlap(desk.getId(), dates, startTime, endTime))
+            .filter(desk -> !hasBlockingOverlap(
+                blockingsByDeskId.getOrDefault(desk.getId(), List.of()),
+                windows
+            ))
             .toList();
     }
 
@@ -335,22 +388,67 @@ public class SeriesService {
             return false;
         }
 
+        final List<TimeWindow> windows = buildTimeWindows(dates, startTime, endTime);
+        if (windows.isEmpty()) {
+            return false;
+        }
+
+        final LocalDateTime queryStart = windows.stream()
+            .map(TimeWindow::start)
+            .min(Comparator.naturalOrder())
+            .orElseThrow();
+        final LocalDateTime queryEnd = windows.stream()
+            .map(TimeWindow::end)
+            .max(Comparator.naturalOrder())
+            .orElseThrow();
+
+        final List<ScheduledBlocking> overlappingBlockings = scheduledBlockingRepository
+            .findByDeskIdAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                deskId,
+                SERIES_BLOCKING_STATUSES,
+                queryEnd,
+                queryStart
+            );
+
+        return hasBlockingOverlap(overlappingBlockings, windows);
+    }
+
+    private List<TimeWindow> buildTimeWindows(
+            final List<Date> dates,
+            final Time startTime,
+            final Time endTime) {
         final LocalTime startLocalTime = startTime.toLocalTime();
         final LocalTime endLocalTime = endTime.toLocalTime();
 
-        return dates.stream().anyMatch(date -> {
-            final LocalDate day = date.toLocalDate();
-            final LocalDateTime startDateTime = LocalDateTime.of(day, startLocalTime);
-            final LocalDateTime endDateTime = LocalDateTime.of(day, endLocalTime);
-
-            return scheduledBlockingRepository.existsByDeskIdAndStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
-                deskId,
-                SERIES_BLOCKING_STATUSES,
-                endDateTime,
-                startDateTime
-            );
-        });
+        return dates.stream()
+            .filter(Objects::nonNull)
+            .map(Date::toLocalDate)
+            .map(day -> new TimeWindow(
+                LocalDateTime.of(day, startLocalTime),
+                LocalDateTime.of(day, endLocalTime)
+            ))
+            .filter(window -> window.end().isAfter(window.start()))
+            .toList();
     }
+
+    private boolean hasBlockingOverlap(
+            final List<ScheduledBlocking> blockings,
+            final List<TimeWindow> windows) {
+        for (final ScheduledBlocking blocking : blockings) {
+            if (blocking == null || blocking.getStartDateTime() == null || blocking.getEndDateTime() == null) {
+                continue;
+            }
+            for (final TimeWindow window : windows) {
+                if (blocking.getStartDateTime().isBefore(window.end())
+                    && blocking.getEndDateTime().isAfter(window.start())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private record TimeWindow(LocalDateTime start, LocalDateTime end) {}
 
     /**
      * Find all series associated to the user identified by email.

@@ -2,6 +2,7 @@ package com.desk_sharing.services;
 
 import java.sql.Date;
 import java.sql.Time;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -123,9 +124,15 @@ public class ScheduledBlockingService {
     }
 
     public Map<String, Long> getBlockingCountsForMonth(Long defectId, int year, int month) {
+        validateYearAndMonth(year, month);
         defectService.getDefect(defectId);
 
-        LocalDateTime monthStart = LocalDateTime.of(year, month, 1, 0, 0);
+        final LocalDateTime monthStart;
+        try {
+            monthStart = LocalDateTime.of(year, month, 1, 0, 0);
+        } catch (DateTimeException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid year or month value");
+        }
         LocalDateTime monthEnd = monthStart.plusMonths(1);
 
         List<Object[]> results = scheduledBlockingRepository.countByDefectGroupedByDay(
@@ -146,6 +153,15 @@ public class ScheduledBlockingService {
             counts.put(day, ((Number) row[1]).longValue());
         }
         return counts;
+    }
+
+    private void validateYearAndMonth(final int year, final int month) {
+        if (month < 1 || month > 12) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "month must be between 1 and 12");
+        }
+        if (year < 1 || year > 9999) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "year must be between 1 and 9999");
+        }
     }
 
     @Scheduled(cron = "0 0/1 * * * *")
