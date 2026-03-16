@@ -1,20 +1,23 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button } from '@mui/material';
+import { colorVars, semanticColors } from '../../../theme';
+
+const tableHeaderTextSx = { textAlign: 'center', fontSize: 15, color: colorVars.text.inverse };
 
 function BookingTable({ bookings, onAction, action }) {
   return (
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 450, marginTop: 1, maxHeight: '400px' }}>
-        <TableHead sx={{ backgroundColor: 'green', color: 'white' }}>
+        <TableHead sx={{ backgroundColor: semanticColors.tables.header, color: colorVars.text.inverse }}>
           <TableRow>
-            <TableCell sx={{ textAlign: 'center', fontSize: 15, color: 'white' }}> ID</TableCell>
-            <TableCell sx={{ textAlign: 'center', fontSize: 15, color: 'white' }}> USER</TableCell>
-            <TableCell sx={{ textAlign: 'center', fontSize: 15, color: 'white' }}> ROOM ID</TableCell>
-            <TableCell sx={{ textAlign: 'center', fontSize: 15, color: 'white' }}> DESK ID</TableCell>
-            <TableCell sx={{ textAlign: 'center', fontSize: 15, color: 'white' }}> DATE</TableCell>
-            <TableCell sx={{ textAlign: 'center', fontSize: 15, color: 'white' }}> BEGIN</TableCell>
-            <TableCell sx={{ textAlign: 'center', fontSize: 15, color: 'white' }}> END</TableCell>
-            <TableCell sx={{ textAlign: 'center', fontSize: 15, color: 'white' }} colSpan={2}>ACTION</TableCell>
+            <TableCell sx={tableHeaderTextSx}> ID</TableCell>
+            <TableCell sx={tableHeaderTextSx}> USER</TableCell>
+            <TableCell sx={tableHeaderTextSx}> ROOM ID</TableCell>
+            <TableCell sx={tableHeaderTextSx}> DESK ID</TableCell>
+            <TableCell sx={tableHeaderTextSx}> DATE</TableCell>
+            <TableCell sx={tableHeaderTextSx}> BEGIN</TableCell>
+            <TableCell sx={tableHeaderTextSx}> END</TableCell>
+            <TableCell sx={tableHeaderTextSx} colSpan={2}>ACTION</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

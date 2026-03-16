@@ -19,15 +19,15 @@
 .edit-rooms-button,
 .manage-bookings-button,
 .download-statistics-button {
-  background-color: #008444;
-  color: white;
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-inverse);
   padding: 15px 20px;
   width: 240px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   margin-right: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-soft);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -38,16 +38,16 @@
 .edit-rooms-button:hover,
 .manage-bookings-button:hover,
 .download-statistics-button:hover {
-  background-color: #006c37;
+  background-color: var(--color-brand-primary-hover);
 }
 
 /* Icon styles */
 .logo {
-  color: #008444;
+  color: var(--color-brand-primary);
   font-size: 3em;
   margin-top: 5px;
   margin-left: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-soft);
   border-radius: 30%;
   padding: 10px;
 }
@@ -73,7 +73,7 @@
     top: 80px;
     right: 60px;
     padding: 50px;
-    background-color: rgba(171, 168, 168, 0.5); /* Semi-transparent black background */
+    background-color: var(--color-overlay-panel);
     border-radius: 10px;
     display: flex;
     flex-direction: column;
@@ -85,7 +85,7 @@
     top: 80px; /* Adjust this value as needed */
     right: 60px;
     padding: 50px;
-    background-color: rgba(171, 168, 168, 0.5); /* Semi-transparent black background */
+    background-color: var(--color-overlay-panel);
     border-radius: 10px;
     display: flex;
     flex-direction: column;
@@ -99,8 +99,8 @@
   }
 
 .my-button {
-  background-color: #008444;
-  color: white;
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-inverse);
   padding: 10px 20px;
   border: none;
   border-radius: 15px;
@@ -108,8 +108,8 @@
   margin-bottom: 5px;
 }
 .employee-button {
-  background-color: #008444;
-  color: white;
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-inverse);
   padding: 10px 20px;
   border: none;
   border-radius: 15px;
@@ -118,8 +118,8 @@
 }
 
 .workstation-button {
-  background-color: #008444;
-  color: white;
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-inverse);
   padding: 10px 20px;
   border: none;
   border-radius: 15px;
@@ -128,7 +128,7 @@
 }
 
 .employee-button:hover {
-  background-color: #006c37;
+  background-color: var(--color-brand-primary-hover);
 }
 
   
@@ -139,7 +139,7 @@
 
   
   .workstation-button:hover {
-    background-color: #006c37;
+    background-color: var(--color-brand-primary-hover);
   }
 
   .booking-button-wrapper {
@@ -147,7 +147,7 @@
     top: 80px; /* Adjust this value as needed */
     right: 60px;
     padding: 50px;
-    background-color: rgba(171, 168, 168, 0.5); /* Semi-transparent black background */
+    background-color: var(--color-overlay-panel);
     border-radius: 10px;
     display: flex;
     flex-direction: column;
@@ -160,8 +160,8 @@
   }
   
   .booking-button {
-    background-color: #008444;
-    color: white;
+    background-color: var(--color-brand-primary);
+    color: var(--color-text-inverse);
     padding: 10px 20px;
     border: none;
     border-radius: 15px;
@@ -170,7 +170,7 @@
   }
   
   .booking-button:hover {
-    background-color: #006c37;
+    background-color: var(--color-brand-primary-hover);
   }
 
   .bottom-container{
@@ -178,7 +178,6 @@
     width: 100%;
   }
   .data-display{
-    /* background-color: #006c37; */
     height: 90vh;
     width: 70vw;
   }
@@ -190,17 +189,17 @@
   }
   .heat-map{
     margin: 20px;
-    border-bottom: 2px solid black;
+    border-bottom: 2px solid var(--color-text-primary);
     opacity: 1;
   }
   .usage-map{
     margin: 20px;
-    border-bottom: 2px solid black;
+    border-bottom: 2px solid var(--color-text-primary);
     opacity: 1;
   }
   .column-map{
     margin: 20px;
-    border-bottom: 2px solid black;
+    border-bottom: 2px solid var(--color-text-primary);
     opacity: 1;
   }
 
@@ -209,12 +208,10 @@
   }
   
   .map-content{
-    /* background-color: #008444; */
     height: 60vh;
     width: 65vw;
   }
   .no-map-content{
-    /* background: #628876; */
     height: 60vh;
     width: 65vw;
     display: flex;

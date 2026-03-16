@@ -1,3 +1,5 @@
+import { semanticColors } from '../../theme';
+
 export function buildLocationLabel(defect) {
   if (!defect || !defect.desk) return '';
   const desk = defect.desk;
@@ -36,8 +38,8 @@ export const STATUS_LABELS = {
 };
 
 export const URGENCY_COLORS = {
-  LOW: '#4caf50',
-  MEDIUM: '#ff9800',
-  HIGH: '#f44336',
-  CRITICAL: '#b71c1c',
+  LOW: semanticColors.defects.urgency.LOW,
+  MEDIUM: semanticColors.defects.urgency.MEDIUM,
+  HIGH: semanticColors.defects.urgency.HIGH,
+  CRITICAL: semanticColors.defects.urgency.CRITICAL,
 };

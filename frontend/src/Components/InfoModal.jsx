@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Tooltip, IconButton, DialogContent, DialogActions, Box, Button } from '@mui/material';
 import { HelpOutline, PriorityHighOutlined } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { colorVars, semanticColors } from '../theme';
 
 const InfoModal = ({text, helpIcon=true}) => {
     const { t } = useTranslation();
@@ -17,8 +18,8 @@ const InfoModal = ({text, helpIcon=true}) => {
             position: 'fixed',
             bottom: 16,
             right: 16,
-            backgroundColor: '#fff',
-            color: '#008444',
+            backgroundColor: colorVars.base.light,
+            color: colorVars.brand.primary,
             boxShadow: 3,
             padding: 0, // etwa 12px
             minWidth: 'auto',
@@ -27,11 +28,11 @@ const InfoModal = ({text, helpIcon=true}) => {
             height: 'auto',
             zIndex: 1500,
             '&:hover': {
-              backgroundColor: '#f1f1f1',
+              backgroundColor: colorVars.surface.iconHover,
             },
           }}
         >
-          {helpIcon ? <HelpOutline/> : <PriorityHighOutlined style={{ color: 'red' }}/>}
+          {helpIcon ? <HelpOutline/> : <PriorityHighOutlined style={{ color: semanticColors.destructive.main }}/>}
         </IconButton>
       </Tooltip>
 
@@ -42,14 +43,14 @@ const InfoModal = ({text, helpIcon=true}) => {
             left: 0,
             width: '100%',
             height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: colorVars.overlay.scrim,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 1300,
           }}>
             <DialogContent sx={{
-              backgroundColor: 'white',
+              backgroundColor: colorVars.base.light,
               padding: '20px',
               borderRadius: '8px',
               maxWidth: '500px',

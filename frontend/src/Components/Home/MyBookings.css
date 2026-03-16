@@ -21,7 +21,7 @@
   right: 8px;
   font-size: 30px;
   line-height: 1;
-  color: #ffffff;
+  color: var(--color-text-inverse);
   opacity: 1;
   pointer-events: none;
 }

@@ -9,6 +9,7 @@ import styled from '@emotion/styled';
 import EditBookingModal from './EditBookingsModal';
 import BookingTable from './BookingTable';
 import {getRequest} from '../../RequestFunctions/RequestFunctions'
+import { colorVars } from '../../../theme';
 
 export default function EditBookings({ editBookingsModal }) {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -118,7 +119,7 @@ export default function EditBookings({ editBookingsModal }) {
             {
               allBookings && allBookings.length > 0 ? (
                 <BookingTable  bookings={allBookings} onAction={editBookingsById} action={"EDIT"}/>
-              ):<p style={{color: 'red', textAlign:'left'}}>{t("dataNotFound")}</p>
+              ):<p style={{ color: colorVars.text.error, textAlign:'left' }}>{t("dataNotFound")}</p>
             }   
           </>
         </Grid2>

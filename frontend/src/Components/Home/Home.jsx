@@ -843,60 +843,6 @@ const Home = () => {
       </div>
     </LayoutPage>
   );
-
-
-  /*return (
-    <Box sx={{
-      width: '100vw',
-      height: '100vh',
-      backgroundColor: 'aliceblue',
-      display: 'flex'
-    }}>
-      <div>
-        <SidebarComponent />
-      </div>
-      <Box sx={{
-        width: '100vw',
-        height: '100vh',
-        backgroundColor: '#ffffff'
-      }}>
-        <Box sx={{display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingTop: '15px',
-          paddingBottom: '15px'}}
-        >
-          <h1>{t("chooseDate")}</h1>
-        </Box>
-        <hr className="gradient" />
-        <div data-testid='Home_Calendar'>
-          <Calendar
-            
-            data-testid='abc'
-            localizer={localizer}
-            events={events}
-            startAccessor="start"
-            endAccessor="end"
-            views={["month"]}
-            style={{ height: 500 }}
-            onSelectSlot={handleSelectSlot}
-            selectable={true}
-            messages={{
-              next: t("next"),
-              previous: t("back"),
-              today: t("today"),
-              month: t("month"),
-              week: t("week"),
-              day: t("day"),
-              agenda: t("agenda"),
-              noEventsInRange: t("noEventsInRange")
-           }}
-           onNavigate={handleNavigate}
-          />
-        </div>
-      </Box>
-    </Box>
-  );*/
 };
 
 export default Home;

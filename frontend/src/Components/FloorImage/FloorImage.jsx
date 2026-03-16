@@ -4,16 +4,17 @@ import FloorSelector from '../FloorSelector.js';
 import { getRequest } from '../RequestFunctions/RequestFunctions.js';
 import LaptopIcon from '@mui/icons-material/Laptop';
 import HtmlTooltip from './HtmlTooltip.jsx';
+import { semanticColors } from '../../theme';
 /**
  * @param sendDataToParent The function that is called when data has to be transmitted to the parent component. 
- * @param present_color The color (green, blue, ...) of the known rooms.
+ * @param present_color The display color of the known rooms.
  * @param click_freely False if the user is only allowed to click on already existing rooms.
  * @returns The rendered map with known rooms and the option to add an room.
  */
 const FloorImage = (
     {
         sendDataToParent,
-        present_color = 'blue',
+        present_color = semanticColors.map.existing,
         click_freely = true
     }) => {
     const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -24,7 +25,7 @@ const FloorImage = (
     const [rooms, setRooms] = React.useState([]);
     const [floor, setFloor] = React.useState('');
     const [room, setRoom] = React.useState('');
-    const new_color = 'green';
+    const new_color = semanticColors.map.pending;
 
     const handleChildData = (data) => {
         setFloor(data);

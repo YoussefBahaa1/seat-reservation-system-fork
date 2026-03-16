@@ -8,6 +8,7 @@ import BookingTable from './BookingTable';
 import { roomToOption, optionToRoomId} from '../Room/RoomAndOption';
 import {getRequest, deleteRequest} from '../../RequestFunctions/RequestFunctions'
 import LayoutModalAdmin from '../../Templates/LayoutModalAdmin';
+import { colorVars } from '../../../theme';
 
 export default function DeleteBookings({ onClose, isOpen }) {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -112,7 +113,7 @@ export default function DeleteBookings({ onClose, isOpen }) {
 
                         <BookingTable bookings={allBookings} onAction={deleteBookingsById} action={"DELETE"}/>
 
-                        ):<p style={{color: 'red', textAlign:'left'}}>{t("dataNotFound")}</p>
+                        ):<p style={{ color: colorVars.text.error, textAlign:'left' }}>{t("dataNotFound")}</p>
                       }
               
           

@@ -6,6 +6,7 @@ import {deleteRequest} from '../../RequestFunctions/RequestFunctions';
 import FloorImage from '../../FloorImage/FloorImage.jsx';
 import InfoModal from '../../InfoModal.jsx';
 import LayoutModalAdmin from '../../Templates/LayoutModalAdmin.jsx';
+import { semanticColors } from '../../../theme';
 
 export default function DeleteRoom({ open, close }) {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -74,7 +75,7 @@ export default function DeleteRoom({ open, close }) {
       />
 
             <FloorImage 
-              present_color='red'
+              present_color={semanticColors.map.destructive}
               click_freely={false}
               sendDataToParent={handleChildData}
             />

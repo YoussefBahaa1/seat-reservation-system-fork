@@ -28,6 +28,7 @@ import com.desk_sharing.entities.ParkingReservationStatus;
 import com.desk_sharing.entities.ParkingSpot;
 import com.desk_sharing.entities.ParkingSpotType;
 import com.desk_sharing.entities.UserEntity;
+import com.desk_sharing.misc.VisibilityDisplayHelper;
 import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
@@ -159,18 +160,14 @@ public class ParkingReservationService {
         return time.toLocalTime().truncatedTo(ChronoUnit.MINUTES).toString();
     }
 
-    private String displayUserFromCache(final ParkingReservation reservation, final Map<Integer, UserEntity> userCache) {
+    private String displayUserFromCache(
+        final ParkingReservation reservation,
+        final Map<Integer, UserEntity> userCache,
+        final boolean revealFullIdentity
+    ) {
         if (reservation == null) return null;
         final UserEntity user = userCache.get(reservation.getUserId());
-        if (user == null) return "unknown";
-        final String fullName = ((user.getName() == null ? "" : user.getName().trim()) + " "
-            + (user.getSurname() == null ? "" : user.getSurname().trim())).trim();
-        if (!fullName.isBlank()) {
-            return user.getEmail() == null || user.getEmail().isBlank()
-                ? fullName
-                : fullName + " (" + user.getEmail() + ")";
-        }
-        return user.getEmail();
+        return VisibilityDisplayHelper.formatReservedByUser(user, revealFullIdentity);
     }
 
     private ParkingAvailabilityResponseDTO availabilityRow(
@@ -183,7 +180,8 @@ public class ParkingReservationService {
         final boolean manuallyBlocked,
         final Integer chargingKw,
         final ParkingReservation overlapForDetails,
-        final Map<Integer, UserEntity> userCache
+        final Map<Integer, UserEntity> userCache,
+        final boolean revealFullIdentity
     ) {
         return new ParkingAvailabilityResponseDTO(
             label,
@@ -196,7 +194,7 @@ public class ParkingReservationService {
             chargingKw,
             overlapForDetails == null ? null : formatTimeValue(overlapForDetails.getBegin()),
             overlapForDetails == null ? null : formatTimeValue(overlapForDetails.getEnd()),
-            overlapForDetails == null ? null : displayUserFromCache(overlapForDetails, userCache)
+            overlapForDetails == null ? null : displayUserFromCache(overlapForDetails, userCache, revealFullIdentity)
         );
     }
 
@@ -210,7 +208,9 @@ public class ParkingReservationService {
         final Time end = Time.valueOf(LocalTime.parse(normalizeTimeString(request.getEnd())));
         validateTimes(day, begin, end);
 
-        final int myUserId = getCurrentUser().getId();
+        final UserEntity currentUser = getCurrentUser();
+        final int myUserId = currentUser.getId();
+        final boolean revealFullIdentity = currentUser.isAdmin();
 
         final List<String> requestedLabels = request.getSpotLabels().stream()
             .filter(l -> l != null && !l.isBlank())
@@ -279,7 +279,7 @@ public class ParkingReservationService {
             final ParkingReservation rejectedMine = rejectedOverlapForMeByLabel.get(label);
 
             if (spotType == ParkingSpotType.SPECIAL_CASE) {
-                return availabilityRow(label, "BLOCKED", false, null, spotType, covered, manuallyBlocked, chargingKw, null, userCache);
+                return availabilityRow(label, "BLOCKED", false, null, spotType, covered, manuallyBlocked, chargingKw, null, userCache, revealFullIdentity);
             }
             if (manuallyBlocked) {
                 final boolean mine = myOccupiedLabels.contains(label);
@@ -293,7 +293,8 @@ public class ParkingReservationService {
                     true,
                     chargingKw,
                     activeOverlap,
-                    userCache
+                    userCache,
+                    revealFullIdentity
                 );
             }
             if (approvedLabels.contains(label)) {
@@ -308,7 +309,8 @@ public class ParkingReservationService {
                     manuallyBlocked,
                     chargingKw,
                     activeOverlap,
-                    userCache
+                    userCache,
+                    revealFullIdentity
                 );
             }
             if (pendingLabels.contains(label)) {
@@ -323,13 +325,14 @@ public class ParkingReservationService {
                     manuallyBlocked,
                     chargingKw,
                     activeOverlap,
-                    userCache
+                    userCache,
+                    revealFullIdentity
                 );
             }
             if (rejectedMine != null) {
-                return availabilityRow(label, "BLOCKED", true, null, spotType, covered, manuallyBlocked, chargingKw, rejectedMine, userCache);
+                return availabilityRow(label, "BLOCKED", true, null, spotType, covered, manuallyBlocked, chargingKw, rejectedMine, userCache, revealFullIdentity);
             }
-            return availabilityRow(label, "AVAILABLE", false, null, spotType, covered, manuallyBlocked, chargingKw, null, userCache);
+            return availabilityRow(label, "AVAILABLE", false, null, spotType, covered, manuallyBlocked, chargingKw, null, userCache, revealFullIdentity);
         }).toList();
     }
 

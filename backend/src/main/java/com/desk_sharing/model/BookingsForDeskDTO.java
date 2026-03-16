@@ -3,6 +3,8 @@ package com.desk_sharing.model;
 import java.sql.Date;
 import java.sql.Time;
 
+import com.desk_sharing.misc.VisibilityDisplayHelper;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -43,19 +45,6 @@ public class BookingsForDeskDTO {
     }
 
     private static String mask(String name, String surname, String mode) {
-        if (mode == null) mode = "FULL_NAME";
-        switch (mode) {
-            case "ANONYMOUS":
-                return "Anonymous";
-            case "ABBREVIATION":
-                String first = (name != null && !name.isEmpty()) ? name.substring(0,1) : "";
-                String last = (surname != null && !surname.isEmpty()) ? surname.substring(0,1) : "";
-                return (first + (last.isEmpty() ? "" : "." + last)).trim();
-            case "FULL_NAME":
-            default:
-                String n = (name == null ? "" : name);
-                String s = (surname == null ? "" : surname);
-                return (n + " " + s).trim();
-        }
+        return VisibilityDisplayHelper.formatVisibleName(name, surname, mode);
     }
 }

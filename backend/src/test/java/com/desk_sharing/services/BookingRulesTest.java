@@ -103,8 +103,10 @@ class BookingRulesTest {
 
         assertThrows(ResponseStatusException.class, () -> invokeValidate(Date.valueOf(today), beginTooEarly, end, settings));
 
-        // booking tomorrow is unaffected by today's lead time
-        assertDoesNotThrow(() -> invokeValidate(Date.valueOf(today.plusDays(1)), beginTooEarly, end, settings));
+        // Use a clearly future slot so the assertion is stable even when the test runs close to midnight.
+        var beginClearlyAllowed = Time.valueOf(LocalTime.of(2, 0));
+        var endClearlyAllowed = Time.valueOf(LocalTime.of(4, 0));
+        assertDoesNotThrow(() -> invokeValidate(Date.valueOf(today.plusDays(1)), beginClearlyAllowed, endClearlyAllowed, settings));
     }
 
     @Test

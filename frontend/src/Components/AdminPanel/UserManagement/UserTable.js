@@ -1,6 +1,7 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Chip } from '@mui/material';
 import FilterUser from './FilterUser';
+import { colorVars, semanticColors } from '../../../theme';
 
 function UserTable({ users, onAction, action, actionRenderer, t, onDisableMfa }) {
   const [filterFunction, setFilterFunction] = React.useState(() => (_)=>{return true});
@@ -40,17 +41,17 @@ function UserTable({ users, onAction, action, actionRenderer, t, onDisableMfa })
 
       <TableContainer component={Paper} style={{ maxHeight: '400px', overflow: 'auto' }}>
         <Table stickyHeader sx={{ minWidth: 900, marginTop: 1, maxHeight:'400px' }}>
-          <TableHead sx={{backgroundColor: 'green', color:'white'}}>
+          <TableHead sx={{ backgroundColor: semanticColors.tables.header, color: colorVars.text.inverse }}>
             <TableRow>
-              <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white'}}>{t("email")}</TableCell>
-              <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t("name")}</TableCell>
-              <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t("surname")}</TableCell>
-              <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t("department")}</TableCell>
-              <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t("activity")}</TableCell>
-              <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>{t('role')}</TableCell>
-              <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>MFA</TableCell>
-              <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }}>Visibility</TableCell>
-              <TableCell sx={{backgroundColor: 'green', textAlign: 'center', fontSize:15, color:'white' }} colSpan={2}>{t("action")}</TableCell>
+              <TableCell sx={{ backgroundColor: semanticColors.tables.header, textAlign: 'center', fontSize: 15, color: colorVars.text.inverse }}>{t("email")}</TableCell>
+              <TableCell sx={{ backgroundColor: semanticColors.tables.header, textAlign: 'center', fontSize: 15, color: colorVars.text.inverse }}>{t("name")}</TableCell>
+              <TableCell sx={{ backgroundColor: semanticColors.tables.header, textAlign: 'center', fontSize: 15, color: colorVars.text.inverse }}>{t("surname")}</TableCell>
+              <TableCell sx={{ backgroundColor: semanticColors.tables.header, textAlign: 'center', fontSize: 15, color: colorVars.text.inverse }}>{t("department")}</TableCell>
+              <TableCell sx={{ backgroundColor: semanticColors.tables.header, textAlign: 'center', fontSize: 15, color: colorVars.text.inverse }}>{t("activity")}</TableCell>
+              <TableCell sx={{ backgroundColor: semanticColors.tables.header, textAlign: 'center', fontSize: 15, color: colorVars.text.inverse }}>{t('role')}</TableCell>
+              <TableCell sx={{ backgroundColor: semanticColors.tables.header, textAlign: 'center', fontSize: 15, color: colorVars.text.inverse }}>MFA</TableCell>
+              <TableCell sx={{ backgroundColor: semanticColors.tables.header, textAlign: 'center', fontSize: 15, color: colorVars.text.inverse }}>Visibility</TableCell>
+              <TableCell sx={{ backgroundColor: semanticColors.tables.header, textAlign: 'center', fontSize: 15, color: colorVars.text.inverse }} colSpan={2}>{t("action")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

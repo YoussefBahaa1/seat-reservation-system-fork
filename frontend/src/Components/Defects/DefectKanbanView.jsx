@@ -1,11 +1,12 @@
 import { Box, Paper, Typography, Chip, Button } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { buildLocationLabel, URGENCY_LABELS, CATEGORY_LABELS, URGENCY_COLORS } from './defectUtils';
+import { colorVars, semanticColors } from '../../theme';
 
 const COLUMNS = [
-  { status: 'NEW', labelKey: 'defectNew', color: '#1976d2' },
-  { status: 'IN_PROGRESS', labelKey: 'defectInProgress', color: '#ed6c02' },
-  { status: 'RESOLVED', labelKey: 'defectResolved', color: '#2e7d32' },
+  { status: 'NEW', labelKey: 'defectNew', color: semanticColors.defects.status.NEW },
+  { status: 'IN_PROGRESS', labelKey: 'defectInProgress', color: semanticColors.defects.status.IN_PROGRESS },
+  { status: 'RESOLVED', labelKey: 'defectResolved', color: semanticColors.defects.status.RESOLVED },
 ];
 
 const DefectKanbanView = ({ defects, onSelect, onStatusChange }) => {
@@ -22,7 +23,7 @@ const DefectKanbanView = ({ defects, onSelect, onStatusChange }) => {
                 p: 1.5,
                 mb: 1,
                 backgroundColor: col.color,
-                color: '#fff',
+                color: colorVars.text.inverse,
                 textAlign: 'center',
               }}
             >
@@ -39,7 +40,7 @@ const DefectKanbanView = ({ defects, onSelect, onStatusChange }) => {
                     p: 1.5,
                     cursor: 'pointer',
                     '&:hover': { boxShadow: 4 },
-                    borderLeft: `4px solid ${URGENCY_COLORS[d.urgency] || '#999'}`,
+                    borderLeft: `4px solid ${URGENCY_COLORS[d.urgency] || semanticColors.defects.fallback}`,
                   }}
                   onClick={() => onSelect(d)}
                 >
@@ -51,7 +52,7 @@ const DefectKanbanView = ({ defects, onSelect, onStatusChange }) => {
                     <Chip
                       label={t(URGENCY_LABELS[d.urgency] || d.urgency)}
                       size="small"
-                      sx={{ backgroundColor: URGENCY_COLORS[d.urgency], color: '#fff', height: 20, fontSize: '0.7rem' }}
+                      sx={{ backgroundColor: URGENCY_COLORS[d.urgency], color: colorVars.text.inverse, height: 20, fontSize: '0.7rem' }}
                     />
                     <Chip
                       label={t(CATEGORY_LABELS[d.category] || d.category)}

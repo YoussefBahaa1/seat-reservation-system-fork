@@ -28,6 +28,7 @@ import CreateTimePicker from '../misc/CreateTimePicker';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { toast } from 'react-toastify';
+import { colorVars } from '../../theme';
 import {postRequest, getRequest, putRequest, deleteRequest} from '../RequestFunctions/RequestFunctions';
 import {DeskTable} from '../misc/DesksTable';
 import bookingPostRequest from '../misc/bookingPostRequest';
@@ -674,7 +675,7 @@ const FreeDesks = () => {
                                     sx={{
                                         minHeight: 40,
                                         border: '1px solid',
-                                        borderColor: isOpen ? 'primary.main' : 'rgba(0, 0, 0, 0.23)',
+                                        borderColor: isOpen ? 'primary.main' : colorVars.border.strong,
                                         borderRadius: 1,
                                         paddingX: 1.5,
                                         paddingY: 1,

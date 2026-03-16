@@ -3,7 +3,7 @@ export const LayoutPage_theme = {
       display: 'flex',
       width: '100vw',
       height: '100vh',
-      bgcolor: '#fff',
+      bgcolor: 'var(--color-surface-page)',
       overflow: 'hidden',
     },
     content: {
@@ -31,13 +31,7 @@ export const LayoutPage_theme = {
       mb: '5px',
       border: 'none',
       borderRadius: '6px',
-      background: `linear-gradient(
-        90deg,
-      #008444 0%,
-      rgb(9, 121, 24) 21%,
-      #b89f01 81%,
-      #ffdd00 100%
-      )`,
+      background: 'var(--gradient-brand)',
     },
     h1: {
       margin: '20px', 

@@ -6,6 +6,7 @@ import LayoutModalAdmin from '../../Templates/LayoutModalAdmin.jsx';
 import { getRequest, putRequest } from '../../RequestFunctions/RequestFunctions';
 import { DeskTable } from '../../misc/DesksTable';
 import ReportDefectModal from '../../Defects/ReportDefectModal';
+import { colorVars } from '../../../theme';
 
 export default function HideShowFixedWorkstation({ isOpen, onClose }) {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -138,8 +139,8 @@ export default function HideShowFixedWorkstation({ isOpen, onClose }) {
                 submitButtonSxForDesk={(desk) => (
                   desk?.hidden
                     ? {
-                      backgroundColor: '#9e9e9e',
-                      '&:hover': { backgroundColor: '#757575' }
+                      backgroundColor: colorVars.state.neutral,
+                      '&:hover': { backgroundColor: colorVars.state.neutralDark }
                     }
                     : undefined
                 )}

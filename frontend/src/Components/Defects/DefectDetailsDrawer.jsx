@@ -12,6 +12,7 @@ import {
   buildLocationLabel, CATEGORY_LABELS, URGENCY_LABELS,
   STATUS_LABELS, URGENCY_COLORS
 } from './defectUtils';
+import { colorVars } from '../../theme';
 
 const DefectDetailsDrawer = ({ defect, open, onClose, onUpdate }) => {
   const { t } = useTranslation();
@@ -198,7 +199,7 @@ const DefectDetailsDrawer = ({ defect, open, onClose, onUpdate }) => {
             <Chip label={t(STATUS_LABELS[defect.status])} size="small"
               color={defect.status === 'NEW' ? 'info' : defect.status === 'IN_PROGRESS' ? 'warning' : 'success'} />
             <Chip label={t(URGENCY_LABELS[defect.urgency])} size="small"
-              sx={{ backgroundColor: URGENCY_COLORS[defect.urgency], color: '#fff' }} />
+              sx={{ backgroundColor: URGENCY_COLORS[defect.urgency], color: colorVars.text.inverse }} />
             <Chip label={t(CATEGORY_LABELS[defect.category])} size="small" variant="outlined" />
           </Box>
 

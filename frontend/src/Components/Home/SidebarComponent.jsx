@@ -25,6 +25,7 @@ import { IoMdNotifications } from 'react-icons/io';
 import Defaults from "./Defaults";
 import VisibilityPreferences from "./VisibilityPreferences";
 import { putRequest } from "../RequestFunctions/RequestFunctions";
+import { colorVars } from '../../theme';
 
 const SidebarComponent = () => {
   const { t, i18n } = useTranslation();
@@ -204,13 +205,13 @@ const SidebarComponent = () => {
     <div>
       <Sidebar
         collapsed={collapsed}
-        backgroundColor='#008444'
+        backgroundColor={colorVars.brand.primary}
         width={collapsed ? '80px' : '210px'}
         style={{
           height: '100vh',
           [`&.active`]: {
-            backgroundColor: '#13395e',
-            color: '#b6c8d9',
+            backgroundColor: colorVars.brand.sidebarActive,
+            color: colorVars.brand.sidebarActiveText,
             overflow: 'auto',
           },
         }}
@@ -220,7 +221,7 @@ const SidebarComponent = () => {
             button: ({ level, active }) => {
               if (level === 0)
                 return {
-                  backgroundColor: active ? '#ffdd00' : undefined,
+                  backgroundColor: active ? colorVars.brand.accent : undefined,
                 };
             },
           }}

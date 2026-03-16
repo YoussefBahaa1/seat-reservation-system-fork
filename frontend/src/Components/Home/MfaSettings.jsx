@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { getRequest, postRequest } from '../RequestFunctions/RequestFunctions';
 import LayoutModal from '../Templates/LayoutModal';
 import { MdSecurity } from 'react-icons/md';
+import { colorVars, semanticColors } from '../../theme';
 
 const MfaSettings = ({ isOpen, onClose }) => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -135,7 +136,7 @@ const MfaSettings = ({ isOpen, onClose }) => {
     return (
       <LayoutModal isOpen={isOpen} onClose={handleClose} title={t('mfaSetup')}>
         <Box sx={{ textAlign: 'center', p: 2 }}>
-          <MdSecurity size={48} color="#008444" />
+          <MdSecurity size={48} color={colorVars.brand.primary} />
           <Typography variant="body1" sx={{ mt: 2, mb: 2 }}>
             {t('mfaScanQrCode')}
           </Typography>
@@ -145,7 +146,7 @@ const MfaSettings = ({ isOpen, onClose }) => {
             <img 
               src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setupData.qrCodeUrl)}`}
               alt="MFA QR Code"
-              style={{ border: '1px solid #ccc', borderRadius: '8px' }}
+              style={{ border: `1px solid ${colorVars.border.muted}`, borderRadius: '8px' }}
             />
           </Box>
           
@@ -180,7 +181,7 @@ const MfaSettings = ({ isOpen, onClose }) => {
     return (
       <LayoutModal isOpen={isOpen} onClose={handleClose} title={t('mfaDisable')}>
         <Box sx={{ textAlign: 'center', p: 2 }}>
-          <MdSecurity size={48} color="#d32f2f" />
+          <MdSecurity size={48} color={semanticColors.destructive.main} />
           <Typography variant="body1" sx={{ mt: 2, mb: 2 }}>
             {t('mfaEnterCodeOrPassword')}
           </Typography>
@@ -222,7 +223,7 @@ const MfaSettings = ({ isOpen, onClose }) => {
   return (
     <LayoutModal isOpen={isOpen} onClose={handleClose} title={t('mfaSettings')}>
       <Box sx={{ textAlign: 'center', p: 2 }}>
-        <MdSecurity size={48} color={mfaEnabled ? "#008444" : "#888"} />
+        <MdSecurity size={48} color={mfaEnabled ? colorVars.brand.primary : colorVars.text.disabled} />
         
         <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
           {mfaEnabled ? t('mfaEnabled') : t('mfaDisabled')}

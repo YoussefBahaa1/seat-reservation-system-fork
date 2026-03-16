@@ -2,6 +2,7 @@ package com.desk_sharing.services;
 
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.entities.VisibilityMode;
+import com.desk_sharing.misc.VisibilityDisplayHelper;
 import com.desk_sharing.repositories.*;
 import com.desk_sharing.security.JWTGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,5 +50,52 @@ class VisibilityServiceTest {
         VisibilityMode mode = userService.getVisibilityMode(userId);
 
         assertThat(mode).isEqualTo(VisibilityMode.FULL_NAME);
+    }
+
+    @Test
+    void formatVisibleName_returnsFullNameForFullNameMode() {
+        String displayName = VisibilityDisplayHelper.formatVisibleName("Jane", "Doe", VisibilityMode.FULL_NAME);
+
+        assertThat(displayName).isEqualTo("Jane Doe");
+    }
+
+    @Test
+    void formatVisibleName_returnsAbbreviationForAbbreviationMode() {
+        String displayName = VisibilityDisplayHelper.formatVisibleName("Jane", "Doe", VisibilityMode.ABBREVIATION);
+
+        assertThat(displayName).isEqualTo("J.D");
+    }
+
+    @Test
+    void formatVisibleName_returnsAnonymousForAnonymousMode() {
+        String displayName = VisibilityDisplayHelper.formatVisibleName("Jane", "Doe", VisibilityMode.ANONYMOUS);
+
+        assertThat(displayName).isEqualTo("Anonymous");
+    }
+
+    @Test
+    void formatReservedByUser_respectsVisibilityModeForRegularViewers() {
+        UserEntity user = new UserEntity();
+        user.setName("Jane");
+        user.setSurname("Doe");
+        user.setEmail("jane@example.com");
+        user.setVisibilityMode(VisibilityMode.ABBREVIATION);
+
+        String displayName = VisibilityDisplayHelper.formatReservedByUser(user, false);
+
+        assertThat(displayName).isEqualTo("J.D");
+    }
+
+    @Test
+    void formatReservedByUser_revealsFullIdentityForAdminViewers() {
+        UserEntity user = new UserEntity();
+        user.setName("Jane");
+        user.setSurname("Doe");
+        user.setEmail("jane@example.com");
+        user.setVisibilityMode(VisibilityMode.ANONYMOUS);
+
+        String displayName = VisibilityDisplayHelper.formatReservedByUser(user, true);
+
+        assertThat(displayName).isEqualTo("Jane Doe (jane@example.com)");
     }
 }

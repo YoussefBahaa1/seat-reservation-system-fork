@@ -3,6 +3,7 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { buildLocationLabel, CATEGORY_LABELS, URGENCY_LABELS, STATUS_LABELS, URGENCY_COLORS } from './defectUtils';
+import { colorVars } from '../../theme';
 
 const DefectListView = ({ defects, onSelect }) => {
   const { t } = useTranslation();
@@ -46,7 +47,7 @@ const DefectListView = ({ defects, onSelect }) => {
                 <Chip
                   label={t(URGENCY_LABELS[d.urgency] || d.urgency)}
                   size="small"
-                  sx={{ backgroundColor: URGENCY_COLORS[d.urgency], color: '#fff' }}
+                  sx={{ backgroundColor: URGENCY_COLORS[d.urgency], color: colorVars.text.inverse }}
                 />
               </TableCell>
               <TableCell>{t(CATEGORY_LABELS[d.category] || d.category)}</TableCell>

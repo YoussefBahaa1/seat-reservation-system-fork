@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap');
 
 * {
 
@@ -9,15 +9,20 @@
 
 body {
   
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Source Sans Pro', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: url('./saxony.jpg') no-repeat;
-  background-size: cover;
+  background: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    #ffffff 50%,
+    #0082c4 50%,
+    #0082c4 100%
+  );
 }
 
 code {

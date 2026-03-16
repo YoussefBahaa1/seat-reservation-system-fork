@@ -25,6 +25,7 @@ import { getRequest, postRequest, putRequest, deleteRequest } from '../../Reques
 import bookingPostRequest, { checkDeskBookingOverlap, showDeskBookingConfirmation } from '../../misc/bookingPostRequest.js';
 import ReportDefectModal from '../../Defects/ReportDefectModal';
 import { DeskTable } from '../../misc/DesksTable.jsx';
+import { colorVars, semanticColors } from '../../../theme';
 //import { buildFullDaySlots } from './buildFullDaySlots.js';
 
 const BOOKING_CONTEXT_KEY = 'bookingNavigationContext';
@@ -834,7 +835,7 @@ const Booking = () => {
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
                       {desk.blocked && (
                         <>
-                          <Typography variant="caption" sx={{ fontWeight: 700, color: '#ff9800' }}>
+                          <Typography variant="caption" sx={{ fontWeight: 700, color: semanticColors.defects.urgency.MEDIUM }}>
                             {t('defectBlocked')}
                           </Typography>
                           {desk.blockedReasonCategory && (
@@ -860,8 +861,8 @@ const Booking = () => {
                   <Box
                     sx={{
                       backgroundColor: desk.blocked
-                        ? '#bdbdbd'
-                        : desk.id === clickedDeskId ? '#ffdd00' : 'yellowgreen',
+                        ? semanticColors.booking.desk.blocked
+                        : desk.id === clickedDeskId ? semanticColors.booking.desk.selected : semanticColors.booking.desk.available,
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'center',
@@ -872,9 +873,9 @@ const Booking = () => {
                       padding: '5px',
                       cursor: desk.blocked ? 'not-allowed' : 'pointer',
                       opacity: desk.blocked ? 0.6 : 1,
-                      boxShadow: '0px 0px 5px rgba(0,0,0,0.2)',
+                      boxShadow: colorVars.shadow.desk,
                       transition: desk.id === clickedDeskId ? '0.25s' : 'box-shadow 0.3s',
-                      '&:hover': { boxShadow: desk.blocked ? undefined : '0px 0px 10px rgba(0,0,0,0.4)' },
+                      '&:hover': { boxShadow: desk.blocked ? undefined : colorVars.shadow.deskHover },
                     }}
                     onClick={() => {
                       if (desk.blocked) {
@@ -888,7 +889,7 @@ const Booking = () => {
                   >
                     <Typography sx={{ ...typography_sx, margin: 0 }}>{desk.remark}</Typography>
                     {desk.blocked && (
-                      <Typography sx={{ ...typography_sx, marginTop: '6px', fontSize: '0.7rem', color: '#d32f2f', fontWeight: 600 }}>
+                      <Typography sx={{ ...typography_sx, marginTop: '6px', fontSize: '0.7rem', color: colorVars.text.error, fontWeight: 600 }}>
                         {t('defectBlocked')}
                       </Typography>
                     )}
@@ -908,7 +909,7 @@ const Booking = () => {
               <IconButton
                 onClick={toggleFavourite}
                 aria-label="toggle-favourite"
-                sx={{ color: isFavourite ? '#ffb300' : '#9e9e9e', fontSize: '22px' }}
+                sx={{ color: isFavourite ? semanticColors.booking.favourite.active : semanticColors.booking.favourite.inactive, fontSize: '22px' }}
               >
                 {isFavourite ? <FaStar /> : <FaRegStar />}
               </IconButton>
@@ -952,7 +953,7 @@ const Booking = () => {
             formats={calendarFormats}
             eventPropGetter={(event) => ({
               style: {
-                backgroundColor: events.some((e) => e.id === event.id) ? 'grey' : '#008444',
+                backgroundColor: events.some((e) => e.id === event.id) ? colorVars.state.neutralGrey : colorVars.brand.primary,
               },
             })}
             messages={{
@@ -973,15 +974,15 @@ const Booking = () => {
               sx={{
                 margin: '10px',
                 padding: '15px',
-                backgroundColor: '#008444',
+                backgroundColor: colorVars.brand.primary,
                 borderRadius: '8px',
-                color: '#fff',
+                color: colorVars.text.inverse,
                 fontSize: '16px',
                 textAlign: 'center',
                 transition: 'all 0.5s',
                 '&.Mui-disabled': {
-                  backgroundColor: '#7a7a7a',
-                  color: '#fff',
+                  backgroundColor: colorVars.state.neutralMid,
+                  color: colorVars.text.inverse,
                   opacity: 0.8,
                 },
               }}
@@ -997,13 +998,13 @@ const Booking = () => {
                 sx={{
                   margin: '10px',
                   padding: '15px',
-                  backgroundColor: '#d32f2f',
+                  backgroundColor: colorVars.text.error,
                   borderRadius: '8px',
-                  color: '#fff',
+                  color: colorVars.text.inverse,
                   fontSize: '16px',
                   textAlign: 'center',
                   transition: 'all 0.5s',
-                  '&:hover': { backgroundColor: '#b71c1c' },
+                  '&:hover': { backgroundColor: colorVars.text.errorDark },
                 }}
                 onClick={() => {
                   const desk = desks.find(d => d.id === clickedDeskId);

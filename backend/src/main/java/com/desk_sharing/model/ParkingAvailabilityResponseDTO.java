@@ -18,5 +18,5 @@ public class ParkingAvailabilityResponseDTO {
     private Integer chargingKw; // only relevant for E_CHARGING_STATION
     private String reservedBegin; // HH:mm if overlapping reservation exists
     private String reservedEnd; // HH:mm if overlapping reservation exists
-    private String reservedByUser; // display name/email of user with overlapping reservation
+    private String reservedByUser; // viewer-appropriate display label for the overlapping reservation
 }

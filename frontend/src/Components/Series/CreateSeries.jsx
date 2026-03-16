@@ -9,6 +9,7 @@ import { formatDate_yyyymmdd_to_ddmmyyyy } from '../misc/formatDate';
 import {DeskTable} from '../misc/DesksTable';
 import LayoutPage from '../Templates/LayoutPage';
 import ReportDefectModal from '../Defects/ReportDefectModal';
+import { colorVars } from '../../theme';
 
 /**
  * Interface to create series (=recurrent) bookings.
@@ -317,9 +318,9 @@ const CreateSeries = () => {
                                 id='dates_label'
                             >
                                 <h3>{t('calculatedDates')}</h3>
-                                <div style={{ width: '100%', overflowX: 'auto', whiteSpace: 'nowrap', border: '1px solid #ccc', padding: '10px' }}>
+                                <div style={{ width: '100%', overflowX: 'auto', whiteSpace: 'nowrap', border: `1px solid ${colorVars.border.muted}`, padding: '10px' }}>
                                     {dates.map((date, index) => ( (
-                                    <span key={index} style={{ display: "inline-block", padding: "10px", border: "1px solid #ddd", marginRight: "10px" }}>
+                                    <span key={index} style={{ display: "inline-block", padding: "10px", border: `1px solid ${colorVars.border.faint}`, marginRight: "10px" }}>
                                         {formatDate_yyyymmdd_to_ddmmyyyy(date)}
                                     </span>
                                 )))}

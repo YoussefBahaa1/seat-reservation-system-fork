@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { getRequest, postRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
 import CreateDatePicker from '../misc/CreateDatePicker';
 import CreateTimePicker from '../misc/CreateTimePicker';
+import { colorVars, semanticColors } from '../../theme';
 
 const CARPARK_SVG_URL = '/Assets/carpark_overview_ready.svg';
 const CARPARK_SELECTED_DATE_KEY = 'carparkSelectedDate';
@@ -418,14 +419,14 @@ const CarparkView = ({
       const style = doc.createElementNS(svg.namespaceURI, 'style');
       style.textContent = `
         .carpark-spot { cursor: pointer; }
-        .carpark-spot.carpark-hover { fill: #90caf9 !important; }
-        .carpark-spot.carpark-selected { fill: #1976d2 !important; }
+        .carpark-spot.carpark-hover { fill: ${semanticColors.carpark.hover} !important; }
+        .carpark-spot.carpark-selected { fill: ${semanticColors.carpark.selected} !important; }
         .carpark-spot:focus { outline: none; }
-        .carpark-status-available { fill: #2e7d32 !important; }
-        .carpark-status-pending { fill: #f9a825 !important; }
-        .carpark-status-occupied { fill: #c62828 !important; }
-        .carpark-status-blocked { fill: #9e9e9e !important; }
-        .carpark-status-inactive { fill: #ffffff !important; }
+        .carpark-status-available { fill: ${semanticColors.carpark.status.AVAILABLE} !important; }
+        .carpark-status-pending { fill: ${semanticColors.carpark.status.PENDING} !important; }
+        .carpark-status-occupied { fill: ${semanticColors.carpark.status.OCCUPIED} !important; }
+        .carpark-status-blocked { fill: ${semanticColors.carpark.status.BLOCKED} !important; }
+        .carpark-status-inactive { fill: ${semanticColors.carpark.status.INACTIVE} !important; }
       `;
       defs.appendChild(style);
 
@@ -1098,10 +1099,10 @@ const CarparkView = ({
             </Button>
           )}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Chip size="small" label={t('carparkLegendAvailable')} sx={{ bgcolor: '#2e7d32', color: '#fff' }} />
-            <Chip size="small" label={t('carparkLegendPending')} sx={{ bgcolor: '#f9a825', color: '#000' }} />
-            <Chip size="small" label={t('carparkLegendOccupied')} sx={{ bgcolor: '#c62828', color: '#fff' }} />
-            <Chip size="small" label={t('carparkLegendBlocked')} sx={{ bgcolor: '#9e9e9e', color: '#fff' }} />
+            <Chip size="small" label={t('carparkLegendAvailable')} sx={{ bgcolor: semanticColors.carpark.status.AVAILABLE, color: colorVars.text.inverse }} />
+            <Chip size="small" label={t('carparkLegendPending')} sx={{ bgcolor: semanticColors.carpark.status.PENDING, color: colorVars.text.primary }} />
+            <Chip size="small" label={t('carparkLegendOccupied')} sx={{ bgcolor: semanticColors.carpark.status.OCCUPIED, color: colorVars.text.inverse }} />
+            <Chip size="small" label={t('carparkLegendBlocked')} sx={{ bgcolor: semanticColors.carpark.status.BLOCKED, color: colorVars.text.inverse }} />
           </Box>
           {headerAction && (
             <Box sx={{ ml: 'auto', display: 'flex' }}>
@@ -1156,7 +1157,7 @@ const CarparkView = ({
               sx={{
                 overflow: 'auto',
                 maxHeight: 600,
-                backgroundColor: '#fff',
+                backgroundColor: colorVars.surface.paper,
               }}
             />
             {loadError && (

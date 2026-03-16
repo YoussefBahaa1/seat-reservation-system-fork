@@ -7,6 +7,7 @@ import { FaStar, FaRegStar } from 'react-icons/fa';
 
 import LayoutPage from '../Templates/LayoutPage.jsx';
 import { getRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
+import { colorVars } from '../../theme';
 
 /**
  * Full-screen page listing the current user's favourites.
@@ -72,7 +73,7 @@ const Favourites = () => {
     return (
       <Stack spacing={2}>
         {rooms.map((room) => (
-          <Card key={room.roomId} variant="outlined" sx={{ borderRadius: 2, boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}>
+          <Card key={room.roomId} variant="outlined" sx={{ borderRadius: 2, boxShadow: colorVars.shadow.card }}>
             <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
               <Box>
                 <Typography variant="h6">{room.name}</Typography>
@@ -85,11 +86,11 @@ const Favourites = () => {
                   variant="contained"
                   onClick={() => goToBooking(room)}
                   sx={{
-                    backgroundColor: '#008444',
+                    backgroundColor: colorVars.brand.primary,
                     borderRadius: '8px',
-                    color: '#fff',
+                    color: colorVars.text.inverse,
                     px: 2.5,
-                    '&:hover': { backgroundColor: '#006f38' },
+                    '&:hover': { backgroundColor: colorVars.brand.primaryCardHover },
                   }}
                 >
                   {t('book')}

@@ -12,6 +12,7 @@ import isEmail from '../misc/isEmail';
 import InfoModal from '../InfoModal';
 import News from './News';
 import i18n from '../../i18n';
+import { colorVars } from '../../theme';
 
 const LoginPage = () => {
   const { t } = useTranslation();
@@ -228,7 +229,7 @@ const LoginPage = () => {
         <Box sx={{ ...styles.box, ...styles.centeredBox }}>
           <h1 style={styles.h1}>{t('mfaRequired')}</h1>
           <img src={'/Assets/flag.png'} alt='Flag' className='flag-image' />
-          <MdSecurity size={40} color="#008444" />
+          <MdSecurity size={40} color={colorVars.brand.primary} />
           <Typography variant="body2" sx={{ mb: 2, textAlign: 'center' }}>
             {t('mfaCodeLabel')}
           </Typography>

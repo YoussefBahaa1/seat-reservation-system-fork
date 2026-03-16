@@ -1,16 +1,3 @@
-/*.home-page {
-  width: 100vw;
-  height: 100vh;
-  background-color: aliceblue;
-  display: flex;
-}
-
-.home-content {
-  width: 100vw;
-  height: 100vh;
-  background-color: #ffffff;
-}*/
-
 .choose-date {
   display: flex;
   align-items: center;
@@ -25,13 +12,7 @@
   margin-bottom: 5px;
   border: none;
   border-radius: 6px;
-  background: linear-gradient(
-    90deg,
-    #008444 0%,
-    rgb(9, 121, 24) 21%,
-    #b89f01 81%,
-    #ffdd00 100%
-  );
+  background: var(--gradient-brand);
 }
 
 .admin-content {
@@ -42,13 +23,18 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 2px 0;
+  padding: 4px 6px;
+  background: var(--color-brand-primary);
+  border-radius: 6px;
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .home-add-booking-btn {
-  background: #ffffff;
-  color: #3174ad;
-  border: 1px solid #3174ad;
+  background: var(--color-surface-paper);
+  color: var(--color-brand-primary);
+  border: 1px solid var(--color-brand-primary);
   border-radius: 4px;
   padding: 2px 6px;
   font-size: 0.75rem;
@@ -57,23 +43,41 @@
 }
 
 .home-add-booking-btn:hover {
-  background: #eaf2fb;
+  background: var(--color-surface-calendar-control);
 }
 
 .home-bookings-sum {
   font-size: 0.75rem;
   line-height: 1.2;
-  color: #ffffff;
+  color: var(--color-text-inverse);
+  background: var(--color-brand-primary);
+  border-radius: 4px;
+  padding: 2px 6px;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.rbc-month-view .rbc-event,
+.rbc-month-view .rbc-background-event {
+  background-color: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+  padding: 0;
+}
+
+.rbc-month-view .rbc-event:focus,
+.rbc-month-view .rbc-background-event:focus {
+  outline: none;
 }
 
 .rbc-toolbar .rbc-btn-group button {
-  background: #e4f3ea;
-  border: 1px solid #b7e0c8;
-  color: #0b5f2a;
+  background: var(--color-surface-calendar-control);
+  border: 1px solid var(--color-border-calendar-control);
+  color: var(--color-brand-primary);
 }
 
 .rbc-toolbar .rbc-btn-group button:hover {
-  background: #d7ecdf;
+  background: var(--color-surface-calendar-control-hover);
 }
 
 .home-rbc-toolbar {
@@ -95,7 +99,7 @@
 }
 
 .home-selected-day {
-  background-color: #f3f3f3;
+  background-color: var(--color-surface-subtle);
 }
 
 .home-floor-toolbar {
@@ -128,14 +132,14 @@
 
 .home-filter-label {
   font-weight: 400;
-  color: #000000;
+  color: var(--color-text-primary);
   margin-left: 5px;
   margin-right: 5px;
 }
 
 .home-mode-toggle {
-  background-color: #008444 !important;
-  color: #ffffff !important;
+  background-color: var(--color-brand-primary) !important;
+  color: var(--color-text-inverse) !important;
   width: 40px;
   height: 40px;
   border-radius: 8px !important;
@@ -149,7 +153,7 @@
 }
 
 .home-mode-toggle:hover {
-  background-color: #006b36 !important;
+  background-color: var(--color-brand-primary-hover-alt) !important;
 }
 
 .home-mode-toggle:focus,
@@ -159,8 +163,8 @@
 }
 
 .home-view-toggle {
-  background-color: #008444 !important;
-  color: #ffffff !important;
+  background-color: var(--color-brand-primary) !important;
+  color: var(--color-text-inverse) !important;
   width: 56px;
   height: 44px;
   border-radius: 12px !important;
@@ -174,7 +178,7 @@
 }
 
 .home-view-toggle:hover {
-  background-color: #006b36 !important;
+  background-color: var(--color-brand-primary-hover-alt) !important;
 }
 
 .home-view-toggle:focus,
@@ -193,7 +197,7 @@
 }
 
 .home-selected-date {
-  color: #000000;
+  color: var(--color-text-primary);
   font-weight: 400;
   margin-right: 20px;
 }
@@ -203,17 +207,17 @@
 }
 
 .home-day-block {
-  border-top: 3px solid #008444;
+  border-top: 3px solid var(--color-brand-primary);
   padding: 10px 0 14px;
 }
 
 .home-day-block:last-child {
-  border-bottom: 3px solid #008444;
+  border-bottom: 3px solid var(--color-brand-primary);
 }
 
 .home-day-block-label {
   font-weight: 400;
-  color: #000000;
+  color: var(--color-text-primary);
   margin-bottom: 8px;
   margin-left: 5px;
 }
@@ -230,26 +234,26 @@
 }
 
 .home-day-event {
-  background-color: #505050;
-  color: #ffffff;
+  background-color: var(--color-text-event-default);
+  color: var(--color-text-inverse);
   border-radius: 8px;
   padding: 4px 6px;
   min-width: 90px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-soft-strong);
 }
 
 .home-day-event--mine {
-  background-color: #3174ad;
+  background-color: var(--color-state-calendar-mine);
 }
 
 .home-day-event--mine-pending {
-  background-color: #f9a825;
-  color: #000000;
+  background-color: var(--color-state-calendar-mine-pending);
+  color: var(--color-text-primary);
 }
 
 .home-day-event--pending-other {
-  background-color: #c9c9c9;
-  color: #1f1f1f;
+  background-color: var(--color-state-calendar-pending-other);
+  color: var(--color-text-muted);
 }
 
 .home-day-event-title {

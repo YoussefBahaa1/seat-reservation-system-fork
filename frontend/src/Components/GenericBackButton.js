@@ -2,6 +2,7 @@ import Button from '@mui/material/Button';
 import { styled } from '@mui/system';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { colorVars } from '../theme';
 
 const GenericBackButton = () => {
     const { t } = useTranslation();
@@ -19,14 +20,14 @@ const GenericBackButton = () => {
     }
 
     const StyledButton = styled(Button)({
-        backgroundColor: '#008444',
-        color: '#fff',
+        backgroundColor: colorVars.brand.primary,
+        color: colorVars.text.inverse,
         position: 'fixed',
         top: '10px',
         right: '10px',
         zIndex: 1300,
         '&:hover': {
-          backgroundColor: '#006633',
+          backgroundColor: colorVars.brand.primaryPressed,
         },
       });
       return (

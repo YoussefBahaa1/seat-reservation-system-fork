@@ -5,6 +5,7 @@ import { getRequest, postRequest } from '../RequestFunctions/RequestFunctions';
 import CreateDatePicker from '../misc/CreateDatePicker';
 import { formatDate_yyyymmdd_to_ddmmyyyy } from '../misc/formatDate';
 import LayoutPage from '../Templates/LayoutPage';
+import { colorVars } from '../../theme';
 
 const Colleagues = () => {
     const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -166,9 +167,9 @@ const Colleagues = () => {
                                   display: 'inline-block',
                                   marginRight: '0.5rem',
                                   padding: '0.4rem 0.6rem',
-                                  border: '1px solid #ccc',
+                                  border: `1px solid ${colorVars.border.muted}`,
                                   borderRadius: '6px',
-                                  backgroundColor: '#f9f9f9',
+                                  backgroundColor: colorVars.surface.panel,
                                   fontSize: '0.9rem',
                                 }}
                               >

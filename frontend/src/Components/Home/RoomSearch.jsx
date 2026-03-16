@@ -6,6 +6,7 @@ import CreateDatePicker from '../misc/CreateDatePicker';
 import CreateTimePicker from '../misc/CreateTimePicker';
 import LayoutPage from '../Templates/LayoutPage';
 import { FaStar, FaRegStar } from 'react-icons/fa';
+import { semanticColors } from '../../theme';
 
 const RoomSearch = () => {
     const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
@@ -206,7 +207,7 @@ const RoomSearch = () => {
                         <IconButton
                           aria-label="favourite"
                           onClick={() => toggleFavourite(room.id)}
-                          sx={{ color: favouriteIds.has(room.id) ? '#ffb300' : '#9e9e9e' }}
+                          sx={{ color: favouriteIds.has(room.id) ? semanticColors.booking.favourite.active : semanticColors.booking.favourite.inactive }}
                         >
                           {favouriteIds.has(room.id) ? <FaStar /> : <FaRegStar />}
                         </IconButton>

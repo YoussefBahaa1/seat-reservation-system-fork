@@ -2,25 +2,26 @@ import { formatDate_yyyymmdd_to_ddmmyyyy } from './formatDate';
 import { postRequest, putRequest, deleteRequest, downloadRequest } from '../RequestFunctions/RequestFunctions';
 import { toast } from 'react-toastify';
 import { confirmAlert } from 'react-confirm-alert';
+import { colorVars } from '../../theme';
 
 const overlapWarningBoxStyles = {
     marginTop: '12px',
     padding: '12px 14px',
     borderRadius: '8px',
-    backgroundColor: '#fff4e5',
-    border: '1px solid #f0b36a',
+    backgroundColor: colorVars.surface.warning,
+    border: `1px solid ${colorVars.border.warning}`,
     textAlign: 'left',
 };
 
 const overlapWarningTitleStyles = {
     margin: '0 0 4px 0',
     fontWeight: 700,
-    color: '#8a3b00',
+    color: colorVars.text.warning,
 };
 
 const overlapWarningTextStyles = {
     margin: 0,
-    color: '#8a3b00',
+    color: colorVars.text.warning,
     lineHeight: 1.4,
 };
 
