@@ -2,6 +2,7 @@ package com.desk_sharing.services;
 
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.entities.VisibilityMode;
+import com.desk_sharing.entities.Role;
 import com.desk_sharing.model.ColleagueBookingsDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
@@ -136,6 +137,38 @@ class BookingServiceColleaguesLookupTest {
 
         assertThat(result).isEmpty();
         verify(bookingRepository, never()).getEveryBookingForEmail("%hidden.user@lit.justiz.sachsen.de%");
+    }
+
+    @Test
+    void adminsCanSeeAnonymousUsers() {
+        Date day = Date.valueOf(LocalDate.of(2026, 2, 24));
+        UserEntity hidden = new UserEntity();
+        hidden.setEmail("hidden.user@lit.justiz.sachsen.de");
+        hidden.setName("Hidden");
+        hidden.setSurname("User");
+        hidden.setVisibilityMode(VisibilityMode.ANONYMOUS);
+
+        UserEntity admin = new UserEntity();
+        Role roleAdmin = new Role();
+        roleAdmin.setName("ROLE_ADMIN");
+        admin.setRoles(List.of(roleAdmin));
+
+        when(userService.getCurrentUser()).thenReturn(admin);
+        when(userService.getAllUsers()).thenReturn(List.of(hidden));
+        when(bookingRepository.getEveryBookingForEmail("%hidden.user@lit.justiz.sachsen.de%"))
+            .thenReturn(List.<Object[]>of(bookingRow(7L, day, "hidden.user@lit.justiz.sachsen.de")));
+
+        List<ColleagueBookingsDTO> result =
+            bookingService.getBookingsFromColleaguesOnDate(
+                List.of("hidden.user@lit.justiz.sachsen.de"),
+                day
+            );
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getEmail()).isEqualTo("hidden.user@lit.justiz.sachsen.de");
+        assertThat(result.get(0).getDisplayName()).isEqualTo("Hidden User");
+        assertThat(result.get(0).getBookings()).hasSize(1);
+        verify(bookingRepository, times(1)).getEveryBookingForEmail("%hidden.user@lit.justiz.sachsen.de%");
     }
 
     private Object[] bookingRow(Long bookingId, Date day, String email) {

@@ -86,6 +86,7 @@ public class BookingService {
         if (searchTerms == null || searchTerms.isEmpty()) {
             return Collections.emptyList();
         }
+        final boolean canSeeAnonymousUsers = currentUserIsAdmin();
 
         final List<UserEntity> safeUsers = Optional.ofNullable(userService.getAllUsers()).orElse(Collections.emptyList());
         final Map<String, UserEntity> usersByNormalizedEmail = safeUsers.stream()
@@ -98,12 +99,17 @@ public class BookingService {
                 LinkedHashMap::new
             ));
 
-        final LinkedHashSet<String> resolvedEmails = resolveSearchTermsToEmails(searchTerms, safeUsers, usersByNormalizedEmail);
+        final LinkedHashSet<String> resolvedEmails = resolveSearchTermsToEmails(
+            searchTerms,
+            safeUsers,
+            usersByNormalizedEmail,
+            canSeeAnonymousUsers
+        );
         final List<ColleagueBookingsDTO> result = new ArrayList<>();
 
         for (final String emailString : resolvedEmails) {
             final UserEntity user = usersByNormalizedEmail.get(normalizeSearchTerm(emailString));
-            if (isAnonymous(user)) {
+            if (!canSeeAnonymousUsers && isAnonymous(user)) {
                 continue;
             }
 
@@ -126,7 +132,8 @@ public class BookingService {
     private LinkedHashSet<String> resolveSearchTermsToEmails(
         final List<String> searchTerms,
         final List<UserEntity> users,
-        final Map<String, UserEntity> usersByNormalizedEmail
+        final Map<String, UserEntity> usersByNormalizedEmail,
+        final boolean canSeeAnonymousUsers
     ) {
         final LinkedHashSet<String> resolvedEmails = new LinkedHashSet<>();
 
@@ -139,7 +146,7 @@ public class BookingService {
             final String compactTerm = compactSearchTerm(term);
 
             final List<String> matchingEmails = users.stream()
-                .filter(user -> !isAnonymous(user))
+                .filter(user -> canSeeAnonymousUsers || !isAnonymous(user))
                 .filter(user -> userMatchesSearchTerm(user, normalizedTerm, compactTerm))
                 .map(UserEntity::getEmail)
                 .filter(Objects::nonNull)
@@ -157,12 +164,21 @@ public class BookingService {
                 final UserEntity mappedUser = usersByNormalizedEmail.get(normalizedTerm);
                 if (mappedUser == null) {
                     resolvedEmails.add(term);
-                } else if (!isAnonymous(mappedUser)) {
+                } else if (canSeeAnonymousUsers || !isAnonymous(mappedUser)) {
                     resolvedEmails.add(mappedUser.getEmail().trim());
                 }
             }
         }
         return resolvedEmails;
+    }
+
+    private boolean currentUserIsAdmin() {
+        try {
+            final UserEntity currentUser = userService.getCurrentUser();
+            return currentUser != null && currentUser.isAdmin();
+        } catch (Exception ex) {
+            return false;
+        }
     }
 
     private boolean userMatchesSearchTerm(final UserEntity user, final String normalizedTerm, final String compactTerm) {
