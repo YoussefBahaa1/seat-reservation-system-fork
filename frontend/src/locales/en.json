@@ -190,7 +190,7 @@
     "continue": "Continue",
     "currentlyBeingBooked": "Currently being booked",
     "bookingLockExpired": "Desk lock expired after 3 minutes. Please select a desk again.",
-    "otherFreeDesksForSelectedTimeSlots": "Other free desks for selected time slots",
+    "otherFreeDesksForSelectedTimeSlots": "Other free desks for {{start}} to {{end}}",
     "noFreeDesksForSelectedTimeSlotInBuilding": "No free desks are available for this time slot in this building.",
     "booked": "Booking saved successfully",
     "scheduledBlockingLabel": "Scheduled Blocking",

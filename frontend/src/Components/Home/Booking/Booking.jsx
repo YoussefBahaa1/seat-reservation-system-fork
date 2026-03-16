@@ -1327,7 +1327,14 @@ const Booking = () => {
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
-            {t('otherFreeDesksForSelectedTimeSlots')}
+            {t('otherFreeDesksForSelectedTimeSlots', {
+              start: pendingSlotSuggestionRef.current?.start
+                ? moment(pendingSlotSuggestionRef.current.start).format('HH:mm')
+                : '--:--',
+              end: pendingSlotSuggestionRef.current?.end
+                ? moment(pendingSlotSuggestionRef.current.end).format('HH:mm')
+                : '--:--',
+            })}
           </Typography>
           <IconButton
             onClick={closeAlternativeDeskDialog}
