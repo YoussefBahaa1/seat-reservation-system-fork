@@ -66,6 +66,7 @@
     "logoutConfirmation": "Are you sure you want to logout?",
     "toLogout": "Logout",
     "cancel": "Cancel",
+    "confirm": "Confirm",
 
     "previousPassword": "Previous Password",
     "newPassword": "New Password",

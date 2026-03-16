@@ -66,6 +66,7 @@
     "logoutConfirmation": "Sind Sie sicher, dass sie sich abmelden wollen?",
     "toLogout": "Abmelden",
     "cancel": "Abbrechen",
+    "confirm": "Bestätigen",
 
     "previousPassword": "Vorheriges Passwort",
     "newPassword": "Neues Passwort",

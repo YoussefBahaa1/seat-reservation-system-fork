@@ -245,7 +245,7 @@ function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBooki
                             onClose();
                         }}
                     >
-                        {t('yes')}
+                        {t('confirm')}
                     </button>
                     <button
                         type='button'
@@ -258,7 +258,7 @@ function bookingPostRequest(name, bookingData, deskRemark, headers, t, postBooki
                             onClose();
                         }}
                     >
-                        {t('no')}
+                        {t('cancel')}
                     </button>
                     <button
                         type='button'
