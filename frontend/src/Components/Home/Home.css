@@ -121,14 +121,19 @@
   align-items: center;
   gap: 16px;
   margin-top: 10px;
+  padding-left: 22px;
+  padding-right: 22px;
+  box-sizing: border-box;
 }
 
 .home-calendar-controls {
   display: flex;
   justify-content: flex-start;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   min-width: 0;
+  width: 100%;
+  flex: 1 1 auto;
 }
 
 .home-filter-label {
@@ -199,7 +204,33 @@
   flex: 0 0 520px;
 }
 
-.home-filter-select .MuiSelect-select {
+.home-filter-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.home-filter-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.home-filter-bar {
+  min-width: 160px;
+  flex: 1 1 180px;
+  max-width: 260px;
+}
+
+.home-filter-bar--building {
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.home-filter-select .MuiSelect-select,
+.home-filter-bar .MuiSelect-select {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -215,7 +246,14 @@
 .home-selected-date {
   color: var(--color-text-primary);
   font-weight: 400;
-  margin-right: 20px;
+  margin-right: 0;
+  margin-left: auto;
+  min-width: 170px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .home-day-events {
@@ -297,7 +335,22 @@
     flex: 1 1 auto;
   }
 
+  .home-filter-row {
+    width: 100%;
+  }
+
+  .home-filter-bar,
+  .home-filter-bar--building {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
   .home-selected-date {
     margin-right: 0;
+    margin-left: 0;
+    align-items: flex-start;
+    text-align: left;
   }
 }
