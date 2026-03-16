@@ -45,6 +45,13 @@ const toFiniteNumber = (value, fallback = Number.MAX_SAFE_INTEGER) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
+const normalizeEquipmentText = (value) => String(value ?? '').trim().toLowerCase();
+const normalizeMonitorCount = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
 const compareRankTuples = (left, right) => {
   for (let i = 0; i < left.length; i += 1) {
     if (left[i] < right[i]) return -1;
@@ -102,6 +109,9 @@ const Booking = () => {
   const [isAlternativeDeskDialogOpen, setIsAlternativeDeskDialogOpen] = useState(false);
   const [isAlternativeDeskDialogLoading, setIsAlternativeDeskDialogLoading] = useState(false);
   const [alternativeDesks, setAlternativeDesks] = useState([]);
+  const [sameEquipmentAlternativeDesks, setSameEquipmentAlternativeDesks] = useState([]);
+  const [preferredAlternativeDesks, setPreferredAlternativeDesks] = useState([]);
+  const [hasFavouriteRooms, setHasFavouriteRooms] = useState(false);
 
   const eventRef = useRef(event);
   const eventsRef = useRef(events);
@@ -357,10 +367,123 @@ const Booking = () => {
       .sort((left, right) => compareRankTuples(rankTupleForDesk(left), rankTupleForDesk(right)));
   }, [clickedDeskId, desks, room]);
 
+  const buildEquipmentProfile = useCallback((desk) => ({
+    ergonomicsHeightAdjustable: desk?.deskHeightAdjustable === true,
+    monitorsQuantity: normalizeMonitorCount(desk?.monitorsQuantity),
+    monitorsSize: normalizeEquipmentText(desk?.monitorsSize),
+    deskType: normalizeEquipmentText(desk?.workstationType),
+    technologyDockingStation: desk?.technologyDockingStation === true,
+    technologyWebcam: desk?.technologyWebcam === true,
+    technologyHeadset: desk?.technologyHeadset === true,
+    specialFeatures: normalizeEquipmentText(desk?.specialFeatures),
+  }), []);
+
+  const isSameEquipmentProfile = useCallback((candidateDesk, selectedProfile) => {
+    if (!selectedProfile) return false;
+    const candidateProfile = buildEquipmentProfile(candidateDesk);
+    return (
+      candidateProfile.ergonomicsHeightAdjustable === selectedProfile.ergonomicsHeightAdjustable &&
+      candidateProfile.monitorsQuantity === selectedProfile.monitorsQuantity &&
+      candidateProfile.monitorsSize === selectedProfile.monitorsSize &&
+      candidateProfile.deskType === selectedProfile.deskType &&
+      candidateProfile.technologyDockingStation === selectedProfile.technologyDockingStation &&
+      candidateProfile.technologyWebcam === selectedProfile.technologyWebcam &&
+      candidateProfile.technologyHeadset === selectedProfile.technologyHeadset &&
+      candidateProfile.specialFeatures === selectedProfile.specialFeatures
+    );
+  }, [buildEquipmentProfile]);
+
+  const loadAlternativeDesksForSlot = useCallback((buildingId, startTime, endTime, selectedProfile) => {
+    postRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/series/desksForBuildingAndDatesAndTimes/${buildingId}`,
+      headers.current,
+      (data) => {
+        const rankedDesks = rankAlternativeDesks(data);
+        const sameEquipmentRanked = rankedDesks.filter((desk) => isSameEquipmentProfile(desk, selectedProfile));
+        setAlternativeDesks(rankedDesks.slice(0, 2));
+        setSameEquipmentAlternativeDesks(sameEquipmentRanked.slice(0, 2));
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+          setHasFavouriteRooms(false);
+          setPreferredAlternativeDesks([]);
+          setIsAlternativeDeskDialogLoading(false);
+          return;
+        }
+        getRequest(
+          `${process.env.REACT_APP_BACKEND_URL}/favourites/${userId}`,
+          headers.current,
+          (favourites) => {
+            const favouriteRoomIds = new Set(
+              (Array.isArray(favourites) ? favourites : [])
+                .map((fav) => fav?.roomId)
+                .filter((roomId) => roomId !== null && roomId !== undefined)
+                .map((roomId) => String(roomId))
+            );
+            setHasFavouriteRooms(favouriteRoomIds.size > 0);
+            setPreferredAlternativeDesks(
+              rankedDesks
+                .filter((desk) => favouriteRoomIds.has(String(desk?.room?.id)))
+                .slice(0, 2)
+            );
+            setIsAlternativeDeskDialogLoading(false);
+          },
+          () => {
+            setHasFavouriteRooms(false);
+            setPreferredAlternativeDesks([]);
+            setIsAlternativeDeskDialogLoading(false);
+          }
+        );
+      },
+      () => {
+        setAlternativeDesks([]);
+        setSameEquipmentAlternativeDesks([]);
+        setPreferredAlternativeDesks([]);
+        setHasFavouriteRooms(false);
+        setIsAlternativeDeskDialogLoading(false);
+        toast.error(t('httpOther'));
+      },
+      JSON.stringify({
+        dates: [moment(startTime).format('YYYY-MM-DD')],
+        startTime: moment(startTime).format('HH:mm'),
+        endTime: moment(endTime).format('HH:mm'),
+      })
+    );
+  }, [isSameEquipmentProfile, rankAlternativeDesks, t]);
+
+  const fetchSelectedDeskProfileAndLoadAlternatives = useCallback((buildingId, startTime, endTime) => {
+    if (!clickedDeskId) {
+      setAlternativeDesks([]);
+      setSameEquipmentAlternativeDesks([]);
+      setPreferredAlternativeDesks([]);
+      setHasFavouriteRooms(false);
+      setIsAlternativeDeskDialogLoading(false);
+      return;
+    }
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/desks/${clickedDeskId}`,
+      headers.current,
+      (selectedDeskFromApi) => {
+        const selectedProfile = buildEquipmentProfile(selectedDeskFromApi);
+        loadAlternativeDesksForSlot(buildingId, startTime, endTime, selectedProfile);
+      },
+      () => {
+        setAlternativeDesks([]);
+        setSameEquipmentAlternativeDesks([]);
+        setPreferredAlternativeDesks([]);
+        setHasFavouriteRooms(false);
+        setIsAlternativeDeskDialogLoading(false);
+        toast.error(t('httpOther'));
+      }
+    );
+  }, [buildEquipmentProfile, clickedDeskId, loadAlternativeDesksForSlot, t]);
+
   const closeAlternativeDeskDialog = useCallback(() => {
     setIsAlternativeDeskDialogOpen(false);
     setIsAlternativeDeskDialogLoading(false);
     setAlternativeDesks([]);
+    setSameEquipmentAlternativeDesks([]);
+    setPreferredAlternativeDesks([]);
+    setHasFavouriteRooms(false);
     pendingSlotSuggestionRef.current = null;
   }, []);
 
@@ -371,6 +494,9 @@ const Booking = () => {
     pendingSlotSuggestionRef.current = { start: new Date(startTime), end: new Date(endTime) };
     setIsAlternativeDeskDialogOpen(true);
     setAlternativeDesks([]);
+    setSameEquipmentAlternativeDesks([]);
+    setPreferredAlternativeDesks([]);
+    setHasFavouriteRooms(false);
 
     if (!buildingId) {
       setIsAlternativeDeskDialogLoading(false);
@@ -378,26 +504,8 @@ const Booking = () => {
     }
 
     setIsAlternativeDeskDialogLoading(true);
-    postRequest(
-      `${process.env.REACT_APP_BACKEND_URL}/series/desksForBuildingAndDatesAndTimes/${buildingId}`,
-      headers.current,
-      (data) => {
-        const rankedDesks = rankAlternativeDesks(data).slice(0, 5);
-        setAlternativeDesks(rankedDesks);
-        setIsAlternativeDeskDialogLoading(false);
-      },
-      () => {
-        setAlternativeDesks([]);
-        setIsAlternativeDeskDialogLoading(false);
-        toast.error(t('httpOther'));
-      },
-      JSON.stringify({
-        dates: [moment(startTime).format('YYYY-MM-DD')],
-        startTime: moment(startTime).format('HH:mm'),
-        endTime: moment(endTime).format('HH:mm'),
-      })
-    );
-  }, [clickedDeskId, desks, rankAlternativeDesks, room, t]);
+    fetchSelectedDeskProfileAndLoadAlternatives(buildingId, startTime, endTime);
+  }, [clickedDeskId, desks, fetchSelectedDeskProfileAndLoadAlternatives, room]);
 
   const handleAlternativeDeskSelection = useCallback((desk) => {
     if (bookingPendingRef.current) return;
@@ -1347,15 +1455,64 @@ const Booking = () => {
         <DialogContent dividers>
           {isAlternativeDeskDialogLoading ? (
             <Typography>{t('loading')}</Typography>
-          ) : alternativeDesks.length > 0 ? (
-            <DeskTable
-              name="booking_alternative_desks"
-              desks={alternativeDesks}
-              submit_function={handleAlternativeDeskSelection}
-              submitLabelKey="book"
-            />
           ) : (
-            <Typography>{t('noFreeDesksForSelectedTimeSlotInBuilding')}</Typography>
+            <>
+              {alternativeDesks.length > 0 ? (
+                <DeskTable
+                  name="booking_alternative_desks"
+                  desks={alternativeDesks}
+                  submit_function={handleAlternativeDeskSelection}
+                  hideHeader
+                  submitLabelKey="book"
+                />
+              ) : (
+                <Typography>{t('noFreeDesksForSelectedTimeSlotInBuilding')}</Typography>
+              )}
+              <Typography variant="h6" sx={{ mt: 2, mb: 1, fontWeight: 600 }}>
+                {t('otherDesksWithSameEquipementForSelectedTimeSlots', {
+                  start: pendingSlotSuggestionRef.current?.start
+                    ? moment(pendingSlotSuggestionRef.current.start).format('HH:mm')
+                    : '--:--',
+                  end: pendingSlotSuggestionRef.current?.end
+                    ? moment(pendingSlotSuggestionRef.current.end).format('HH:mm')
+                    : '--:--',
+                })}
+              </Typography>
+              {sameEquipmentAlternativeDesks.length > 0 ? (
+                <DeskTable
+                  name="booking_alternative_desks_same_equipment"
+                  desks={sameEquipmentAlternativeDesks}
+                  submit_function={handleAlternativeDeskSelection}
+                  hideHeader
+                  submitLabelKey="book"
+                />
+              ) : (
+                <Typography>{t('noFreeDesksWithSameEquipmentForSelectedTimeSlotInBuilding')}</Typography>
+              )}
+              <Typography variant="h6" sx={{ mt: 2, mb: 1, fontWeight: 600 }}>
+                {t('closestPreferredDesksForSelectedTimeSlots', {
+                  start: pendingSlotSuggestionRef.current?.start
+                    ? moment(pendingSlotSuggestionRef.current.start).format('HH:mm')
+                    : '--:--',
+                  end: pendingSlotSuggestionRef.current?.end
+                    ? moment(pendingSlotSuggestionRef.current.end).format('HH:mm')
+                    : '--:--',
+                })}
+              </Typography>
+              {!hasFavouriteRooms ? (
+                <Typography>{t('noFavoriteRooms')}</Typography>
+              ) : preferredAlternativeDesks.length > 0 ? (
+                <DeskTable
+                  name="booking_alternative_desks_preferred"
+                  desks={preferredAlternativeDesks}
+                  submit_function={handleAlternativeDeskSelection}
+                  hideHeader
+                  submitLabelKey="book"
+                />
+              ) : (
+                <Typography>{t('noFreeDesksInFavoriteRoomsForSelectedTimeSlot')}</Typography>
+              )}
+            </>
           )}
         </DialogContent>
       </Dialog>
