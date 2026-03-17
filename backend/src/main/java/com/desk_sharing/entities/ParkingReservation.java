@@ -52,4 +52,7 @@ public class ParkingReservation {
 
     @Column(name = "request_locale", length = 10)
     private String requestLocale;
+
+    @Column(name = "justification", length = 500)
+    private String justification;
 }

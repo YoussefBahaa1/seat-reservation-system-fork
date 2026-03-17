@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { getRequest, postRequest } from '../../RequestFunctions/RequestFunctions';
 import { formatDate_yyyymmdd_to_ddmmyyyy } from '../../misc/formatDate';
 import BookingFilters, { getBookingFilterFields } from './BookingFilters';
+import JustificationDialog from './JustificationDialog';
 
 const formatRoleName = (roleName) => {
   if (!roleName) return '-';
@@ -91,6 +92,8 @@ const ParkingRequestsView = ({ onChanged }) => {
   const [filters, setFilters] = useState({});
   const [actionInFlightIds, setActionInFlightIds] = useState(new Set());
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [selectedJustification, setSelectedJustification] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
   const requestFilterFields = useMemo(() => getBookingFilterFields('parkings'), []);
 
   const loadPending = useCallback(() => {
@@ -246,6 +249,7 @@ const ParkingRequestsView = ({ onChanged }) => {
                   <TableCell>{t('filterRole')}</TableCell>
                   <TableCell>{t('filterDepartment')}</TableCell>
                   <TableCell>{t('spotNumber')}</TableCell>
+                  <TableCell>{t('justification')}</TableCell>
                   <TableCell>{t('action')}</TableCell>
                 </TableRow>
               </TableHead>
@@ -260,6 +264,20 @@ const ParkingRequestsView = ({ onChanged }) => {
                     <TableCell>{formatRoleName(row.roleName)}</TableCell>
                     <TableCell>{row.department || '-'}</TableCell>
                     <TableCell>{row.spotLabel}</TableCell>
+                    <TableCell>
+                      {row.justification ? (
+                        <Button
+                          size="small"
+                          variant="text"
+                          onClick={() => {
+                            setSelectedJustification(row.justification);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          {t('viewJustification')}
+                        </Button>
+                      ) : '-'}
+                    </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         {(() => {
@@ -294,6 +312,11 @@ const ParkingRequestsView = ({ onChanged }) => {
               </TableBody>
             </Table>
           </TableContainer>
+          <JustificationDialog
+            open={dialogOpen}
+            onClose={() => setDialogOpen(false)}
+            justification={selectedJustification}
+          />
         </>
       )}
     </Box>

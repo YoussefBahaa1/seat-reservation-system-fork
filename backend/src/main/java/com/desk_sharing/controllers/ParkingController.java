@@ -48,7 +48,13 @@ public class ParkingController {
 
     @PostMapping("/reservations")
     public ResponseEntity<ParkingReservation> reserve(@RequestBody ParkingReservationRequestDTO request) {
-        logger.info("parkingReserve( {} )", request);
+        logger.info(
+            "parkingReserve( spotLabel={}, day={}, begin={}, end={} )",
+            request == null ? null : request.getSpotLabel(),
+            request == null ? null : request.getDay(),
+            request == null ? null : request.getBegin(),
+            request == null ? null : request.getEnd()
+        );
         return new ResponseEntity<>(parkingReservationService.createReservation(request), HttpStatus.CREATED);
     }
 

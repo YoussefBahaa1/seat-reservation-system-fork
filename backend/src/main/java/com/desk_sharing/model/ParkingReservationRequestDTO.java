@@ -9,4 +9,5 @@ public class ParkingReservationRequestDTO {
     private String begin; // hh:mm:ss
     private String end; // hh:mm:ss
     private String locale; // optional UI locale tag (e.g., de-DE)
+    private String justification;
 }
