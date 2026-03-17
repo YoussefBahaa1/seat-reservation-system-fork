@@ -1,13 +1,21 @@
 import { FormControl, TextField } from '@mui/material';
 
-const CreateTimePicker = ({time, setter, label, disabledFunc=()=>{return false}, stepSeconds=1}) => {
+const CreateTimePicker = ({
+    time,
+    setter,
+    label,
+    disabledFunc=()=>{return false},
+    stepSeconds=1,
+    required=true,
+    size='medium',
+}) => {
     return (
-        <FormControl id='createTimePicker_textField' required fullWidth>
+        <FormControl id='createTimePicker_textField' required={required} fullWidth>
         <TextField
             disabled={disabledFunc()}
             label={label}
             type="time"                   // Native HTML5 time picker
-            value={time}
+            value={time || ''}
             onChange={(e) => setter(e.target.value)}
             InputLabelProps={{
                 shrink: true,             // Keeps label in place when time is selected
@@ -16,8 +24,9 @@ const CreateTimePicker = ({time, setter, label, disabledFunc=()=>{return false},
                 step: stepSeconds,
             }}
             variant="outlined"
+            size={size}
             fullWidth
-            required
+            required={required}
         />
         </FormControl>
     )

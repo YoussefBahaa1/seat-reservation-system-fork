@@ -44,7 +44,7 @@
     "you": "Du",
     "visibilityHelper": "Wählen Sie aus, wie Ihr Name anderen Nutzern angezeigt wird.",
     "favourites": "Favoriten",
-    "favouritesHelper": "Speichere häufig genutzte Räume. Klick zum Buchen; Stern zum Entfernen.",
+    "favouritesHelper": "Speichere häufig genutzte Räume und Parkplätze. Optional kannst du Datum und Zeitraum wählen, um die Verfügbarkeit vor dem Öffnen der Buchungsansicht zu sehen.",
     "addFavourite": "Zu Favoriten hinzugefügt",
     "removeFavourite": "Aus Favoriten entfernt",
     "favouritesEmpty": "Noch keine Favoriten. Markiere einen Raum mit dem Stern.",
@@ -53,6 +53,9 @@
     "rooms": "Räume",
     "parking": "Parken",
     "parkingComingSoon": "Parkplatz-Favoriten folgen bald.",
+    "favouritesParkingEmpty": "Du hast noch keine Parkplatz-Favoriten. Markiere einen Parkplatz mit dem Stern.",
+    "favouritesAvailable": "Verfügbar",
+    "favouritesUnavailable": "Belegt",
     "loading": "Lade",
     "roomSection": "Räume",
     "parkingSection": "Parkplätze (bald verfügbar)",
@@ -411,6 +414,7 @@
     ,"carparkTypeStall":"Markierter Platz"
     ,"carparkTypeEmpty":"Unmarkierter Platz"
     ,"carparkStandard":"Standard"
+    ,"carparkAccessible":"Barrierefrei"
     ,"carparkSpecialCase":"Sonderfall"
     ,"carparkContactStaff":"Bitte wenden Sie sich an das Personal, um diesen Platz zu reservieren."
     ,"carparkReserve":"Reservieren"

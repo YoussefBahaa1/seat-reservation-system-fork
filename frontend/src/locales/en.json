@@ -44,7 +44,7 @@
     "you": "You",
     "visibilityHelper": "Choose how your name is shown to other users.",
     "favourites": "Favourites",
-    "favouritesHelper": "Save rooms you book often. Click to open booking; unstar to remove.",
+    "favouritesHelper": "Save rooms and parking spots you use often. Optionally select a date and time range to see availability before opening the booking screen.",
     "addFavourite": "Added to favourites",
     "removeFavourite": "Removed from favourites",
     "favouritesEmpty": "You have no favourites yet. Star a room to save it.",
@@ -53,6 +53,9 @@
     "rooms": "Rooms",
     "parking": "Parking",
     "parkingComingSoon": "Parking favourites coming soon.",
+    "favouritesParkingEmpty": "You have no parking favourites yet. Star a parking spot to save it.",
+    "favouritesAvailable": "Available",
+    "favouritesUnavailable": "Occupied",
     "loading": "Loading",
     "roomSection": "Rooms",
     "parkingSection": "Parking (coming soon)",
@@ -410,6 +413,7 @@
     ,"carparkTypeStall":"Marked spot"
     ,"carparkTypeEmpty":"Unmarked spot"
     ,"carparkStandard":"Standard"
+    ,"carparkAccessible":"Accessible"
     ,"carparkSpecialCase":"Special case"
     ,"carparkContactStaff":"Contact staff to reserve this spot."
     ,"carparkReserve":"Reserve"

@@ -6,6 +6,9 @@ function clearAuthStorage() {
   try {
     sessionStorage.removeItem('freeDesksAdvancedFilters');
     sessionStorage.removeItem('freeDesksSelectedBuilding');
+    sessionStorage.removeItem('favouritesSelectedDate');
+    sessionStorage.removeItem('favouritesStartTime');
+    sessionStorage.removeItem('favouritesEndTime');
     sessionStorage.removeItem('headers');
     sessionStorage.removeItem('accessToken');
   } catch {
