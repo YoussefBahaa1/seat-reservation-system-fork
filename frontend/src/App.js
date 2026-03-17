@@ -19,7 +19,6 @@ import FreeDesks from './Components/Home/FreeDesks';
 import RoomSearch from './Components/Home/RoomSearch';
 import Colleagues from './Components/Home/Colleagues';
 import Favourites from './Components/Home/Favourites';
-import SupportContacts from './Components/Home/SupportContacts';
 import JwtHeartbeat from './Components/misc/JwtHearbeat';
 import CarparkOverview from './Components/Carpark/CarparkOverview';
 import DefectDashboard from './Components/Defects/DefectDashboard';
@@ -81,7 +80,6 @@ function AppRoutes() {
         <Route path='/freedesks' element={isAuthenticated ? <FreeDesks /> : <Navigate to="/" replace />} />
         <Route path='/roomSearch' element={isAuthenticated ? <RoomSearch /> : <Navigate to="/" replace />} />
         <Route path='/colleagues' element={isAuthenticated ? <Colleagues /> : <Navigate to="/" replace />} />
-        <Route path='/supportContacts' element={isAuthenticated ? <SupportContacts /> : <Navigate to="/" replace />} />
         <Route path="/carpark" element={isAuthenticated ? <CarparkOverview /> : <Navigate to="/" replace />} />
         <Route path="/favourites" element={isAuthenticated ? <Favourites /> : <Navigate to="/" replace />} />
         <Route

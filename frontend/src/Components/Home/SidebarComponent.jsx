@@ -23,10 +23,24 @@ import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { AiOutlineTeam } from "react-icons/ai";
 import { MdLocalParking, MdSupportAgent, MdBuild } from 'react-icons/md';
 import { IoMdNotifications } from 'react-icons/io';
+import { Box, Divider, Typography } from '@mui/material';
 import Defaults from "./Defaults";
 import VisibilityPreferences from "./VisibilityPreferences";
 import { putRequest } from "../RequestFunctions/RequestFunctions";
 import { colorVars } from '../../theme';
+
+const supportContacts = [
+  {
+    id: 'admin',
+    email: process.env.REACT_APP_SUPPORT_ADMIN_EMAIL || 'test.admin@mail.de',
+    phone: process.env.REACT_APP_SUPPORT_ADMIN_PHONE || '000 000 000',
+  },
+  {
+    id: 'service',
+    email: process.env.REACT_APP_SUPPORT_SERVICE_EMAIL || 'test.servicepersonnel@mail.de',
+    phone: process.env.REACT_APP_SUPPORT_SERVICE_PHONE || '111 111 111',
+  },
+];
 
 const SidebarComponent = () => {
   const { t, i18n } = useTranslation();
@@ -82,9 +96,6 @@ const SidebarComponent = () => {
     }
     if (location.pathname === '/carpark') {
       setActiveTab('carpark');
-    }
-    if (location.pathname === '/supportContacts') {
-      setActiveTab('supportContacts');
     }
     if (location.pathname === '/defects') {
       setActiveTab('defects');
@@ -176,10 +187,6 @@ const SidebarComponent = () => {
       case 'carpark':
         navigate("/carpark", { replace: true });
         break;
-      case 'supportContacts':
-        navigate("/supportContacts", { replace: true });
-        break;
-
       case 'defects':
         navigate("/defects", { replace: true });
         break;
@@ -249,8 +256,24 @@ const SidebarComponent = () => {
         collapsed={collapsed}
         backgroundColor={colorVars.brand.primary}
         width={collapsed ? '80px' : '210px'}
+        rootStyles={{
+          position: 'relative',
+          zIndex: 1300,
+          '& .ps-sidebar-container': {
+            overflow: 'visible',
+          },
+          '& .ps-menu-root': {
+            overflow: 'visible',
+          },
+          '& .ps-submenu-content': {
+            zIndex: 1301,
+          },
+        }}
         style={{
           height: '100vh',
+          position: 'relative',
+          zIndex: 1300,
+          overflow: 'visible',
           [`&.active`]: {
             backgroundColor: colorVars.brand.sidebarActive,
             color: colorVars.brand.sidebarActiveText,
@@ -258,192 +281,210 @@ const SidebarComponent = () => {
           },
         }}
       >
-        <Menu
-          menuItemStyles={{
-            button: ({ level, active }) => {
-              if (level === 0)
-                return {
-                  backgroundColor: active ? colorVars.brand.accent : undefined,
-                };
-            },
-          }}
-        >
-          <MenuItem
-            id='sidebar_collapse'
-            active={activeTab === 'collapse'}
-            icon={<BsList />}
-            onClick={() => handleClick('collapse')}
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Menu
+            menuItemStyles={{
+              button: ({ level, active }) => {
+                if (level === 0)
+                  return {
+                    backgroundColor: active ? colorVars.brand.accent : undefined,
+                  };
+              },
+            }}
           >
-            {localStorage.getItem("name") ? `${t("hello")}, ${localStorage.getItem("name")}` : `${t("hello")}!`}
-          </MenuItem>
-          {localStorage.getItem("admin") === 'true' && (
-            <SubMenu
-              id='sidebar_admin0'
-              icon={<RiAdminFill />}
-              label={t('admin')}
-              active={activeTab.startsWith('admin')}
-              open={isAdminSubMenuOpen}
-              onOpenChange={setIsAdminSubMenuOpen}
-            >
-              <MenuItem
-                id='sidebar_admin_userManagement'
-                active={activeTab === 'adminUserManagement'}
-                icon={<FaAddressBook />}
-                onClick={() => handleClick('adminUserManagement')}
-              >
-                {t('userManagement')}
-              </MenuItem>
-              <MenuItem
-                id='sidebar_admin_roomManagement'
-                active={activeTab === 'adminRoomManagement'}
-                icon={<FaPlusMinus />}
-                onClick={() => handleClick('adminRoomManagement')}
-              >
-                {t('roomManagement')}
-              </MenuItem>
-              <MenuItem
-                id='sidebar_admin_bookingManagement'
-                active={activeTab === 'adminBookingManagement'}
-                icon={<FaBook />}
-                onClick={() => handleClick('adminBookingManagement')}
-              >
-                {t('bookingManagement')}
-              </MenuItem>
-              <MenuItem
-                id='sidebar_admin_bookingSettings'
-                active={activeTab === 'adminBookingSettings'}
-                icon={<FaCog />}
-                onClick={() => handleClick('adminBookingSettings')}
-              >
-                {t('bookingSettings')}
-              </MenuItem>
-            </SubMenu>
-          )}
-          {(localStorage.getItem("admin") === 'true' || localStorage.getItem("servicePersonnel") === 'true') && (
             <MenuItem
-              id='sidebar_defects'
-              active={activeTab === "defects"}
-              icon={<MdBuild />}
-              onClick={() => handleClick("defects")}
+              id='sidebar_collapse'
+              active={activeTab === 'collapse'}
+              icon={<BsList />}
+              onClick={() => handleClick('collapse')}
             >
-              {t("defects")}
-            </MenuItem>
-          )}
-          <MenuItem
-            id='sidebar_calendar'
-            active={activeTab === "calendar"}
-            icon={<IoCalendarNumberOutline />}
-            onClick={() => handleClick("calendar")}
-          >
-            {t("home")}
-          </MenuItem>
-          <MenuItem
-            id='sidebar_bookings'
-            active={activeTab === 'bookings'}
-            icon={<FaBookmark />}
-            onClick={() => handleClick('bookings')}
-          >
-
-            {t('bookings')}
-          </MenuItem>
-
-          <MenuItem
-            id='sidebar_favourites'
-            active={activeTab === 'favourites'}
-            icon={<FaStar />}
-            onClick={() => handleClick('favourites')}
-          >
-            {t('favourites')}
-          </MenuItem>
-
-          {/*Series*/}
-          <SubMenu active={activeTab === 'series'} icon={<IoIosAlbums />} label={t('series')}>
-            <MenuItem id='sidebar_manageseries' icon={<IoIosAlbums />} onClick={() => {navigate('/manageseries', { replace: true });}}>
-              {t('manage')}
-            </MenuItem>
-            <MenuItem id='sidebar_createseries' icon={<AiFillPlusCircle />} onClick={() => {navigate('/createseries', { replace: true });}}>
-              {t('create')}
-            </MenuItem>
-          </SubMenu> 
-
-          {/*Search*/}
-          <SubMenu id='sidebar_search0' icon={<IoSearchSharp />}  label={t('search')}>
-            <MenuItem id='sidebar_search' icon={<MeetingRoomIcon/>} onClick={
-              () => handleClick('roomSearch')}
-            >
-              {t('room')}
-            </MenuItem>
-            <MenuItem
-              id='sidebar_freeDesks'
-              active={activeTab === 'freeDesks'}
-              icon={<LaptopIcon />}
-              onClick={() => handleClick('freeDesks')}
-            >
-              {t('workstations')}
-            </MenuItem>
-            <MenuItem id='sidebar_colleagues' icon={<AiOutlineTeam />} onClick={() => handleClick('colleagues')}>
-              {t('colleagues')}
-            </MenuItem>
-            <MenuItem
-              id='sidebar_supportContacts'
-              active={activeTab === 'supportContacts'}
-              icon={<MdSupportAgent />}
-              onClick={() => handleClick('supportContacts')}
-            >
-              {t('supportContacts')}
-            </MenuItem>
-            <MenuItem
-              id='sidebar_carpark'
-              active={activeTab === 'carpark'}
-              icon={<MdLocalParking />}
-              onClick={() => handleClick('carpark')}
-            >
-              {t('carpark')}
-            </MenuItem>
-          </SubMenu>
-          
-          {/*Settings*/}
-          <SubMenu id='sidebar_settings0' icon={<IoIosSettings/>} label={t('settings')}>
-            <MenuItem
-              id='sidebar_language'
-              icon={<MdGTranslate />}
-              onClick={() => handleClick("language")}
-            >
-              {i18n.language === "en" ? "Deutsch" : "English"}
-            </MenuItem>
-
-              <MenuItem 
-                id='sidebar_defaults' 
-                icon={<HiOutlineSparkles />} onClick={
-                () => handleClick('defaults')}>
-                  {t('defaults')}
-              </MenuItem>
-              <MenuItem 
-                id='sidebar_visibility' 
-                icon={<MdVisibility />} onClick={
-                () => handleClick('visibilityPrefs')}>
-                  {t('visibility')}
-              </MenuItem>
-            <MenuItem
-              id='sidebar_notifications'
-              icon={<IoMdNotifications />}
-              style={{ fontSize: '16px', fontWeight: 500 }}
-              onClick={() => handleClick('notifications')}
-            >
-              {t('notifications')}
-            </MenuItem>
-            <MenuItem id='sidebar_changePassword' icon={<FaLock/>} onClick={() => handleClick('changePassword')}>
-              {t('password')}
+              {localStorage.getItem("name") ? `${t("hello")}, ${localStorage.getItem("name")}` : `${t("hello")}!`}
             </MenuItem>
             {localStorage.getItem("admin") === 'true' && (
-              <MenuItem id='sidebar_mfaSettings' icon={<MdSecurity/>} onClick={() => handleClick('mfaSettings')}>
-                {t('mfaSettings')}
+              <SubMenu
+                id='sidebar_admin0'
+                icon={<RiAdminFill />}
+                label={t('admin')}
+                active={activeTab.startsWith('admin')}
+                open={isAdminSubMenuOpen}
+                onOpenChange={setIsAdminSubMenuOpen}
+              >
+                <MenuItem
+                  id='sidebar_admin_userManagement'
+                  active={activeTab === 'adminUserManagement'}
+                  icon={<FaAddressBook />}
+                  onClick={() => handleClick('adminUserManagement')}
+                >
+                  {t('userManagement')}
+                </MenuItem>
+                <MenuItem
+                  id='sidebar_admin_roomManagement'
+                  active={activeTab === 'adminRoomManagement'}
+                  icon={<FaPlusMinus />}
+                  onClick={() => handleClick('adminRoomManagement')}
+                >
+                  {t('roomManagement')}
+                </MenuItem>
+                <MenuItem
+                  id='sidebar_admin_bookingManagement'
+                  active={activeTab === 'adminBookingManagement'}
+                  icon={<FaBook />}
+                  onClick={() => handleClick('adminBookingManagement')}
+                >
+                  {t('bookingManagement')}
+                </MenuItem>
+                <MenuItem
+                  id='sidebar_admin_bookingSettings'
+                  active={activeTab === 'adminBookingSettings'}
+                  icon={<FaCog />}
+                  onClick={() => handleClick('adminBookingSettings')}
+                >
+                  {t('bookingSettings')}
+                </MenuItem>
+              </SubMenu>
+            )}
+            {(localStorage.getItem("admin") === 'true' || localStorage.getItem("servicePersonnel") === 'true') && (
+              <MenuItem
+                id='sidebar_defects'
+                active={activeTab === "defects"}
+                icon={<MdBuild />}
+                onClick={() => handleClick("defects")}
+              >
+                {t("defects")}
               </MenuItem>
             )}
-          </SubMenu>
-          
-          <MenuItem id='sidebar_logout' icon={<CiLogout />} onClick={() => handleClick('logout')}>{t('logout')}</MenuItem>
-        </Menu>
+            <MenuItem
+              id='sidebar_calendar'
+              active={activeTab === "calendar"}
+              icon={<IoCalendarNumberOutline />}
+              onClick={() => handleClick("calendar")}
+            >
+              {t("home")}
+            </MenuItem>
+            <MenuItem
+              id='sidebar_bookings'
+              active={activeTab === 'bookings'}
+              icon={<FaBookmark />}
+              onClick={() => handleClick('bookings')}
+            >
+
+              {t('bookings')}
+            </MenuItem>
+
+            <MenuItem
+              id='sidebar_favourites'
+              active={activeTab === 'favourites'}
+              icon={<FaStar />}
+              onClick={() => handleClick('favourites')}
+            >
+              {t('favourites')}
+            </MenuItem>
+
+            {/*Series*/}
+            <SubMenu active={activeTab === 'series'} icon={<IoIosAlbums />} label={t('series')}>
+              <MenuItem id='sidebar_manageseries' icon={<IoIosAlbums />} onClick={() => {navigate('/manageseries', { replace: true });}}>
+                {t('manage')}
+              </MenuItem>
+              <MenuItem id='sidebar_createseries' icon={<AiFillPlusCircle />} onClick={() => {navigate('/createseries', { replace: true });}}>
+                {t('create')}
+              </MenuItem>
+            </SubMenu>
+
+            {/*Search*/}
+            <SubMenu id='sidebar_search0' icon={<IoSearchSharp />}  label={t('search')}>
+              <MenuItem id='sidebar_search' icon={<MeetingRoomIcon/>} onClick={
+                () => handleClick('roomSearch')}
+              >
+                {t('room')}
+              </MenuItem>
+              <MenuItem
+                id='sidebar_freeDesks'
+                active={activeTab === 'freeDesks'}
+                icon={<LaptopIcon />}
+                onClick={() => handleClick('freeDesks')}
+              >
+                {t('workstations')}
+              </MenuItem>
+              <MenuItem id='sidebar_colleagues' icon={<AiOutlineTeam />} onClick={() => handleClick('colleagues')}>
+                {t('colleagues')}
+              </MenuItem>
+              <MenuItem
+                id='sidebar_carpark'
+                active={activeTab === 'carpark'}
+                icon={<MdLocalParking />}
+                onClick={() => handleClick('carpark')}
+              >
+                {t('carpark')}
+              </MenuItem>
+            </SubMenu>
+
+            {/*Settings*/}
+            <SubMenu id='sidebar_settings0' icon={<IoIosSettings/>} label={t('settings')}>
+              <MenuItem
+                id='sidebar_language'
+                icon={<MdGTranslate />}
+                onClick={() => handleClick("language")}
+              >
+                {i18n.language === "en" ? "Deutsch" : "English"}
+              </MenuItem>
+
+                <MenuItem
+                  id='sidebar_defaults'
+                  icon={<HiOutlineSparkles />} onClick={
+                  () => handleClick('defaults')}>
+                    {t('defaults')}
+                </MenuItem>
+                <MenuItem
+                  id='sidebar_visibility'
+                  icon={<MdVisibility />} onClick={
+                  () => handleClick('visibilityPrefs')}>
+                    {t('visibility')}
+                </MenuItem>
+              <MenuItem
+                id='sidebar_notifications'
+                icon={<IoMdNotifications />}
+                style={{ fontSize: '16px', fontWeight: 500 }}
+                onClick={() => handleClick('notifications')}
+              >
+                {t('notifications')}
+              </MenuItem>
+              <MenuItem id='sidebar_changePassword' icon={<FaLock/>} onClick={() => handleClick('changePassword')}>
+                {t('password')}
+              </MenuItem>
+              {localStorage.getItem("admin") === 'true' && (
+                <MenuItem id='sidebar_mfaSettings' icon={<MdSecurity/>} onClick={() => handleClick('mfaSettings')}>
+                  {t('mfaSettings')}
+                </MenuItem>
+              )}
+            </SubMenu>
+
+            <MenuItem id='sidebar_logout' icon={<CiLogout />} onClick={() => handleClick('logout')}>{t('logout')}</MenuItem>
+          </Menu>
+          <Box sx={{ mt: 'auto', px: collapsed ? 1 : 1.5, py: 1.5, color: colorVars.text.inverse }}>
+            <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)', mb: 1.5 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: collapsed ? 'center' : 'flex-start', mb: collapsed ? 0 : 1 }}>
+              <MdSupportAgent size={18} />
+              {!collapsed && (
+                <Typography variant="subtitle2" sx={{ color: 'inherit', fontWeight: 700 }}>
+                  {t('supportContacts')}
+                </Typography>
+              )}
+            </Box>
+            {!collapsed && supportContacts.map((contact) => (
+              <Box key={contact.id} sx={{ mb: 1.25 }}>
+                <Typography variant="caption" sx={{ display: 'block', color: 'inherit', fontWeight: 700 }}>
+                  {contact.id === 'admin' ? t('supportContactAdmin') : t('supportContactService')}
+                </Typography>
+                <Typography variant="caption" sx={{ display: 'block', color: 'inherit', opacity: 0.92, wordBreak: 'break-word' }}>
+                  {t('supportEmail')}: {contact.email}
+                </Typography>
+                <Typography variant="caption" sx={{ display: 'block', color: 'inherit', opacity: 0.92 }}>
+                  {t('supportPhone')}: {contact.phone}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
       </Sidebar>
 
       <Defaults 
