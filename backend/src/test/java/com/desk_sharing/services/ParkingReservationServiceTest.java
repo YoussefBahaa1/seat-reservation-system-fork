@@ -69,6 +69,7 @@ class ParkingReservationServiceTest {
         request.setDay(day.toString());
         request.setBegin("10:00");
         request.setEnd("11:00");
+        request.setJustification("Valid parking justification text.");
 
         when(parkingSpotRepository.findById("1")).thenReturn(java.util.Optional.of(activeSpot("1")));
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("1"), any(Time.class), any(Time.class)))
@@ -107,6 +108,7 @@ class ParkingReservationServiceTest {
         request.setDay(day.toString());
         request.setBegin("10:00");
         request.setEnd("11:00");
+        request.setJustification("Valid parking justification text.");
 
         when(parkingSpotRepository.findById("2")).thenReturn(java.util.Optional.of(activeSpot("2")));
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("2"), any(Time.class), any(Time.class)))
@@ -132,6 +134,7 @@ class ParkingReservationServiceTest {
         // This interval is only in the 30-minute post-buffer of an existing 10:00-12:00 booking.
         request.setBegin("12:00");
         request.setEnd("12:30");
+        request.setJustification("Valid parking justification text.");
 
         ParkingReservation existing = new ParkingReservation();
         existing.setId(900L);
@@ -571,6 +574,7 @@ class ParkingReservationServiceTest {
         request.setDay(LocalDate.now().plusDays(1).toString());
         request.setBegin("10:00");
         request.setEnd("11:00");
+        request.setJustification("Valid parking justification text.");
 
         when(parkingSpotRepository.findById("404")).thenReturn(java.util.Optional.empty());
 
@@ -593,6 +597,7 @@ class ParkingReservationServiceTest {
         request.setDay(LocalDate.now().plusDays(1).toString());
         request.setBegin("10:00");
         request.setEnd("11:00");
+        request.setJustification("Valid parking justification text.");
 
         assertThatThrownBy(() -> service.createReservation(request))
             .isInstanceOf(ResponseStatusException.class)
@@ -616,6 +621,7 @@ class ParkingReservationServiceTest {
         request.setDay(LocalDate.now().plusDays(1).toString());
         request.setBegin("10:00");
         request.setEnd("11:00");
+        request.setJustification("Valid parking justification text.");
 
         assertThatThrownBy(() -> service.createReservation(request))
             .isInstanceOf(ResponseStatusException.class)
@@ -635,6 +641,7 @@ class ParkingReservationServiceTest {
         request.setBegin("10:00");
         request.setEnd("11:00");
         request.setLocale("de-DE");
+        request.setJustification("Valid parking justification text.");
 
         when(parkingSpotRepository.findById("2")).thenReturn(java.util.Optional.of(activeSpot("2")));
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("2"), any(Time.class), any(Time.class)))
@@ -660,6 +667,7 @@ class ParkingReservationServiceTest {
         request.setBegin("10:00");
         request.setEnd("11:00");
         request.setLocale(" ");
+        request.setJustification("Valid parking justification text.");
 
         when(parkingSpotRepository.findById("2")).thenReturn(java.util.Optional.of(activeSpot("2")));
         when(parkingReservationRepository.findOverlapsForSpot(any(Date.class), eq("2"), any(Time.class), any(Time.class)))
