@@ -15,6 +15,7 @@ function clearAuthStorage() {
     sessionStorage.removeItem('roomSearchSelectedDate');
     sessionStorage.removeItem('roomSearchStartTime');
     sessionStorage.removeItem('roomSearchEndTime');
+    sessionStorage.removeItem('roomSearchMinDesks');
     sessionStorage.removeItem('createSeriesStartDate');
     sessionStorage.removeItem('createSeriesEndDate');
     sessionStorage.removeItem('createSeriesStartTime');

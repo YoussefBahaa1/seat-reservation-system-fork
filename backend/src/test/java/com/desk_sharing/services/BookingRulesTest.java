@@ -8,6 +8,7 @@ import com.desk_sharing.entities.Role;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.model.AdminBookingEditRequestDTO;
 import com.desk_sharing.model.AdminEditCandidateRequestDTO;
+import com.desk_sharing.model.BookingEditDTO;
 import com.desk_sharing.model.BookingOverlapCheckResponseDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
@@ -37,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -204,6 +206,40 @@ class BookingRulesTest {
     }
 
     @Test
+    void deleteBooking_rejectsBookingWhoseStartHasPassed() {
+        Booking startedBooking = createBooking(10L, 7, 11L, false);
+        startedBooking.setDay(Date.valueOf(LocalDate.now()));
+        startedBooking.setBegin(Time.valueOf(LocalTime.now().minusHours(1).withSecond(0).withNano(0)));
+        startedBooking.setEnd(Time.valueOf(LocalTime.now().plusHours(1).withSecond(0).withNano(0)));
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(startedBooking));
+
+        assertThatThrownBy(() -> bookingService.deleteBooking(10L))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("start time has already passed");
+
+        verify(bookingRepository, never()).deleteById(10L);
+        verify(calendarNotificationService, never()).sendBookingCancelled(any());
+    }
+
+    @Test
+    void deleteBookingByAdmin_rejectsBookingWhoseStartHasPassed() {
+        Booking startedBooking = createBooking(10L, 7, 11L, false);
+        startedBooking.setDay(Date.valueOf(LocalDate.now()));
+        startedBooking.setBegin(Time.valueOf(LocalTime.now().minusHours(1).withSecond(0).withNano(0)));
+        startedBooking.setEnd(Time.valueOf(LocalTime.now().plusHours(1).withSecond(0).withNano(0)));
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(startedBooking));
+
+        assertThatThrownBy(() -> bookingService.deleteBookingByAdmin(10L, "Because"))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("start time has already passed");
+
+        verify(bookingRepository, never()).deleteById(10L);
+        verify(calendarNotificationService, never()).sendBookingCancelledByAdmin(any(), any());
+    }
+
+    @Test
     void editBookingByAdmin_updatesPeriodAndDeskAndSendsAdminNotification() {
         UserEntity admin = new UserEntity();
         Role role = new Role();
@@ -256,6 +292,52 @@ class BookingRulesTest {
         assertThat(updated.getDesk()).isSameAs(targetDesk);
         assertThat(updated.getRoom()).isSameAs(targetRoom);
         verify(calendarNotificationService).sendBookingUpdatedByAdmin(any(Booking.class), eq(updated), eq("Capacity change"));
+    }
+
+    @Test
+    void editBookingByAdmin_rejectsBookingWhoseStartHasPassed() {
+        UserEntity admin = new UserEntity();
+        Role role = new Role();
+        role.setName("ROLE_ADMIN");
+        admin.setRoles(List.of(role));
+        when(userService.getCurrentUser()).thenReturn(admin);
+
+        Booking startedBooking = createBooking(10L, 7, 11L, false);
+        startedBooking.setDay(Date.valueOf(LocalDate.now()));
+        startedBooking.setBegin(Time.valueOf(LocalTime.now().minusHours(1).withSecond(0).withNano(0)));
+        startedBooking.setEnd(Time.valueOf(LocalTime.now().plusHours(1).withSecond(0).withNano(0)));
+
+        AdminBookingEditRequestDTO request = new AdminBookingEditRequestDTO();
+        request.setDay(LocalDate.now().plusDays(1).toString());
+        request.setBegin("10:00");
+        request.setEnd("12:00");
+        request.setDeskId(41L);
+        request.setJustification("Capacity change");
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(startedBooking));
+
+        assertThatThrownBy(() -> bookingService.editBookingByAdmin(10L, request))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("start time has already passed");
+    }
+
+    @Test
+    void editBookingTimings_rejectsBookingWhoseStartHasPassed() {
+        Booking startedBooking = createBooking(10L, 7, 11L, false);
+        startedBooking.setDay(Date.valueOf(LocalDate.now()));
+        startedBooking.setBegin(Time.valueOf(LocalTime.now().minusHours(1).withSecond(0).withNano(0)));
+        startedBooking.setEnd(Time.valueOf(LocalTime.now().plusHours(1).withSecond(0).withNano(0)));
+
+        BookingEditDTO request = new BookingEditDTO();
+        request.setId(10L);
+        request.setBegin(Time.valueOf("10:00:00"));
+        request.setEnd(Time.valueOf("12:00:00"));
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(startedBooking));
+
+        assertThatThrownBy(() -> bookingService.editBookingTimings(request))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("start time has already passed");
     }
 
     @Test

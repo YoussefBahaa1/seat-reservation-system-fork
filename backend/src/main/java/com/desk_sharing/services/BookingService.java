@@ -379,6 +379,14 @@ public class BookingService {
         }
     }
 
+    private boolean bookingStartHasPassed(final Booking booking) {
+        if (booking == null || booking.getDay() == null || booking.getBegin() == null) {
+            return false;
+        }
+        return LocalDateTime.of(booking.getDay().toLocalDate(), booking.getBegin().toLocalTime())
+            .isBefore(LocalDateTime.now());
+    }
+
     private void validateNoScheduledBlockingOverlap(
         final Long deskId,
         final Date day,
@@ -542,6 +550,9 @@ public class BookingService {
 
     public void deleteBooking(@NonNull final Long id) {
         bookingRepository.findById(id).ifPresent(booking -> {
+            if (bookingStartHasPassed(booking)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Booking start time has already passed");
+            }
             if (!booking.isBookingInProgress()) {
                 calendarNotificationService.sendBookingCancelled(booking);
             }
@@ -551,6 +562,9 @@ public class BookingService {
 
     public void deleteBookingByAdmin(@NonNull final Long id, @NonNull final String justification) {
         bookingRepository.findById(id).ifPresent(booking -> {
+            if (bookingStartHasPassed(booking)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Booking start time has already passed");
+            }
             if (!booking.isBookingInProgress()) {
                 calendarNotificationService.sendBookingCancelledByAdmin(booking, justification);
             }
@@ -572,6 +586,9 @@ public class BookingService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
         if (booking.isBookingInProgress()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Booking is still in progress");
+        }
+        if (bookingStartHasPassed(booking)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Booking start time has already passed");
         }
         if (booking.getRoom() == null || booking.getDesk() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking is missing room or desk");
@@ -766,6 +783,9 @@ public class BookingService {
         }
         Optional<Booking> bookingById = getBookingById(bookingId);
         if(bookingById.isPresent()) {
+            if (bookingStartHasPassed(bookingById.get())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Booking start time has already passed");
+            }
             List<Booking> alreadyBookingList = bookingRepository.getAllBookings(
                 bookingById.get().getId(), bookingById.get().getRoom().getId(), 
                 bookingById.get().getDesk().getId(), bookingById.get().getDay(), 

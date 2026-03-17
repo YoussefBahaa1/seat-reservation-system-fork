@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -70,6 +70,32 @@ const compareRankTuples = (left, right) => {
   return 0;
 };
 
+const deskAutoSelectRank = (desk) => {
+  const explicitNumber = Number(desk?.deskNumberInRoom);
+  if (Number.isFinite(explicitNumber)) {
+    return explicitNumber;
+  }
+  const remark = String(desk?.remark ?? '').trim();
+  const numericMatch = remark.match(/\d+/);
+  if (numericMatch) {
+    const parsed = Number(numericMatch[0]);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return Number.MAX_SAFE_INTEGER;
+};
+
+const sortDesksForAutoSelection = (desks) => {
+  return [...(Array.isArray(desks) ? desks : [])].sort((left, right) => {
+    const rankDiff = deskAutoSelectRank(left) - deskAutoSelectRank(right);
+    if (rankDiff !== 0) return rankDiff;
+    const remarkDiff = String(left?.remark ?? '').localeCompare(String(right?.remark ?? ''));
+    if (remarkDiff !== 0) return remarkDiff;
+    return toFiniteNumber(left?.id) - toFiniteNumber(right?.id);
+  });
+};
+
 const Booking = () => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const { t, i18n } = useTranslation();
@@ -87,7 +113,15 @@ const Booking = () => {
   };
   const roomId = locationState.roomId ?? storedContext?.roomId ?? null;
   const date = locationState.date ?? storedContext?.date ?? null;
-  const preferredSlot = parsePreferredSlot(locationState.preferredSlot ?? storedContext?.preferredSlot ?? null);
+  const preferredSlotStartValue = locationState.preferredSlot?.start ?? storedContext?.preferredSlot?.start ?? null;
+  const preferredSlotEndValue = locationState.preferredSlot?.end ?? storedContext?.preferredSlot?.end ?? null;
+  const preferredSlot = useMemo(() => {
+    if (!preferredSlotStartValue || !preferredSlotEndValue) return null;
+    return parsePreferredSlot({
+      start: preferredSlotStartValue,
+      end: preferredSlotEndValue,
+    });
+  }, [preferredSlotEndValue, preferredSlotStartValue]);
   const editBooking = locationState.editBooking || null;
   const isEditMode = Boolean(editBooking && editBooking.bookingId);
   const parsedDate = date ? new Date(date) : null;
@@ -131,6 +165,10 @@ const Booking = () => {
   const activeDeskLockRef = useRef(null);
   const lockExpiryTimeoutRef = useRef(null);
   const preferredSlotRef = useRef(preferredSlot);
+  const preferredNavigationRef = useRef(Boolean(preferredSlot));
+  const preferredAutoSelectKeyRef = useRef(null);
+  const autoSuggestedSlotActiveRef = useRef(false);
+  const autoSuggestedDeskIdRef = useRef(null);
 
   const setBookingPending = useCallback((value) => {
     bookingPendingRef.current = value;
@@ -150,6 +188,8 @@ const Booking = () => {
     setEvents([]);
     setEvent({});
     pendingSlotSuggestionRef.current = null;
+    autoSuggestedSlotActiveRef.current = false;
+    autoSuggestedDeskIdRef.current = null;
     sessionStorage.removeItem(selectionKey);
   }, [selectionKey]);
 
@@ -203,6 +243,12 @@ const Booking = () => {
 
   const acquireDeskLockAndSelect = useCallback((desk) => {
     if (!desk?.id) return;
+    if (autoSuggestedSlotActiveRef.current && clickedDeskId && desk.id !== clickedDeskId) {
+      setEvents((prev) => prev.filter((existingEvent) => existingEvent.id !== 1));
+      setEvent({});
+      autoSuggestedSlotActiveRef.current = false;
+      autoSuggestedDeskIdRef.current = null;
+    }
     const targetDay = (calendarDate instanceof Date && !Number.isNaN(calendarDate.valueOf()))
       ? moment(calendarDate).format('YYYY-MM-DD')
       : bookingDay;
@@ -244,7 +290,7 @@ const Booking = () => {
       return;
     }
     acquire();
-  }, [armDeskLockExpiry, bookingDay, calendarDate, clearLocalDeskLock, releaseDeskLockByPayload, selectionKey, t]);
+  }, [armDeskLockExpiry, bookingDay, calendarDate, clearLocalDeskLock, clickedDeskId, releaseDeskLockByPayload, selectionKey, t]);
 
   const ensureDeskLockForDay = useCallback((deskId, day, onSuccess, onFail) => {
     if (!deskId || !day) {
@@ -612,6 +658,78 @@ const Booking = () => {
     preferredSlotRef.current = preferredSlot;
   }, [preferredSlot]);
 
+  const clearStoredPreferredSlot = useCallback(() => {
+    preferredNavigationRef.current = false;
+    try {
+      const nextContext = JSON.parse(sessionStorage.getItem(BOOKING_CONTEXT_KEY) || 'null');
+      if (nextContext && typeof nextContext === 'object') {
+        delete nextContext.preferredSlot;
+        sessionStorage.setItem(BOOKING_CONTEXT_KEY, JSON.stringify(nextContext));
+      }
+    } catch {
+      // ignore invalid stored booking context
+    }
+  }, []);
+
+  const canApplyPreferredSlotSilently = useCallback((slotData, calendarEvents = eventsRef.current) => {
+    if (!slotData?.start || !slotData?.end) return false;
+
+    const startTime = new Date(slotData.start);
+    const endTime = new Date(slotData.end);
+    if (Number.isNaN(startTime.valueOf()) || Number.isNaN(endTime.valueOf()) || endTime <= startTime) {
+      return false;
+    }
+
+    const duration = endTime - startTime;
+    const now = new Date();
+    const startDay = new Date(startTime);
+    startDay.setHours(0, 0, 0, 0);
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    if (startDay < today) {
+      return false;
+    }
+
+    const leadMinutes = bookingSettings?.leadTimeMinutes ?? 0;
+    const earliestAllowed = roundUpToNextHalfHour(new Date(now.getTime() + leadMinutes * 60000));
+    if (startTime < earliestAllowed) {
+      return false;
+    }
+
+    if (duration < 2 * 60 * 60 * 1000) {
+      return false;
+    }
+
+    if (bookingSettings?.maxDurationMinutes !== null && bookingSettings?.maxDurationMinutes !== undefined) {
+      if (duration > bookingSettings.maxDurationMinutes * 60 * 1000) {
+        return false;
+      }
+    }
+
+    if (bookingSettings?.maxAdvanceDays !== null && bookingSettings?.maxAdvanceDays !== undefined) {
+      const maxDate = new Date(today);
+      maxDate.setDate(maxDate.getDate() + bookingSettings.maxAdvanceDays);
+      if (startDay > maxDate) {
+        return false;
+      }
+    }
+
+    const updatedEvents = calendarEvents.filter((e) => {
+      if (e.id === 1) return false;
+      if (isEditMode && editBooking?.bookingId && e.id === editBooking.bookingId) return false;
+      return true;
+    });
+
+    const overlappingEvents = updatedEvents.filter(
+      (e) =>
+        (e.start <= startTime && startTime < e.end) ||
+        (e.start < endTime && endTime <= e.end) ||
+        (startTime <= e.start && e.end <= endTime)
+    );
+
+    return overlappingEvents.length === 0;
+  }, [bookingSettings, editBooking, isEditMode]);
+
   const applySlotSelection = useCallback((slotData, currentEventId, calendarEvents = eventsRef.current) => {
     if (!slotData) return;
 
@@ -698,6 +816,7 @@ const Booking = () => {
   }, [bookingSettings, clickedDeskId, editBooking, ensureDeskLockForDay, isEditMode, openAlternativeDeskDialogForSlot, t]);
 
   const selectSlot = useCallback((slotData, currentEventId) => {
+    autoSuggestedSlotActiveRef.current = false;
     applySlotSelection(slotData, currentEventId, eventsRef.current);
   }, [applySlotSelection]);
 
@@ -744,24 +863,23 @@ const Booking = () => {
             setEvent({});
             const pendingPreferredSlot = preferredSlotRef.current;
             if (pendingPreferredSlot?.start && pendingPreferredSlot?.end) {
-              preferredSlotRef.current = null;
-              try {
-                const nextContext = JSON.parse(sessionStorage.getItem(BOOKING_CONTEXT_KEY) || 'null');
-                if (nextContext && typeof nextContext === 'object') {
-                  delete nextContext.preferredSlot;
-                  sessionStorage.setItem(BOOKING_CONTEXT_KEY, JSON.stringify(nextContext));
-                }
-              } catch {
-                // ignore invalid stored booking context
+              const preferredSlotData = {
+                start: pendingPreferredSlot.start,
+                end: pendingPreferredSlot.end,
+              };
+              const canApplyPreferredSlot = canApplyPreferredSlotSilently(preferredSlotData, mergedEvents);
+              if (canApplyPreferredSlot) {
+                const appliedPreferredSlot = applySlotSelection(
+                  preferredSlotData,
+                  undefined,
+                  mergedEvents
+                );
+                autoSuggestedSlotActiveRef.current = Boolean(appliedPreferredSlot);
+                autoSuggestedDeskIdRef.current = appliedPreferredSlot ? clickedDeskId : null;
+              } else {
+                autoSuggestedSlotActiveRef.current = false;
+                autoSuggestedDeskIdRef.current = null;
               }
-              applySlotSelection(
-                {
-                  start: pendingPreferredSlot.start,
-                  end: pendingPreferredSlot.end,
-                },
-                undefined,
-                mergedEvents
-              );
             }
           }
         };
@@ -786,7 +904,7 @@ const Booking = () => {
       },
       () => console.error('Failed to fetch bookings')
     );
-  }, [applySlotSelection, calendarDate, calendarView, clickedDeskId, editBooking, isEditMode, t]);
+  }, [applySlotSelection, calendarDate, calendarView, canApplyPreferredSlotSilently, clickedDeskId, editBooking, isEditMode, t]);
 
   /** ----- EVENT FUNCTIONS ----- */
   const booking = async () => {
@@ -1200,6 +1318,9 @@ const Booking = () => {
           return;
         }
       }
+      if (preferredNavigationRef.current) {
+        return;
+      }
       const saved = JSON.parse(sessionStorage.getItem(selectionKey));
       if (saved?.deskId) {
         const match = desks.find((desk) => desk.id === saved.deskId);
@@ -1211,6 +1332,88 @@ const Booking = () => {
       // ignore invalid stored value
     }
   }, [acquireDeskLockAndSelect, desks, editBooking, isEditMode, selectionKey]);
+
+  useEffect(() => {
+    if (!preferredNavigationRef.current || isEditMode || clickedDeskId || !desks.length) {
+      return;
+    }
+
+    const pendingPreferredSlot = preferredSlotRef.current;
+    if (!pendingPreferredSlot?.start || !pendingPreferredSlot?.end) {
+      return;
+    }
+
+    const slotDay = moment(pendingPreferredSlot.start).format('YYYY-MM-DD');
+    const autoSelectKey = `${roomId ?? 'none'}:${slotDay}:${pendingPreferredSlot.start.toISOString()}:${pendingPreferredSlot.end.toISOString()}`;
+    if (preferredAutoSelectKeyRef.current === autoSelectKey) {
+      return;
+    }
+    preferredAutoSelectKeyRef.current = autoSelectKey;
+
+    postRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/series/desksForDatesAndTimes`,
+      headers.current,
+      (data) => {
+        const availableDeskIdsInRoom = new Set(
+          (Array.isArray(data) ? data : [])
+            .filter((desk) => String(desk?.room?.id ?? '') === String(roomId))
+            .map((desk) => desk?.id)
+            .filter((deskId) => deskId !== null && deskId !== undefined)
+        );
+
+        const roomAvailableDesks = sortDesksForAutoSelection(
+          desks.filter((desk) =>
+            availableDeskIdsInRoom.has(desk?.id)
+            && !desk?.hidden
+            && !desk?.blocked
+          )
+        );
+
+        if (roomAvailableDesks.length > 0) {
+          acquireDeskLockAndSelect(roomAvailableDesks[0]);
+          return;
+        }
+
+        clearStoredPreferredSlot();
+        autoSuggestedSlotActiveRef.current = false;
+        autoSuggestedDeskIdRef.current = null;
+        const fallbackDesk = sortDesksForAutoSelection(
+          desks.filter((desk) => !desk?.hidden && !desk?.blocked)
+        )[0];
+        if (fallbackDesk) {
+          acquireDeskLockAndSelect(fallbackDesk);
+        }
+      },
+      () => {
+        clearStoredPreferredSlot();
+        autoSuggestedSlotActiveRef.current = false;
+        autoSuggestedDeskIdRef.current = null;
+      },
+      JSON.stringify({
+        dates: [slotDay],
+        startTime: moment(pendingPreferredSlot.start).format('HH:mm'),
+        endTime: moment(pendingPreferredSlot.end).format('HH:mm'),
+      })
+    );
+  }, [acquireDeskLockAndSelect, clearStoredPreferredSlot, clickedDeskId, desks, isEditMode, roomId]);
+
+  useEffect(() => {
+    if (preferredNavigationRef.current && clickedDeskId) {
+      clearStoredPreferredSlot();
+    }
+  }, [clearStoredPreferredSlot, clickedDeskId]);
+
+  useEffect(() => {
+    if (!autoSuggestedSlotActiveRef.current || autoSuggestedDeskIdRef.current == null) {
+      return;
+    }
+    if (clickedDeskId && clickedDeskId !== autoSuggestedDeskIdRef.current) {
+      setEvents((prev) => prev.filter((existingEvent) => existingEvent.id !== 1));
+      setEvent({});
+      autoSuggestedSlotActiveRef.current = false;
+      autoSuggestedDeskIdRef.current = null;
+    }
+  }, [clickedDeskId]);
 
   const refreshFavouriteStatus = useCallback(() => {
     const userId = localStorage.getItem('userId');

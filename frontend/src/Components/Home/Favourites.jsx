@@ -320,6 +320,7 @@ const Favourites = () => {
       size="small"
       label={isAvailable ? t('favouritesAvailable') : t('favouritesUnavailable')}
       sx={{
+        mr: 0.75,
         backgroundColor: isAvailable ? semanticColors.carpark.status.AVAILABLE : semanticColors.carpark.status.OCCUPIED,
         color: colorVars.text.inverse,
         fontWeight: 600,
@@ -361,9 +362,9 @@ const Favourites = () => {
                     {room.building}{room.building && room.floor ? ' · ' : ''}{room.floor}
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, flexShrink: 0 }}>
-                  {isTimeframeActive && getStatusChip(isAvailable)}
+                <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                   <Stack direction="row" spacing={1} alignItems="center">
+                    {isTimeframeActive && getStatusChip(isAvailable)}
                     <Button
                       variant="contained"
                       onClick={() => goToRoomBooking(room)}
@@ -426,9 +427,9 @@ const Favourites = () => {
                     </Typography>
                   )}
                 </Box>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1, flexShrink: 0 }}>
-                  {isTimeframeActive && getStatusChip(isAvailable)}
+                <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                   <Stack direction="row" spacing={1} alignItems="center">
+                    {isTimeframeActive && getStatusChip(isAvailable)}
                     <Button
                       variant="contained"
                       onClick={() => goToParkingBooking(parking)}

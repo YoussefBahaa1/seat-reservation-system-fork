@@ -21,7 +21,6 @@ const SIDEBAR_DIRECT_ROUTES = new Set([
     '/manageseries',
     '/mybookings',
     '/roomSearch',
-    '/supportContacts',
 ]);
 /**
  * Simple template for pages.

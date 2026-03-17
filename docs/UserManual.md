@@ -312,6 +312,13 @@ Admins can optionally enable Multi-Factor Authentication (MFA) using a TOTP auth
 5. Enter the 6-digit code from the app to confirm setup.
 6. To disable MFA later, click `Disable MFA` and confirm using either your password or a current 6-digit code.
 
+### Service Contacts
+All users can the the service contacts of the main admin and service personel.
+
+1. Login.
+2. Look at the bottom of the side bar navigation component.
+3. View or copy the email/phone lines of the service contacts.
+
 ## Favourites
 Save rooms and parking spots you use often and jump back to them quickly.
 
@@ -395,15 +402,20 @@ Notes:
 This tool allows any logged-in user to reserve and book a parking spot.
 
 1. Login
-2. Open `Home` from the sidebar (`/home`).
-3. Use the mode toggle to switch from `Desk` to `Parking`.
-4. (Optional) Use the view toggle to switch between `Calendar` and `Floor` view.
-5. Select the date and time range in the parking toolbar.
-6. Click a parking spot on the map to open the details modal.
-7. If the spot is available (green), click `Reserve`.
-8. For non-admin users, the reservation is created as `PENDING` (yellow) until an admin approves or rejects it.
-9. If approved, the spot becomes occupied (red). If rejected, it is not booked for you.
-10. For occupied/pending spots you can open details to see reservation information (time window, requester, spot properties). A 30-minute overlap buffer is applied.
+2. Navigate to the carpark map in 2 possible ways:
+   - Open `Home` from the sidebar (`/home`).
+   - Use the mode toggle to switch from `Desk` to `Parking`.
+   - (Optional) Use the view toggle to switch between `Calendar` and `Floor` view.
+  OR
+   - Open `Search` from the sidebar.
+   - Select the `Parking` tab.
+3. Select the date and time range in the parking toolbar and time panel.
+4. (Optional) Use the filter bar to view only specific parking space types (standard / accessible / e-charging / station / motorcycle, and covered / uncovered).
+7. Click an available (green) parking spot on the map to open the details modal.
+8. Provide a justification (20-500 characters) for your parking reservation request, and click `Reserve`.
+9. For non-admin users, the reservation is created as `PENDING` (yellow) until an admin approves or rejects it.
+10. If approved, the spot becomes occupied (red). If rejected, it is not booked for you and becomes blocked for the selected time frame.
+11. For occupied/pending spots you can open details to see reservation information (time window, requester, spot properties). A 30-minute overlap buffer is applied.
 
 ## My Bookings
 `My Bookings` gives you an overview of your own desk reservations and actions for each entry.
@@ -561,6 +573,18 @@ Notification details:
 - Backend validation also rejects booking creation/confirmation for blocked desks.
 - Free desk and series search results return only unblocked desks.
 
+### Parking bookings management:
+Admins can approve/reject incoming parking requests, or manage existing ones.
+1. From the sidebar, navigate to the Admin panel.
+2. Open the `Booking Management` tab.
+3. Select between the `Parking Bookings` or `Parking Requests` panels:
+4. (Optional) Filter the requests by selecting specific details in the panel.
+   - In `Parking Requests`, view the pending requests where the details of the reservation (user details, times, and justification) are visible
+   - Accept or deny the request by pressing the corresponding buttons.
+  OR
+   - In `Parking Bookings`, view the existing bookings where the details of the booking (user details, times, and justification) are visible
+   - (Optional) Choose to remove the current booking by pressing the `Cancel` button, ot choose the edit the booking with the corresponding button.
+     
 ## Add new floor images
 Every room is associated with an floor in a building.
 This tool helps to visualize the position of the rooms with a floor plan of every floor. Every room is associated with a x- and a y-coordinate. The user see the room on the floor plan according to the x- and y-coordinate.
