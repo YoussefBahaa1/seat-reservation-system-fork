@@ -26,8 +26,8 @@ const normalizeCalendarView = (view) => {
   return ['day', 'week', 'month'].includes(value) ? value : null;
 };
 
-const isPastBookingDay = (bookingStart) =>
-  moment(bookingStart).startOf('day').isBefore(moment().startOf('day'));
+const hasBookingStarted = (bookingStart) =>
+  moment(bookingStart).isBefore(moment());
 
 const bookingEquipmentSummary = (desk, t) => {
   if (!desk) return '';
@@ -264,8 +264,8 @@ const MyBookings = () => {
   // Get selected date and view from location state
   const selectedDate = location.state?.date ? new Date(location.state.date) : null;
   const [currentDate, setCurrentDate] = useState(selectedDate || new Date());
-  const isPastDayBooking = selectedBookingEvent
-    ? moment(selectedBookingEvent.start).startOf('day').isBefore(moment().startOf('day'))
+  const isStartedBooking = selectedBookingEvent
+    ? hasBookingStarted(selectedBookingEvent.start)
     : false;
 
   return (
@@ -337,7 +337,7 @@ const MyBookings = () => {
                   >
                     {t('exportIcs')}
                   </Button>
-                  {!isPastDayBooking && (
+                  {!isStartedBooking && (
                     <Button
                       id="mybookings_edit_booking_btn"
                       sx={{
@@ -356,7 +356,7 @@ const MyBookings = () => {
                       {t('editBooking')}
                     </Button>
                   )}
-                  {!isPastDayBooking && (
+                  {!isStartedBooking && (
                     <Button
                       id="mybookings_cancel_booking_btn"
                       sx={{
@@ -416,7 +416,7 @@ const MyBookings = () => {
                 style={{ height: '100vh' }}
                 eventPropGetter={(event) => {
                   const eventClasses = ['mybookings-event'];
-                  if (isPastBookingDay(event.start)) {
+                  if (hasBookingStarted(event.start)) {
                     eventClasses.push('mybookings-event--past');
                   }
                   return {

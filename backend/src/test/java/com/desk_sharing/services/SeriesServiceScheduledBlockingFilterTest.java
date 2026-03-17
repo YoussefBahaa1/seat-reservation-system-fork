@@ -277,6 +277,38 @@ class SeriesServiceScheduledBlockingFilterTest {
         verify(seriesRepository).delete(series);
     }
 
+    @Test
+    void deleteById_treatsStartedButNotEndedOccurrenceAsAlreadyPassed() {
+        Series series = new Series();
+        series.setId(88L);
+
+        Booking startedOccurrence = new Booking();
+        startedOccurrence.setId(201L);
+        startedOccurrence.setDay(Date.valueOf(LocalDate.now()));
+        startedOccurrence.setBegin(Time.valueOf(LocalTime.now().minusHours(1).withSecond(0).withNano(0)));
+        startedOccurrence.setEnd(Time.valueOf(LocalTime.now().plusHours(1).withSecond(0).withNano(0)));
+        startedOccurrence.setSeries(series);
+
+        Booking futureOccurrence = new Booking();
+        futureOccurrence.setId(202L);
+        futureOccurrence.setDay(Date.valueOf(LocalDate.now().plusDays(1)));
+        futureOccurrence.setBegin(Time.valueOf(LocalTime.of(9, 0)));
+        futureOccurrence.setEnd(Time.valueOf(LocalTime.of(11, 0)));
+        futureOccurrence.setSeries(series);
+
+        when(seriesRepository.findById(88L)).thenReturn(java.util.Optional.of(series));
+        when(bookingRepository.findBySeriesId(88L)).thenReturn(List.of(futureOccurrence, startedOccurrence));
+
+        int result = seriesService.deleteById(88L);
+
+        assertThat(result).isEqualTo(1);
+        verify(calendarNotificationService).sendSeriesDeleted(List.of(futureOccurrence));
+        assertThat(startedOccurrence.getSeries()).isNull();
+        verify(bookingRepository).saveAll(List.of(startedOccurrence));
+        verify(bookingRepository).deleteAll(List.of(futureOccurrence));
+        verify(seriesRepository).delete(series);
+    }
+
     private Desk desk(Long id) {
         Room room = new Room();
         room.setId(100L + id);

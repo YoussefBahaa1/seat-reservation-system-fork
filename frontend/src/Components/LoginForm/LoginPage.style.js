@@ -15,7 +15,7 @@ export const styles = {
     h1: {
         margin: '2px',
         textAlign: 'center',
-        color: colorVars.brand.primary,
+        color: colorVars.brand.accent,
     },
     button_sx: { 
         width: '100%',

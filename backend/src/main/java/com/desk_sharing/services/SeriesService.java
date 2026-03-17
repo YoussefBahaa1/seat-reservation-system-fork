@@ -701,9 +701,9 @@ public class SeriesService {
     }
 
     private boolean bookingHasAlreadyPassed(final Booking booking, final LocalDateTime now) {
-        if (booking == null || booking.getDay() == null || booking.getEnd() == null) {
+        if (booking == null || booking.getDay() == null || booking.getBegin() == null) {
             return false;
         }
-        return LocalDateTime.of(booking.getDay().toLocalDate(), booking.getEnd().toLocalTime()).isBefore(now);
+        return LocalDateTime.of(booking.getDay().toLocalDate(), booking.getBegin().toLocalTime()).isBefore(now);
     }
 }
