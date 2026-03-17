@@ -1203,6 +1203,7 @@ const CarparkView = ({
     setEndTime('');
     setHasExplicitTimeSelection(false);
     setHideTimelineSelectionOverlay(false);
+    setSelectedMapFilters([]);
   }, []);
 
   const toggleFavourite = useCallback(() => {
