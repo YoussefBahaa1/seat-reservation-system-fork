@@ -13,11 +13,11 @@ import LayoutModal from './LayoutModal';
  * @param widthInPx The amount of pixels for the width of the modal. If not provided the width is 'auto'.
  * @param children The content of the modal.  
  */
-const LayoutModalAdmin = ({isOpen, onClose, title, submit, submitTxt='', widthInPx='', children}) => {
+const LayoutModalAdmin = ({isOpen, onClose, title, submit, submitTxt='', closeTxt='', widthInPx='', children}) => {
     const { i18n } = useTranslation();
     return  JSON.parse(localStorage.getItem('admin')) 
     ? 
-    <LayoutModal isOpen={isOpen} onClose={onClose} title={title} submit={submit} submitTxt={submitTxt} widthInPx={widthInPx} children={children}/>
+    <LayoutModal isOpen={isOpen} onClose={onClose} title={title} submit={submit} submitTxt={submitTxt} closeTxt={closeTxt} widthInPx={widthInPx} children={children}/>
     :
     <LayoutModal
         isOpen={isOpen}

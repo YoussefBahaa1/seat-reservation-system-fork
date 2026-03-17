@@ -118,6 +118,7 @@ export default function HideShowFixedWorkstation({ isOpen, onClose }) {
         onClose={onClose}
         isOpen={isOpen}
         title={t('hideShowFixedDesk')}
+        closeTxt={t('close')}
       >
         <div style={{ marginTop: '8px' }}>
           <FloorSelector
