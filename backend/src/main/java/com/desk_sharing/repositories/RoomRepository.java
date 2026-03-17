@@ -32,6 +32,7 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     + "FROM rooms r " 
     + "JOIN desks d " 
     + "ON r.room_id = d.room_id "
+    + "WHERE d.is_hidden = 0 AND d.is_blocked = 0 "
     + "GROUP BY r.room_id "
     + "HAVING COUNT(d.desk_id) >= :minimalAmountOfWorkstations "
     ,nativeQuery=true)
@@ -43,6 +44,9 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     + "JOIN desks d0 " 
     + "ON r.room_id = d0.room_id "
     + "WHERE "
+    + "d0.is_hidden = 0 "
+    + "AND d0.is_blocked = 0 "
+    + "AND "
     + "d0.desk_id NOT IN ( " +
     "   SELECT d.desk_id " +
     "   FROM desks d " +

@@ -361,7 +361,9 @@ const MyBookings = () => {
                       id="mybookings_cancel_booking_btn"
                       sx={{
                         padding: '8px 12px',
+                        backgroundColor: 'transparent',
                         borderRadius: '6px',
+                        border: `1px solid ${colorVars.text.error}`,
                         borderColor: colorVars.text.error,
                         color: colorVars.text.error,
                         fontSize: '14px',
@@ -369,10 +371,10 @@ const MyBookings = () => {
                         '&:hover': {
                           borderColor: colorVars.text.errorDark,
                           backgroundColor: colorVars.surface.translucent,
+                          color: colorVars.text.errorDark,
                         }
                       }}
                       variant="outlined"
-                      color="error"
                       onClick={() => setIsDeleteDialogOpen(true)}
                       disabled={!selectedBookingEvent}
                     >
