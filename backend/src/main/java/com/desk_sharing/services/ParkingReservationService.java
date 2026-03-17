@@ -53,6 +53,8 @@ public class ParkingReservationService {
 
     public static final String BLOCKED_SPOT_LABEL = "23";
     public static final String ACCESSIBLE_SPOT_LABEL = "30";
+    private static final int JUSTIFICATION_MIN_LENGTH = 20;
+    private static final int JUSTIFICATION_MAX_LENGTH = 500;
 
     private final ParkingReservationRepository parkingReservationRepository;
     private final ParkingSpotRepository parkingSpotRepository;
@@ -185,7 +187,8 @@ public class ParkingReservationService {
         final Integer chargingKw,
         final ParkingReservation overlapForDetails,
         final Map<Integer, UserEntity> userCache,
-        final boolean revealFullIdentity
+        final boolean revealFullIdentity,
+        final int currentUserId
     ) {
         return new ParkingAvailabilityResponseDTO(
             label,
@@ -198,7 +201,8 @@ public class ParkingReservationService {
             chargingKw,
             overlapForDetails == null ? null : formatTimeValue(overlapForDetails.getBegin()),
             overlapForDetails == null ? null : formatTimeValue(overlapForDetails.getEnd()),
-            overlapForDetails == null ? null : displayUserFromCache(overlapForDetails, userCache, revealFullIdentity)
+            overlapForDetails == null ? null : displayUserFromCache(overlapForDetails, userCache, revealFullIdentity),
+            overlapForDetails != null && overlapForDetails.getUserId() == currentUserId ? overlapForDetails.getJustification() : null
         );
     }
 
@@ -283,7 +287,7 @@ public class ParkingReservationService {
             final ParkingReservation rejectedMine = rejectedOverlapForMeByLabel.get(label);
 
             if (spotType == ParkingSpotType.SPECIAL_CASE) {
-                return availabilityRow(label, "BLOCKED", false, null, spotType, covered, manuallyBlocked, chargingKw, null, userCache, revealFullIdentity);
+                return availabilityRow(label, "BLOCKED", false, null, spotType, covered, manuallyBlocked, chargingKw, null, userCache, revealFullIdentity, myUserId);
             }
             if (manuallyBlocked) {
                 final boolean mine = myOccupiedLabels.contains(label);
@@ -298,7 +302,8 @@ public class ParkingReservationService {
                     chargingKw,
                     activeOverlap,
                     userCache,
-                    revealFullIdentity
+                    revealFullIdentity,
+                    myUserId
                 );
             }
             if (approvedLabels.contains(label)) {
@@ -314,7 +319,8 @@ public class ParkingReservationService {
                     chargingKw,
                     activeOverlap,
                     userCache,
-                    revealFullIdentity
+                    revealFullIdentity,
+                    myUserId
                 );
             }
             if (pendingLabels.contains(label)) {
@@ -330,13 +336,14 @@ public class ParkingReservationService {
                     chargingKw,
                     activeOverlap,
                     userCache,
-                    revealFullIdentity
+                    revealFullIdentity,
+                    myUserId
                 );
             }
             if (rejectedMine != null) {
-                return availabilityRow(label, "BLOCKED", true, null, spotType, covered, manuallyBlocked, chargingKw, rejectedMine, userCache, revealFullIdentity);
+                return availabilityRow(label, "BLOCKED", true, null, spotType, covered, manuallyBlocked, chargingKw, rejectedMine, userCache, revealFullIdentity, myUserId);
             }
-            return availabilityRow(label, "AVAILABLE", false, null, spotType, covered, manuallyBlocked, chargingKw, null, userCache, revealFullIdentity);
+            return availabilityRow(label, "AVAILABLE", false, null, spotType, covered, manuallyBlocked, chargingKw, null, userCache, revealFullIdentity, myUserId);
         }).toList();
     }
 
@@ -363,6 +370,13 @@ public class ParkingReservationService {
         final Time begin = Time.valueOf(LocalTime.parse(normalizeTimeString(request.getBegin())));
         final Time end = Time.valueOf(LocalTime.parse(normalizeTimeString(request.getEnd())));
         validateTimes(day, begin, end);
+        final String justification = request.getJustification() == null ? "" : request.getJustification().trim();
+        if (justification.length() < JUSTIFICATION_MIN_LENGTH || justification.length() > JUSTIFICATION_MAX_LENGTH) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Parking reservation justification must be between " + JUSTIFICATION_MIN_LENGTH + " and " + JUSTIFICATION_MAX_LENGTH + " characters"
+            );
+        }
 
         final UserEntity currentUser = getCurrentUser();
         final int myUserId = currentUser.getId();
@@ -386,6 +400,7 @@ public class ParkingReservationService {
         reservation.setEnd(end);
         reservation.setCreatedAt(LocalDateTime.now());
         reservation.setStatus(currentUser.isAdmin() ? ParkingReservationStatus.APPROVED : ParkingReservationStatus.PENDING);
+        reservation.setJustification(justification);
 
         String requestLocale = request.getLocale();
         if (requestLocale == null || requestLocale.isBlank()) {
@@ -412,6 +427,7 @@ public class ParkingReservationService {
         copy.setCreatedAt(reservation.getCreatedAt());
         copy.setStatus(reservation.getStatus());
         copy.setRequestLocale(reservation.getRequestLocale());
+        copy.setJustification(reservation.getJustification());
         return copy;
     }
 
@@ -598,7 +614,8 @@ public class ParkingReservationService {
                     userSurname,
                     roleName,
                     department,
-                    reservation.getCreatedAt()
+                    reservation.getCreatedAt(),
+                    reservation.getJustification()
                 );
             })
             .toList();
@@ -629,7 +646,8 @@ public class ParkingReservationService {
                     userSurname,
                     roleName,
                     department,
-                    reservation.getSpotLabel()
+                    reservation.getSpotLabel(),
+                    reservation.getJustification()
                 );
             })
             .toList();

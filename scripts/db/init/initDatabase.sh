@@ -25,6 +25,7 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
         scripts/db/migration/calendar_notifications.sql \
         scripts/db/migration/parking_notifications.sql \
         scripts/db/migration/parking_request_locale.sql \
+        scripts/db/migration/parking_reservation_justification.sql \
         scripts/db/migration/booking_settings.sql \
         scripts/db/migration/booking_locks.sql \
         scripts/db/migration/parking_reservation_status.sql \

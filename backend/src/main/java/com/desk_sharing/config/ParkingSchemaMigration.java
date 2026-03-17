@@ -15,6 +15,7 @@ public class ParkingSchemaMigration {
     private static final Logger logger = LoggerFactory.getLogger(ParkingSchemaMigration.class);
     private static final String RESERVATIONS_TABLE = "parking_reservations";
     private static final String STATUS_COLUMN = "reservation_status";
+    private static final String JUSTIFICATION_COLUMN = "justification";
     private static final String SPOTS_TABLE = "parking_spots";
     private static final String MANUALLY_BLOCKED_COLUMN = "manually_blocked";
     private static final String DISPLAY_LABEL_COLUMN = "display_label";
@@ -54,6 +55,21 @@ public class ParkingSchemaMigration {
                 "UPDATE " + RESERVATIONS_TABLE + " SET " + STATUS_COLUMN + " = 'APPROVED' WHERE " + STATUS_COLUMN + " IS NULL"
             );
             logger.info("Parking schema migration ensured '{}.{}' is populated for existing rows.", RESERVATIONS_TABLE, STATUS_COLUMN);
+
+            final Integer justificationColumnExists = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.COLUMNS "
+                    + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                Integer.class,
+                RESERVATIONS_TABLE,
+                JUSTIFICATION_COLUMN
+            );
+
+            if (justificationColumnExists == null || justificationColumnExists == 0) {
+                jdbcTemplate.execute(
+                    "ALTER TABLE " + RESERVATIONS_TABLE + " ADD COLUMN " + JUSTIFICATION_COLUMN + " VARCHAR(500) NULL"
+                );
+                logger.info("Parking schema migration added '{}.{}'.", RESERVATIONS_TABLE, JUSTIFICATION_COLUMN);
+            }
 
             jdbcTemplate.execute(
                 "CREATE TABLE IF NOT EXISTS " + SPOTS_TABLE + " ("

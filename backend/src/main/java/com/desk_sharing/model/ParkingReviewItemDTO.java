@@ -22,4 +22,5 @@ public class ParkingReviewItemDTO {
     private String roleName;
     private String department;
     private LocalDateTime createdAt;
+    private String justification;
 }

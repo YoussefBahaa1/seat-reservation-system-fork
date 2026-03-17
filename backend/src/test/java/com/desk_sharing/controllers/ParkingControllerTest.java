@@ -56,6 +56,7 @@ class ParkingControllerTest {
                         null,
                         null,
                         null,
+                        null,
                         null
                 ));
         when(parkingReservationService.getAvailability(request)).thenReturn(body);
@@ -74,6 +75,7 @@ class ParkingControllerTest {
         request.setDay("2099-01-01");
         request.setBegin("10:00");
         request.setEnd("10:30");
+        request.setJustification("Test justification for parking.");
 
         ParkingReservation saved = new ParkingReservation();
         saved.setId(123L);
@@ -109,7 +111,8 @@ class ParkingControllerTest {
                 "User",
                 "ROLE_USER",
                 "Engineering",
-                LocalDateTime.now()
+                LocalDateTime.now(),
+                null
             )
         );
         when(parkingReservationService.getPendingReservationsForReview()).thenReturn(body);

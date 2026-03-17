@@ -19,4 +19,5 @@ public class ParkingBookingProjectionDTO {
     private String roleName;
     private String department;
     private String spotLabel;
+    private String justification;
 }

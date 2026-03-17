@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { formatDate_yyyymmdd_to_ddmmyyyy } from '../../misc/formatDate';
+import JustificationDialog from './JustificationDialog';
 
 const formatRoleName = (roleName) => {
   if (!roleName) return '-';
@@ -16,6 +18,8 @@ const formatTimeValue = (value) => {
 
 const ParkingBookingListView = ({ bookings, onCancel, onEdit, isLoading = false }) => {
   const { t } = useTranslation();
+  const [selectedJustification, setSelectedJustification] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -46,6 +50,7 @@ const ParkingBookingListView = ({ bookings, onCancel, onEdit, isLoading = false 
             <TableCell>{t('filterRole')}</TableCell>
             <TableCell>{t('filterDepartment')}</TableCell>
             <TableCell>{t('spotNumber')}</TableCell>
+            <TableCell>{t('justification')}</TableCell>
             <TableCell></TableCell>
           </TableRow>
         </TableHead>
@@ -60,6 +65,20 @@ const ParkingBookingListView = ({ bookings, onCancel, onEdit, isLoading = false 
               <TableCell>{formatRoleName(booking.roleName)}</TableCell>
               <TableCell>{booking.department || '-'}</TableCell>
               <TableCell>{booking.spotLabel}</TableCell>
+              <TableCell>
+                {booking.justification ? (
+                  <Button
+                    size="small"
+                    variant="text"
+                    onClick={() => {
+                      setSelectedJustification(booking.justification);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    {t('viewJustification')}
+                  </Button>
+                ) : '-'}
+              </TableCell>
               <TableCell>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <Button
@@ -83,6 +102,11 @@ const ParkingBookingListView = ({ bookings, onCancel, onEdit, isLoading = false 
           ))}
         </TableBody>
       </Table>
+      <JustificationDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        justification={selectedJustification}
+      />
     </TableContainer>
   );
 };
