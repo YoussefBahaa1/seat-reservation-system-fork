@@ -63,6 +63,7 @@ public class SeriesService {
     private final ScheduledBlockingRepository scheduledBlockingRepository;
     private final CalendarNotificationService calendarNotificationService;
     private final UserService userService;
+    private final BookingSettingsService bookingSettingsService;
 
 
     /**
@@ -262,6 +263,10 @@ public class SeriesService {
 
     @Transactional
     public boolean createSeries(@RequestBody SeriesDTO seriesDTO) {
+        if (seriesDTO == null || seriesDTO.getRangeDTO() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing series payload");
+        }
+
         UserEntity userEntity = userRepository.findByEmail(seriesDTO.getEmail());
         if (userEntity == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User not found for series creation");
@@ -269,18 +274,42 @@ public class SeriesService {
 
         final Time seriesStart = timestringToTime(seriesDTO.getRangeDTO().getStartTime());
         final Time seriesEnd = timestringToTime(seriesDTO.getRangeDTO().getEndTime());
-        final List<Date> dates = seriesDTO.getDates();
+        final List<Date> dates = seriesDTO.getDates() == null
+            ? List.of()
+            : seriesDTO.getDates().stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
+        if (dates.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one series date is required");
+        }
         final Long deskId = seriesDTO.getDesk() == null ? null : seriesDTO.getDesk().getId();
         if (deskId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Desk is required for series creation");
         }
+        final Desk desk = deskRepository.findByIdForUpdate(deskId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Desk not found"));
+        if (desk.isHidden()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This workstation is not available for booking.");
+        }
+        if (desk.isBlocked()) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "This workstation is currently blocked due to a defect and cannot be booked."
+            );
+        }
+        if (desk.getRoom() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Desk is missing room");
+        }
 
+        validateSeriesOccurrences(desk, dates, seriesStart, seriesEnd);
         validateNoScheduledBlockingOverlapForSeries(deskId, dates, seriesStart, seriesEnd);
 
         Series newSeries = new Series(-1L, 
             userEntity, 
-            seriesDTO.getRoom(), 
-            seriesDTO.getDesk(), 
+            desk.getRoom(), 
+            desk, 
             datestringToDate(seriesDTO.getRangeDTO().getStartDate()), 
             datestringToDate(seriesDTO.getRangeDTO().getEndDate()), 
             seriesStart,
@@ -295,8 +324,8 @@ public class SeriesService {
         final List<Booking> bookings = dates.stream().map(date -> {
             return new Booking(
                 userEntity,
-                seriesDTO.getRoom(),
-                seriesDTO.getDesk(),
+                desk.getRoom(),
+                desk,
                 date,
                 seriesStart,
                 seriesEnd,
@@ -310,6 +339,114 @@ public class SeriesService {
         final List<Booking> savedBookings = bookingRepository.saveAll(bookings);
         calendarNotificationService.sendSeriesCreated(savedBookings);
         return true;
+    }
+
+    private void validateSeriesOccurrences(
+            final Desk desk,
+            final List<Date> dates,
+            final Time startTime,
+            final Time endTime) {
+        final var settings = bookingSettingsService.getCurrentSettings();
+        for (final Date date : dates) {
+            validateBookingTimes(date, startTime, endTime, settings);
+            validateNoExistingBookingOverlapForSeries(desk, date, startTime, endTime);
+        }
+    }
+
+    private void validateBookingTimes(
+            final Date day,
+            final Time begin,
+            final Time end,
+            final com.desk_sharing.entities.BookingSettings settings) {
+        if (day == null || begin == null || end == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing booking time data");
+        }
+
+        final LocalDateTime startDateTime = LocalDateTime.of(day.toLocalDate(), begin.toLocalTime());
+        if (startDateTime.isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking start time has already passed");
+        }
+
+        final LocalTime beginTime = begin.toLocalTime();
+        final LocalTime endTime = end.toLocalTime();
+        if (!endTime.isAfter(beginTime)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
+        }
+
+        final int leadMinutes = settings.getLeadTimeMinutes() == null ? 0 : settings.getLeadTimeMinutes();
+        final LocalDateTime earliestStart = roundUpToNextHalfHour(LocalDateTime.now().plusMinutes(leadMinutes));
+        if (startDateTime.isBefore(earliestStart)) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Booking start time must respect lead time (" + leadMinutes + " minutes). Earliest allowed: " + earliestStart.toLocalTime()
+            );
+        }
+
+        if ((beginTime.getMinute() % 30) != 0 || beginTime.getSecond() != 0 || beginTime.getNano() != 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Start time must be aligned to 30-minute slots");
+        }
+        if ((endTime.getMinute() % 30) != 0 || endTime.getSecond() != 0 || endTime.getNano() != 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be aligned to 30-minute slots");
+        }
+
+        final long minutes = java.time.Duration.between(beginTime, endTime).toMinutes();
+        if (minutes < 120) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Minimum booking duration is 120 minutes");
+        }
+
+        final Integer maxDurationMinutes = settings.getMaxDurationMinutes();
+        if (maxDurationMinutes != null && minutes > maxDurationMinutes) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Maximum booking duration is " + maxDurationMinutes + " minutes"
+            );
+        }
+
+        final Integer maxAdvanceDays = settings.getMaxAdvanceDays();
+        if (maxAdvanceDays != null
+            && day.toLocalDate().isAfter(LocalDateTime.now().toLocalDate().plusDays(maxAdvanceDays))) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Bookings allowed up to " + maxAdvanceDays + " days in advance"
+            );
+        }
+    }
+
+    private LocalDateTime roundUpToNextHalfHour(final LocalDateTime dateTime) {
+        final int minute = dateTime.getMinute();
+        final int addMinutes;
+        if (minute == 0 || minute == 30) {
+            addMinutes = 0;
+        } else if (minute < 30) {
+            addMinutes = 30 - minute;
+        } else {
+            addMinutes = 60 - minute;
+        }
+        return dateTime.plusMinutes(addMinutes).withSecond(0).withNano(0);
+    }
+
+    private void validateNoExistingBookingOverlapForSeries(
+            final Desk desk,
+            final Date day,
+            final Time begin,
+            final Time end) {
+        final Long roomId = desk.getRoom() == null ? null : desk.getRoom().getId();
+        if (roomId == null || desk.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Desk is missing room");
+        }
+        final List<Booking> overlaps = bookingRepository.getAllBookingsForPreventDuplicates(
+            roomId,
+            desk.getId(),
+            day,
+            begin,
+            end
+        );
+        if (overlaps != null && !overlaps.isEmpty()) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "This slot overlaps with another booking for this desk"
+            );
+        }
     }
 
     public SeriesOverlapCheckResponseDTO checkConfirmedOverlapWithOtherDeskForSeries(
@@ -525,12 +662,35 @@ public class SeriesService {
     public int deleteById(final long id) {
         try {
             final Optional<Series> seriesOpt = seriesRepository.findById(id);
+            if (seriesOpt.isEmpty()) {
+                return 0;
+            }
             final Series series = seriesOpt.get();
             if (series == null) {
                 System.err.println("series is null in SeriesService.deleteById()");
                 return 0;
             }
-            bookingRepository.deleteBookingsBySeriesId(id);
+            final LocalDateTime now = LocalDateTime.now();
+            final List<Booking> currentSeriesBookings = bookingRepository.findBySeriesId(id).stream()
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(Booking::getDay).thenComparing(Booking::getBegin))
+                .toList();
+            final List<Booking> preservedPastBookings = currentSeriesBookings.stream()
+                .filter(booking -> bookingHasAlreadyPassed(booking, now))
+                .toList();
+            final List<Booking> remainingBookings = currentSeriesBookings.stream()
+                .filter(booking -> !bookingHasAlreadyPassed(booking, now))
+                .toList();
+            if (!remainingBookings.isEmpty()) {
+                calendarNotificationService.sendSeriesDeleted(remainingBookings);
+            }
+            if (!preservedPastBookings.isEmpty()) {
+                preservedPastBookings.forEach(booking -> booking.setSeries(null));
+                bookingRepository.saveAll(preservedPastBookings);
+            }
+            if (!remainingBookings.isEmpty()) {
+                bookingRepository.deleteAll(remainingBookings);
+            }
             seriesRepository.delete(series);
             return 1;
         }
@@ -538,5 +698,12 @@ public class SeriesService {
             e.printStackTrace();
             return 0;
         }
+    }
+
+    private boolean bookingHasAlreadyPassed(final Booking booking, final LocalDateTime now) {
+        if (booking == null || booking.getDay() == null || booking.getEnd() == null) {
+            return false;
+        }
+        return LocalDateTime.of(booking.getDay().toLocalDate(), booking.getEnd().toLocalTime()).isBefore(now);
     }
 }

@@ -72,6 +72,23 @@ public class BookingCalendarFormatter {
         );
     }
 
+    public RenderedCalendarContent buildSeriesCancelContent(List<Booking> bookings, boolean german) {
+        if (bookings == null || bookings.isEmpty()) {
+            throw new IllegalArgumentException("Bookings are required for series content");
+        }
+
+        Booking referenceBooking = bookings.stream()
+            .filter(java.util.Objects::nonNull)
+            .min(Comparator.comparing(Booking::getDay).thenComparing(Booking::getBegin))
+            .orElseThrow(() -> new IllegalArgumentException("Bookings are required for series content"));
+
+        return new RenderedCalendarContent(
+            buildSeriesCancelSubject(referenceBooking, bookings, german),
+            buildSeriesCancelTextBody(referenceBooking, bookings, german),
+            buildCancelContent(referenceBooking, german).icsContent()
+        );
+    }
+
     public static boolean isGermanLanguage(String language) {
         return language != null && language.toLowerCase(Locale.ROOT).startsWith("de");
     }
@@ -147,6 +164,15 @@ public class BookingCalendarFormatter {
         lines.add(german
             ? "Ihre Schreibtisch-Serienbuchung wurde bestätigt."
             : "Your desk series booking was confirmed.");
+        lines.addAll(buildSeriesDetailLines(booking, bookings, german));
+        return String.join("\n", lines);
+    }
+
+    private String buildSeriesCancelTextBody(Booking booking, List<Booking> bookings, boolean german) {
+        List<String> lines = new ArrayList<>();
+        lines.add(german
+            ? "Ihre Schreibtisch-Serienbuchung wurde storniert."
+            : "Your desk series booking was cancelled.");
         lines.addAll(buildSeriesDetailLines(booking, bookings, german));
         return String.join("\n", lines);
     }
@@ -278,6 +304,20 @@ public class BookingCalendarFormatter {
                 roomName, deskName, booking.getDay().toString(), booking.getBegin().toString(), bookingCount);
         }
         return String.format("Desk series booking confirmed: %s / %s starting %s %s (%d bookings)",
+            roomName, deskName, booking.getDay().toString(), booking.getBegin().toString(), bookingCount);
+    }
+
+    private String buildSeriesCancelSubject(Booking booking, List<Booking> bookings, boolean german) {
+        String roomName = safeTrim(booking.getRoom() != null ? booking.getRoom().getRemark() : null);
+        String deskName = safeTrim(booking.getDesk() != null ? booking.getDesk().getRemark() : null);
+        if (roomName.isEmpty()) roomName = german ? "Raum" : "room";
+        if (deskName.isEmpty()) deskName = german ? "Schreibtisch" : "desk";
+        int bookingCount = (int) bookings.stream().filter(java.util.Objects::nonNull).count();
+        if (german) {
+            return String.format("Serienbuchung storniert: %s / %s ab %s %s (%d Termine)",
+                roomName, deskName, booking.getDay().toString(), booking.getBegin().toString(), bookingCount);
+        }
+        return String.format("Desk series booking cancelled: %s / %s starting %s %s (%d bookings)",
             roomName, deskName, booking.getDay().toString(), booking.getBegin().toString(), bookingCount);
     }
 

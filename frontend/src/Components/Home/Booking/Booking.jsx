@@ -1265,7 +1265,7 @@ const Booking = () => {
   };
 
   /** ----- HELPER ----- */
-  const getHeadline = () => t('availableDesks') + (room ? ` in ${room.remark}` : '');
+  const getHeadline = () => (room ? t('availableDesksInRoom', { room: room.remark }) : t('availableDesks'));
   const FALLBACK_PLACEHOLDER = '—';
 
   const showOrPlaceholder = (value) => {
@@ -1353,7 +1353,7 @@ const Booking = () => {
                           ) : null}
                         </>
                       )}
-                      <Typography variant="caption">{t('booking.tooltip.ergonomics')}: {desk?.workstationType || 'Standard'}</Typography>
+                      <Typography variant="caption">{t('booking.tooltip.ergonomics')}: {desk?.workstationType || t('workstationTypeStandard')}</Typography>
                       <Typography variant="caption">{t('booking.tooltip.monitors')}: {monitorSummary(desk)}</Typography>
                       <Typography variant="caption">{t('deskType')}: {deskTypeSummary(desk)}</Typography>
                       <Typography variant="caption">{t('booking.tooltip.technology')}: {technologySummary(desk)}</Typography>
@@ -1425,29 +1425,6 @@ const Booking = () => {
               </IconButton>
             </Tooltip>
           </Box>
-          {/*<FormControl>
-            <RadioGroup
-              row
-              id='radioGrouptimeRangeMode'
-              name='radio-buttons-group'
-              value={timeRangeMode}
-              onChange={(e) => setTimeRangeMode(e.target.value)}
-            >
-              <FormControlLabel
-                disabled={!clickedDeskId}
-                value='userDefined'
-                control={<Radio />}
-                label={i18n.language === 'de' ? 'Nutzerdefiniert' : 'Userdefined'}
-              />
-              <FormControlLabel
-                disabled={!clickedDeskId}
-                value='fullDay'
-                control={<Radio />}
-                label={i18n.language === 'de' ? 'Ganztägig' : 'Whole day'}
-              />
-            </RadioGroup>
-          </FormControl>*/}
-
           <Calendar
             localizer={localizer}
             events={events}

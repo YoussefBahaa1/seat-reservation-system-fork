@@ -105,6 +105,31 @@ class CalendarNotificationServiceTest {
         assertThat(mimeMessage.getContent().toString()).isNotNull();
     }
 
+    @Test
+    void seriesDeletionNotification_sendsSingleCancelMailWithRemainingIcsAttachments() throws Exception {
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+
+        Booking first = baseBooking();
+        first.setId(21L);
+        first.getUser().setNotifyBookingCancel(true);
+
+        Booking second = baseBooking();
+        second.setId(22L);
+        second.setDay(Date.valueOf(LocalDate.now().plusDays(8)));
+        second.setUser(first.getUser());
+        second.setDesk(first.getDesk());
+        second.setRoom(first.getRoom());
+
+        service.sendSeriesDeleted(List.of(first, second));
+
+        verify(mailSender).send(any(MimeMessage.class));
+        var multipart = (jakarta.mail.Multipart) mimeMessage.getContent();
+        assertThat(multipart.getCount()).isGreaterThanOrEqualTo(3);
+        assertThat(mimeMessage.getSubject()).contains("series booking cancelled");
+        assertThat(mimeMessage.getHeader("Method", null)).isEqualTo("CANCEL");
+    }
+
     private Booking baseBooking() {
         Booking b = new Booking();
         b.setDay(Date.valueOf(LocalDate.now().plusDays(1)));

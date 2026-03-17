@@ -179,6 +179,16 @@ const parseStoredTime = (key) => {
     }
 };
 
+const formatLocalDate = (dateValue) => {
+    if (!(dateValue instanceof Date) || Number.isNaN(dateValue.valueOf())) {
+        return '';
+    }
+    const year = dateValue.getFullYear();
+    const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+    const day = String(dateValue.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 /**
  * Interface to create series (=recurrent) bookings.
  *  
@@ -186,7 +196,7 @@ const parseStoredTime = (key) => {
  */
 const CreateSeries = () => {
     const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const valueForAllBuildings = useRef('0');
     const shouldPersistSelectedBuilding = useRef(parseStoredBuilding() !== null);
     const filterPanelRef = useRef(null);
@@ -250,7 +260,7 @@ const CreateSeries = () => {
     ]), [t]);
     
     function create_headline() {
-        return i18n.language === 'de' ? 'Erstellen von Serienterminen' : 'Creation of Series Bookings';
+        return t('createSeriesTitle');
     }
 
     const getSelectedValuesForCategory = (categoryKey) => {
@@ -613,11 +623,13 @@ const CreateSeries = () => {
      * @returns  A message that indicates if the series creation was successful or not.
      */
     function create_msg(ret) {
+        const formattedStartDate = formatLocalDate(startDate);
+        const formattedEndDate = formatLocalDate(endDate);
         if (ret) {
-            return i18n.language === 'de' ? `Serienterminen von ${startDate} bis ${endDate} erfolgreich erstellt.` : `Creation of series bookings from ${startDate} to ${endDate} was successful.`;
+            return t('createSeriesSuccess', { startDate: formattedStartDate, endDate: formattedEndDate });
         }
         else {
-            return i18n.language === 'de' ? `Serienterminen von ${startDate} bis ${endDate} konnte nicht erstellt werden.` : `Creation of series bookings from ${startDate} to ${endDate} was not successful.`;
+            return t('createSeriesError', { startDate: formattedStartDate, endDate: formattedEndDate });
         }
     }
 
@@ -630,8 +642,8 @@ const CreateSeries = () => {
             return;
         }
         // The date as iso format. Cut off the time etc to achieve a date like YYYY-MM-DD.
-        const startDateStr = new Date(startDate).toISOString().split('T')[0];
-        const endDateStr = new Date(endDate).toISOString().split('T')[0];
+        const startDateStr = formatLocalDate(startDate);
+        const endDateStr = formatLocalDate(endDate);
 
         if (startDateStr > endDateStr) {
             toast.error(t('startDateBiggerThanStartDate'));
@@ -772,8 +784,8 @@ const CreateSeries = () => {
             JSON.stringify({
                 'id': 0,
                 'rangeDTO': {
-                    startDate: startDate,
-                    endDate: endDate,
+                    startDate: formatLocalDate(startDate),
+                    endDate: formatLocalDate(endDate),
                     startTime: startTime,
                     endTime: endTime,
                     frequency: frequency, 
@@ -934,11 +946,11 @@ const CreateSeries = () => {
                     </Box>
                     <Box id='div_createSeries_selectBuilding' sx={{ width: 200 }}>
                         <FormControl id='createSeries_selectBuilding' required={true} fullWidth size='small'>
-                            <InputLabel id='demo-simple-select-label'>{t('building')}</InputLabel>
-                            <Select
-                                value={selectedBuilding} 
-                                label={t('Building')}
-                                size='small'
+                                <InputLabel id='demo-simple-select-label'>{t('building')}</InputLabel>
+                                <Select
+                                    value={selectedBuilding} 
+                                    label={t('building')}
+                                    size='small'
                                 onChange={(e)=>{
                                     setSelectedBuilding(e.target.value);
                                 }}
@@ -1113,7 +1125,7 @@ const CreateSeries = () => {
         <>
         <LayoutPage
             title={create_headline()}
-            helpText={i18n.language === 'de' ? 'Wählen Sie optional Startdatum, Enddatum, Startzeit und Endzeit aus. Sobald alle vier Angaben gesetzt sind, werden die Serientermine berechnet.<br/>Legen Sie im Anschluss Frequenz, Gebäude und bei Bedarf den Wochentag fest.<br/>In der unteren Tabelle können Sie dann einen passenden Arbeitsplatz für die Serienbuchung auswählen.' : 'Optionally select the start date, end date, start time, and end time. As soon as all four values are set, the recurring dates are calculated.<br/>Then choose a frequency, a building, and a weekday if needed.<br/>In the table below, you can then select a suitable workspace for the recurring booking.'}
+            helpText={t('createSeriesHelp')}
             withPaddingX={true}
         >
             <CreateContent/>

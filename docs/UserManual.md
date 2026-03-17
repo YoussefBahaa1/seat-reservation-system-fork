@@ -116,9 +116,23 @@ A desk/workstation is a concrete place that a user can book. For the following g
 3. Click on `Room/Desk Management`.
 4. Click on `Add Workstation`.
 5. Choose a building and a floor. Click on the image where the room is located in which you like to place the new desk.
-6. You will be asked to choose the equipment for the desk and a optional desk remark.
+6. After selecting a room, enter the workstation properties:
+   - `Ergonomics`
+   - `Monitors`
+   - `Desk Type`
+   - `Docking Station`
+   - `Webcam`
+   - `Headset`
+   - required `Desk Remark`
+   - optional `Special Features`
+   - `Fixed`
 7. Click on `SUBMIT`.
 8. A small window will appear with the information that the desk was created.
+
+Notes:
+- `Desk Remark` is required.
+- `Special Features` is optional and has a character limit.
+- If `Fixed` is set to `Yes`, the workstation is treated as permanently assigned and is not available in normal user booking/search flows unless it is unhidden in the admin panel.
 
 ### Delete a desk
 1. Login as user with ADMIN role.
@@ -138,8 +152,23 @@ A desk/workstation is a concrete place that a user can book. For the following g
 4. Click on `Edit Workstation`.
 5. Choose a building and a floor. Click on the image where the room is located in which the desk is located you like to edit.
 6. In the lower half of the screen you will see the label `Choose a desk`. Click on the triangle next to it. A list of all desks in this room will be shown. Choose the desk you wish to edit and click on it.
-7. Below you will see the attributes of the choosen desk. You can change them. If you are sure, click on `UPDATE`.
-8. A small window will appear with the information that the desk was updated.
+7. Below you will see the current desk properties. You can update:
+   - `Ergonomics`
+   - `Monitors`
+   - `Desk Type`
+   - `Docking Station`
+   - `Webcam`
+   - `Headset`
+   - `Desk Remark`
+   - `Special Features`
+   - `Fixed`
+8. Click on `UPDATE`.
+9. A small window will appear with the information that the desk was updated.
+
+Notes:
+- `Desk Remark` remains required when editing.
+- `Special Features` is optional and has a character limit.
+- Setting `Fixed` to `Yes` removes the workstation from normal user booking/search flows, but admins can still manage it here.
 
 ## Booking settings
 Configure global booking rules that apply to every booking.
@@ -175,11 +204,10 @@ If a user wants to quickly occupy a free desk, this search option will help to f
 3. Three search options will be shown.
 4. Click on `Workstations`.
 5. You see the Free Workstations page.
-6. Enter a day, a start time and a end time. You can also choose a building or include all buildings in your search.
-7. A list of free desks will appear.
-8. Click on `SUBMIT` in the row of your choice.
-9. You will be asked if you want to confirm your booking. Click `Yes`.
-10. A small window will appear with the information that you successful booked the desk.
+6. You can optionally choose a day, a start time, an end time and a building. If no day/time is selected, the page still shows desks that match the current building and workstation filters.
+7. (Optional) Use the advanced workstation filters to narrow the list, for example by ergonomics, monitor count, desk type, technology, or special features. Saved presets can also be created/applied here.
+8. If day, start time and end time are all filled, the list switches to desks that are free in the selected time range.
+9. Click `SUBMIT` in the row of your choice.
 
 ### Search for colleagues
 Often you want to sit next to your colleagues. To do so you must know the rooms where your colleagues booked desks at a given time. This search option helps you to find your colleagues.
@@ -215,7 +243,7 @@ A user can change the default floor, which is displayed first when a booking is 
 2. On the left side you will see the row called `Settings`. Click on it.
 3. A list of settings options will be shown.
 4. Click on `Defaults`.
-5. Change the default viewmode for the calendar. Select between day, week or month.
+5. Change the default viewmode for the calendar in My Bookings. Select between day, week or month.
 6. Choose your default floor. This floor is displayed first when you want to book a desk. To do so choose the building and the concrete floor.
 7. Click in `SUBMIT`.
 8. A small window will appear with the information that the settings was successful updated.
@@ -262,16 +290,22 @@ Admins can optionally enable Multi-Factor Authentication (MFA) using a TOTP auth
 6. To disable MFA later, click `Disable MFA` and confirm using either your password or a current 6-digit code.
 
 ## Favourites
-Save rooms you book often and jump back to them quickly.
+Save rooms and parking spots you use often and jump back to them quickly.
 
-On the room booking screen: click the star in the top-right. Empty = not a favourite; filled = favourite. Click to toggle.
+How to add favourites:
+- In the room booking view, click the star in the top-right of the room screen.
+- Select the room in Roomsearch and click the empty star (Favourites come up first).
+- In the parking details view, click the star in the details header.
+- Empty star = not a favourite, filled star = favourite.
 
-From the sidebar: click `Favourites` (between Bookings and Search) to:
-1. See your saved rooms (per-user, persistent).
-2. Click BOOK to open that room’s booking view.
-3. Click the star to remove.
-
-Favourite Rooms also come up first in RoomSearch
+From the sidebar, click `Favourites` to:
+1. See your saved room favourites and parking favourites.
+2. Optionally choose one shared `Date`, `Start Time`, and `End Time` filter for both sections.
+3. If all three fields are filled with a valid time range, favourites are checked for availability in that period:
+   - available entries are shown in green
+   - unavailable entries are shown in red
+4. Click `Book` on a room or parking favourite to open the corresponding booking screen.
+5. Click the star to remove the favourite.
 
 ## Home overview
 The `Home` page is the main entry point for both desk and parking workflows.
@@ -343,20 +377,31 @@ To let users choose the concrete days on which bookings are created, the paramet
 - `Every three weeks`: Every three weeks in [start date .. end date], a booking is created. Additionally, a weekday must be provided. The first booking happens on the first weekday in the interval [start date .. end date].
 - `Monthly`: Every month in [start date .. end date], a booking is created. Additionally, a weekday must be provided. The first booking happens on the first weekday in the interval [start date .. end date].
 
-We assume that an admin has already added at least one building with a floor that contains a room with a desk.
+Process: 
 
 1. Login.
 2. You see the main page with the `Home` view (`/home`).
 3. On the left side you will see the row called `Series Bookings`. Click it and choose `Create`.
-4. You are directed to a new page where you can define a start date and end date for the series. You must also provide a start and end time for each individual booking. The `Frequency` determines on which days bookings are created. You can choose a specific building or consider all buildings.
-5. In the central part of the page, you see the calculated dates.
-6. In the lower part of the page, you can see all desks that are available for the provided parameters. If a desk already has a booking on the calculated dates for the provided time range, it is not shown.
-7. To create the series (and all calculated bookings), click `SUBMIT` on your chosen desk.
-8. A small window appears with the information that the series was created.
-9. To see your series bookings, click `Series Bookings` and then `Manage`.
-10. You see a table of all your series bookings.
-11. If you want to delete a series (and all bookings that belong to it), click `Delete`. You will be asked to confirm.
-12. A small window appears with the information that the series was deleted.
+4. You are directed to the series booking page. Here you can optionally define:
+   - `Start Date`
+   - `End Date`
+   - `Start Time`
+   - `End Time`
+   - `Frequency`
+   - `Day of the Week` (depending on frequency)
+   - `Building`
+5. Even before a complete date/time range is selected, a list of desks is shown for the current building selection.
+6. As soon as start date, end date, start time, and end time are all filled with a valid range, the system calculates the recurring booking dates.
+7. (Optional) Use the advanced workstation filters to narrow the list, for example by ergonomics, monitor count, desk type, technology, or special features. Saved presets can also be created/applied here.
+8. The calculated dates are shown in the center of the page under `Day of the Week`.
+9. In the lower part of the page, you can see desks that are available for the provided parameters. If a desk already has a conflicting booking on one of the calculated dates for the selected time range, it is not shown.
+10. To create the series, click `SUBMIT` on your chosen desk.
+11. If no complete date/time range is selected yet, the system shows a message asking you to select date and time first.
+12. If the date/time range is complete and valid, a small window appears with the information that the series was created.
+13. To see your series bookings, click `Series Bookings` and then `Manage`.
+14. You see a table of all your series bookings.
+15. If you want to delete a series (and all bookings that belong to it), click `Delete`. You will be asked to confirm.
+16. A small window appears with the information that the series was deleted.
 
 ## Defect management system
 

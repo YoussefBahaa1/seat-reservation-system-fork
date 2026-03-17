@@ -18,14 +18,14 @@ import LayoutPage from '../Templates/LayoutPage.jsx';
 
 const ManageSeries = () => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [serieses, setSerieses] = useState([]);
   const [openFfDialog, setOpenFfDialog] = useState(false);
   const [selectedSeries, setSelectedSeries] = useState('');
   const [refresh, setRefresh] = useState(true);
 
   function create_headline() {
-    return i18n.language === 'de' ? 'Verwalten von Serienterminen' : 'Management of Series Bookings';
+    return t('manageSeriesTitle');
   }
 
   /**
@@ -48,7 +48,7 @@ const ManageSeries = () => {
       headers.current,
       (ret) => {
           if (ret === 1) {
-            toast.success('de' ? `Serienterminen wurde erfolgreich gelöscht.` : `Series bookings was successful deleted.`);
+            toast.success(t('seriesDeleted'));
             setRefresh(!refresh);
           }
       },
@@ -60,7 +60,7 @@ const ManageSeries = () => {
 
 
   function create_helpText() {
-    return i18n.language === 'de' ? 'Die Übersicht zu all Ihren getätigten Serienbuchungen, inklusive der Möglichkeit diese zu löschen.' : 'An overview of all your recurring bookings, including the option to delete them.';
+    return t('manageSeriesHelp');
   }
 
   return (
@@ -72,7 +72,7 @@ const ManageSeries = () => {
       open={openFfDialog}
       onClose={()=>{setOpenFfDialog(false);}}
       onDelete={deleteSeries}
-      text={i18n.language === 'de' ? 'Möchten Sie diese Serienbuchung mit allen Buchungen wirklich löschen?' : 'With this series all associated bookings will be deleted.'}
+      text={t('manageSeriesDeleteConfirm')}
     />
       {serieses && serieses.length > 0 ? 
 
@@ -116,7 +116,7 @@ const ManageSeries = () => {
             </TableBody>
             </Table>
           </TableContainer>
-        : <div>{i18n.language === 'de' ? 'Für Sie wurden keine Serienterminen gefunden.' : 'For the current user no series booking was found.'}</div>}
+        : <div>{t('manageSeriesEmpty')}</div>}
     </LayoutPage>
   );
 };

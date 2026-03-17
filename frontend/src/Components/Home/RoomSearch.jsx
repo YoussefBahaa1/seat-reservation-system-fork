@@ -43,7 +43,7 @@ const sortRoomsByFavouriteIds = (list, favouriteRoomIds) => {
 const RoomSearch = () => {
     const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
     const favouriteIdsRef = useRef(new Set());
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const [date, setDate] = useState(() => parseStoredDate());
     const [startTime, setStartTime] = useState(() => parseStoredTime(ROOM_SEARCH_START_KEY));
     const [endTime, setEndTime] = useState(() => parseStoredTime(ROOM_SEARCH_END_KEY));
@@ -180,10 +180,10 @@ const RoomSearch = () => {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, minHeight: 'calc(100vh - 260px)' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 860 }}>
             <Box id='div_minimalAmountOfWorkstationsInput' sx={{ width: 200 }}>
-              <Tooltip title={i18n.language === 'de' ? 'Die Mindestanzahl der Arbeitsplätze im Raum' : 'The minimal amount of workstations in room'}>
+              <Tooltip title={t('roomSearchMinDesksTooltip')}>
                 <TextField
                   id='minimalAmountOfWorkstationsInput'
-                  label={i18n.language === 'de' ? 'Mindestanzahl der Arbeitsplätze' : 'Minimal amount of desks in room'}
+                  label={t('roomSearchMinDesksLabel')}
                   type='number'
                   variant='outlined'
                   size='small'
@@ -279,14 +279,12 @@ const RoomSearch = () => {
     }
 
     function create_helpText() {
-      return i18n.language === 'de'
-        ? 'Für eine allgemeine Übersicht wählen Sie die Mindestanzahl an Arbeitsplätzen aus und schauen Sie in der unten stehenden Tabelle nach einem passenden Raum.<br/>Wenn Sie zusätzlich Tag, Startzeit und Endzeit auswählen, wird die Liste auf Räume gefiltert, die in diesem Zeitraum frei sind.'
-        : 'For a general overview, select the minimum number of desks and check the table below for a suitable room.<br/>If you also select a day, start time, and end time, the list is filtered to rooms that are available in that time range.';
+      return t('roomSearchHelp');
     }
 
     return (
       <LayoutPage
-        title={i18n.language === 'de' ? 'Raumsuche' : 'Roomsearch'}
+        title={t('roomSearchTitle')}
         helpText={create_helpText()}
         withPaddingX={true}
       >
