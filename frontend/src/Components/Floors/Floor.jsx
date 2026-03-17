@@ -59,7 +59,12 @@ const Floor = () => {
       roomId,
       date: dateIso,
     }));
-    navigate('/desks', { state: { roomId, date } });
+    navigate('/desks', {
+      state: {
+        roomId,
+        date,
+      },
+    });
   };
 
   return (

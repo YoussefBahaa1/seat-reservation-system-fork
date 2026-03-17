@@ -89,6 +89,23 @@ public class BookingCalendarFormatter {
         );
     }
 
+    public RenderedCalendarContent buildRoomBulkRequestContent(List<Booking> bookings, boolean german) {
+        if (bookings == null || bookings.isEmpty()) {
+            throw new IllegalArgumentException("Bookings are required for room bulk content");
+        }
+
+        Booking referenceBooking = bookings.stream()
+            .filter(java.util.Objects::nonNull)
+            .min(Comparator.comparing(Booking::getDay).thenComparing(Booking::getBegin))
+            .orElseThrow(() -> new IllegalArgumentException("Bookings are required for room bulk content"));
+
+        return new RenderedCalendarContent(
+            buildRoomBulkSubject(referenceBooking, bookings, german),
+            buildRoomBulkTextBody(referenceBooking, bookings, german),
+            buildRequestIcs(referenceBooking, german)
+        );
+    }
+
     public static boolean isGermanLanguage(String language) {
         return language != null && language.toLowerCase(Locale.ROOT).startsWith("de");
     }
@@ -177,6 +194,15 @@ public class BookingCalendarFormatter {
         return String.join("\n", lines);
     }
 
+    private String buildRoomBulkTextBody(Booking booking, List<Booking> bookings, boolean german) {
+        List<String> lines = new ArrayList<>();
+        lines.add(german
+            ? "Ihre Raum-Sammelbuchung wurde bestätigt."
+            : "Your room bulk booking was confirmed.");
+        lines.addAll(buildRoomBulkDetailLines(booking, bookings, german));
+        return String.join("\n", lines);
+    }
+
     private List<String> buildDetailLines(Booking booking, boolean german, boolean notificationBody) {
         List<String> lines = new ArrayList<>();
         lines.add(label(german, "Schreibtisch", "Desk") + ": " + deskRemark(booking));
@@ -217,6 +243,27 @@ public class BookingCalendarFormatter {
         if (!isBlank(frontendBaseUrl)) {
             lines.add(label(german, "Verwalten oder anzeigen in der App", "Manage or view in app") + ": "
                 + frontendBaseUrl + "/series");
+        }
+        return lines;
+    }
+
+    private List<String> buildRoomBulkDetailLines(Booking booking, List<Booking> bookings, boolean german) {
+        List<String> lines = new ArrayList<>();
+        lines.add(label(german, "Raum", "Room") + ": " + roomRemark(booking));
+        lines.add(label(german, "Datum", "Date") + ": " + booking.getDay());
+        lines.add(label(german, "Zeit", "Time") + ": " + booking.getBegin() + " - " + booking.getEnd());
+        lines.add(label(german, "Anzahl Schreibtische", "Desk count") + ": "
+            + bookings.stream().filter(java.util.Objects::nonNull).count());
+        lines.add(label(german, "Schreibtische", "Desks") + ":");
+        bookings.stream()
+            .filter(java.util.Objects::nonNull)
+            .sorted(Comparator.comparing(
+                value -> safeTrim(value.getDesk() == null ? null : value.getDesk().getRemark())
+            ))
+            .forEach(roomBooking -> lines.add("  " + deskRemark(roomBooking)));
+        if (!isBlank(frontendBaseUrl)) {
+            lines.add(label(german, "Verwalten oder anzeigen in der App", "Manage or view in app") + ": "
+                + frontendBaseUrl + "/admin/booking-management");
         }
         return lines;
     }
@@ -319,6 +366,18 @@ public class BookingCalendarFormatter {
         }
         return String.format("Desk series booking cancelled: %s / %s starting %s %s (%d bookings)",
             roomName, deskName, booking.getDay().toString(), booking.getBegin().toString(), bookingCount);
+    }
+
+    private String buildRoomBulkSubject(Booking booking, List<Booking> bookings, boolean german) {
+        String roomName = safeTrim(booking.getRoom() != null ? booking.getRoom().getRemark() : null);
+        if (roomName.isEmpty()) roomName = german ? "Raum" : "room";
+        int bookingCount = (int) bookings.stream().filter(java.util.Objects::nonNull).count();
+        if (german) {
+            return String.format("Raum-Sammelbuchung bestätigt: %s am %s %s (%d Schreibtische)",
+                roomName, booking.getDay().toString(), booking.getBegin().toString(), bookingCount);
+        }
+        return String.format("Room bulk booking confirmed: %s on %s %s (%d desks)",
+            roomName, booking.getDay().toString(), booking.getBegin().toString(), bookingCount);
     }
 
     private String withPlaceholder(String value) {

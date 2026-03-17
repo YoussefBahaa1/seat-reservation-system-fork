@@ -13,6 +13,7 @@ const DESK_FILTER_FIELDS = [
   { key: 'roomRemark', labelKey: 'room', type: 'select' },
   { key: 'deskRemark', labelKey: 'desk', type: 'select' },
   { key: 'seriesId', labelKey: 'seriesId', type: 'text' },
+  { key: 'bulkGroupId', labelKey: 'bulkGroupId', type: 'text' },
 ];
 
 const PARKING_FILTER_FIELDS = [

@@ -49,6 +49,7 @@ const DeskBookingListView = ({ bookings, onCancel, onEdit, isLoading = false }) 
             <TableCell>{t('room')}</TableCell>
             <TableCell>{t('desk')}</TableCell>
             <TableCell>{t('seriesId')}</TableCell>
+            <TableCell>{t('bulkGroupId')}</TableCell>
             <TableCell></TableCell>
           </TableRow>
         </TableHead>
@@ -66,6 +67,7 @@ const DeskBookingListView = ({ bookings, onCancel, onEdit, isLoading = false }) 
               <TableCell>{booking.roomRemark}</TableCell>
               <TableCell>{booking.deskRemark}</TableCell>
               <TableCell>{booking.seriesId || '-'}</TableCell>
+              <TableCell>{booking.bulkGroupId || '-'}</TableCell>
               <TableCell>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <Button

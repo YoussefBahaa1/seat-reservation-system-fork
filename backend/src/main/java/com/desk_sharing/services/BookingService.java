@@ -16,6 +16,10 @@ import com.desk_sharing.model.BookingOverlapCheckResponseDTO;
 import com.desk_sharing.model.AdminBookingEditRequestDTO;
 import com.desk_sharing.model.AdminDeskCandidateDTO;
 import com.desk_sharing.model.AdminEditCandidateRequestDTO;
+import com.desk_sharing.model.AdminRoomBulkBookingPreviewDTO;
+import com.desk_sharing.model.AdminRoomBulkBookingRequestDTO;
+import com.desk_sharing.model.AdminRoomBulkBookingResponseDTO;
+import com.desk_sharing.model.AdminRoomBulkDeskStatusDTO;
 import com.desk_sharing.model.ScheduledBlockingDeskDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
@@ -57,6 +61,12 @@ public class BookingService {
         ScheduledBlockingStatus.SCHEDULED,
         ScheduledBlockingStatus.ACTIVE
     );
+    private static final String ROOM_BULK_STATUS_BOOKABLE = "BOOKABLE";
+    private static final String ROOM_BULK_STATUS_HIDDEN = "HIDDEN";
+    private static final String ROOM_BULK_STATUS_BLOCKED = "BLOCKED";
+    private static final String ROOM_BULK_STATUS_LOCKED_BY_OTHER = "LOCKED_BY_OTHER";
+    private static final String ROOM_BULK_STATUS_BOOKING_CONFLICT = "BOOKING_CONFLICT";
+    private static final String ROOM_BULK_STATUS_SCHEDULED_BLOCKING = "SCHEDULED_BLOCKING";
 
     private final BookingRepository bookingRepository;
     
@@ -218,7 +228,24 @@ public class BookingService {
         copy.setLockExpiryTime(booking.getLockExpiryTime());
         copy.setCalendarUid(booking.getCalendarUid());
         copy.setCalendarSequence(booking.getCalendarSequence());
+        copy.setBulkGroupId(booking.getBulkGroupId());
         return copy;
+    }
+
+    private record ParsedRoomBulkBookingRequest(Date day, Time begin, Time end) {}
+
+    private record RoomBulkDeskEvaluation(Desk desk, String status, String reason, List<String> reasons) {
+        private boolean isBookable() {
+            return ROOM_BULK_STATUS_BOOKABLE.equals(status);
+        }
+
+        private boolean isExcluded() {
+            return ROOM_BULK_STATUS_HIDDEN.equals(status) || ROOM_BULK_STATUS_BLOCKED.equals(status);
+        }
+
+        private boolean isConflicted() {
+            return !isBookable() && !isExcluded();
+        }
     }
 
     private boolean userMatchesSearchTerm(final UserEntity user, final String normalizedTerm, final String compactTerm) {
@@ -294,6 +321,93 @@ public class BookingService {
             return "";
         }
         return last.isEmpty() ? first : first + "." + last;
+    }
+
+    private String safeTrim(final String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String roomBulkDeskLabel(final Desk desk) {
+        if (desk == null) {
+            return "Desk";
+        }
+        final String remark = safeTrim(desk.getRemark());
+        if (!remark.isEmpty()) {
+            return remark;
+        }
+        if (desk.getId() != null) {
+            return "#" + desk.getId();
+        }
+        return "Desk";
+    }
+
+    private String roomBulkReasonForStatus(final String status) {
+        return switch (status) {
+            case ROOM_BULK_STATUS_HIDDEN -> "hidden";
+            case ROOM_BULK_STATUS_BLOCKED -> "blocked";
+            case ROOM_BULK_STATUS_LOCKED_BY_OTHER -> "lockedByOther";
+            case ROOM_BULK_STATUS_BOOKING_CONFLICT -> "bookingConflict";
+            case ROOM_BULK_STATUS_SCHEDULED_BLOCKING -> "scheduledBlocking";
+            default -> "bookable";
+        };
+    }
+
+    private String roomBulkStatusForReason(final String reason) {
+        return switch (reason) {
+            case "hidden" -> ROOM_BULK_STATUS_HIDDEN;
+            case "blocked" -> ROOM_BULK_STATUS_BLOCKED;
+            case "lockedByOther" -> ROOM_BULK_STATUS_LOCKED_BY_OTHER;
+            case "scheduledBlocking" -> ROOM_BULK_STATUS_SCHEDULED_BLOCKING;
+            case "bookingConflict" -> ROOM_BULK_STATUS_BOOKING_CONFLICT;
+            default -> ROOM_BULK_STATUS_BOOKABLE;
+        };
+    }
+
+    private String selectPrimaryRoomBulkConflictStatus(final Collection<String> reasons) {
+        final List<String> safeReasons = reasons == null ? List.of() : reasons.stream()
+            .filter(Objects::nonNull)
+            .toList();
+        if (safeReasons.contains("bookingConflict")) {
+            return ROOM_BULK_STATUS_BOOKING_CONFLICT;
+        }
+        if (safeReasons.contains("scheduledBlocking")) {
+            return ROOM_BULK_STATUS_SCHEDULED_BLOCKING;
+        }
+        if (safeReasons.contains("lockedByOther")) {
+            return ROOM_BULK_STATUS_LOCKED_BY_OTHER;
+        }
+        return ROOM_BULK_STATUS_BOOKABLE;
+    }
+
+    private Comparator<Desk> roomBulkDeskComparator() {
+        return Comparator
+            .comparing((Desk desk) -> Optional.ofNullable(desk.getDeskNumberInRoom()).orElse(Long.MAX_VALUE))
+            .thenComparing(desk -> safeTrim(desk.getRemark()))
+            .thenComparing(desk -> Optional.ofNullable(desk.getId()).orElse(Long.MAX_VALUE));
+    }
+
+    private List<Desk> sortRoomDesks(final List<Desk> desks) {
+        return (desks == null ? List.<Desk>of() : desks).stream()
+            .filter(Objects::nonNull)
+            .sorted(roomBulkDeskComparator())
+            .toList();
+    }
+
+    private ParsedRoomBulkBookingRequest parseRoomBulkBookingRequest(
+        final AdminRoomBulkBookingRequestDTO request
+    ) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing room bulk booking payload");
+        }
+        try {
+            return new ParsedRoomBulkBookingRequest(
+                Date.valueOf(request.getDay()),
+                Time.valueOf(LocalTime.parse(normalizeTimeString(request.getBegin()))),
+                Time.valueOf(LocalTime.parse(normalizeTimeString(request.getEnd())))
+            );
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid booking date or time");
+        }
     }
     
     /**
@@ -434,6 +548,238 @@ public class BookingService {
             bookingStart,
             bookingEnd
         ).isEmpty();
+    }
+
+    private RoomBulkDeskEvaluation evaluateDeskForRoomBulk(
+        final Desk desk,
+        final Date day,
+        final Time begin,
+        final Time end,
+        final UserEntity currentUser
+    ) {
+        if (desk == null) {
+            final String reason = roomBulkReasonForStatus(ROOM_BULK_STATUS_BOOKING_CONFLICT);
+            return new RoomBulkDeskEvaluation(null, ROOM_BULK_STATUS_BOOKING_CONFLICT, reason, List.of(reason));
+        }
+        if (desk.isHidden()) {
+            final String reason = roomBulkReasonForStatus(ROOM_BULK_STATUS_HIDDEN);
+            return new RoomBulkDeskEvaluation(desk, ROOM_BULK_STATUS_HIDDEN, reason, List.of(reason));
+        }
+        if (desk.isBlocked()) {
+            final String reason = roomBulkReasonForStatus(ROOM_BULK_STATUS_BLOCKED);
+            return new RoomBulkDeskEvaluation(desk, ROOM_BULK_STATUS_BLOCKED, reason, List.of(reason));
+        }
+
+        final LinkedHashSet<String> conflictReasons = new LinkedHashSet<>();
+        if (hasScheduledBlockingOverlap(desk.getId(), day, begin, end)) {
+            conflictReasons.add(roomBulkReasonForStatus(ROOM_BULK_STATUS_SCHEDULED_BLOCKING));
+        }
+
+        final Optional<BookingLock> activeLockOpt = bookingLockService.findActiveLock(desk.getId(), day);
+        if (activeLockOpt.isPresent()) {
+            final BookingLock activeLock = activeLockOpt.get();
+            final int ownerId = activeLock.getUser() == null ? -1 : activeLock.getUser().getId();
+            if (currentUser == null || ownerId != currentUser.getId()) {
+                conflictReasons.add(roomBulkReasonForStatus(ROOM_BULK_STATUS_LOCKED_BY_OTHER));
+            }
+        }
+
+        final Long roomId = desk.getRoom() == null ? null : desk.getRoom().getId();
+        final List<Booking> existingBookings = roomId == null
+            ? List.of()
+            : bookingRepository.getAllBookingsForPreventDuplicates(roomId, desk.getId(), day, begin, end);
+        if (existingBookings != null && !existingBookings.isEmpty()) {
+            conflictReasons.add(roomBulkReasonForStatus(ROOM_BULK_STATUS_BOOKING_CONFLICT));
+        }
+
+        if (!conflictReasons.isEmpty()) {
+            final List<String> orderedReasons = conflictReasons.stream()
+                .sorted(Comparator.comparingInt(reason -> switch (reason) {
+                    case "bookingConflict" -> 0;
+                    case "scheduledBlocking" -> 1;
+                    case "lockedByOther" -> 2;
+                    default -> 99;
+                }))
+                .toList();
+            final String primaryStatus = selectPrimaryRoomBulkConflictStatus(orderedReasons);
+            final String primaryReason = orderedReasons.get(0);
+            return new RoomBulkDeskEvaluation(desk, primaryStatus, primaryReason, orderedReasons);
+        }
+
+        final String reason = roomBulkReasonForStatus(ROOM_BULK_STATUS_BOOKABLE);
+        return new RoomBulkDeskEvaluation(desk, ROOM_BULK_STATUS_BOOKABLE, reason, List.of(reason));
+    }
+
+    private AdminRoomBulkDeskStatusDTO toRoomBulkDeskStatusDTO(final RoomBulkDeskEvaluation evaluation) {
+        return new AdminRoomBulkDeskStatusDTO(
+            evaluation.desk() == null ? null : evaluation.desk().getId(),
+            roomBulkDeskLabel(evaluation.desk()),
+            evaluation.status(),
+            evaluation.reason(),
+            evaluation.reasons()
+        );
+    }
+
+    private AdminRoomBulkBookingPreviewDTO buildRoomBulkPreview(
+        final Room room,
+        final List<RoomBulkDeskEvaluation> evaluations
+    ) {
+        final List<RoomBulkDeskEvaluation> safeEvaluations = evaluations == null ? List.of() : evaluations;
+        final int includedDeskCount = (int) safeEvaluations.stream().filter(RoomBulkDeskEvaluation::isBookable).count();
+        final int conflictedDeskCount = (int) safeEvaluations.stream().filter(RoomBulkDeskEvaluation::isConflicted).count();
+        final int excludedDeskCount = (int) safeEvaluations.stream().filter(RoomBulkDeskEvaluation::isExcluded).count();
+        return new AdminRoomBulkBookingPreviewDTO(
+            room == null ? null : room.getId(),
+            room == null ? "" : safeTrim(room.getRemark()),
+            includedDeskCount,
+            conflictedDeskCount,
+            excludedDeskCount,
+            includedDeskCount > 0,
+            safeEvaluations.stream().map(this::toRoomBulkDeskStatusDTO).toList()
+        );
+    }
+
+    private String buildRoomBulkConflictMessage(final RoomBulkDeskEvaluation evaluation) {
+        final String deskLabel = roomBulkDeskLabel(evaluation.desk());
+        final List<String> reasons = evaluation.reasons() == null ? List.of() : evaluation.reasons();
+        if (reasons.isEmpty()) {
+            return "Desk " + deskLabel + " is not eligible for room bulk booking.";
+        }
+        final List<String> messages = reasons.stream()
+            .map(reason -> switch (roomBulkStatusForReason(reason)) {
+                case ROOM_BULK_STATUS_LOCKED_BY_OTHER ->
+                    "is currently being booked by another user";
+                case ROOM_BULK_STATUS_BOOKING_CONFLICT ->
+                    "already has a booking in the selected time range";
+                case ROOM_BULK_STATUS_SCHEDULED_BLOCKING ->
+                    "has a scheduled block during the selected time range";
+                default ->
+                    "is not eligible for room bulk booking";
+            })
+            .distinct()
+            .toList();
+        return "Desk " + deskLabel + " " + String.join(" and ", messages) + ".";
+    }
+
+    public AdminRoomBulkBookingPreviewDTO previewRoomBulkBooking(
+        @NonNull final Long roomId,
+        final AdminRoomBulkBookingRequestDTO request
+    ) {
+        requireAdmin();
+
+        final ParsedRoomBulkBookingRequest parsedRequest = parseRoomBulkBookingRequest(request);
+        validateBookingTimes(parsedRequest.day(), parsedRequest.begin(), parsedRequest.end(), bookingSettingsService.getCurrentSettings());
+
+        final Room room = roomService.getRoomById(roomId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
+        final UserEntity currentUser = userService.getCurrentUser();
+        final List<RoomBulkDeskEvaluation> evaluations = sortRoomDesks(deskRepository.findByRoomId(roomId)).stream()
+            .map(desk -> evaluateDeskForRoomBulk(desk, parsedRequest.day(), parsedRequest.begin(), parsedRequest.end(), currentUser))
+            .toList();
+
+        return buildRoomBulkPreview(room, evaluations);
+    }
+
+    @Transactional
+    public AdminRoomBulkBookingResponseDTO createRoomBulkBooking(
+        @NonNull final Long roomId,
+        final AdminRoomBulkBookingRequestDTO request
+    ) {
+        requireAdmin();
+
+        final ParsedRoomBulkBookingRequest parsedRequest = parseRoomBulkBookingRequest(request);
+        validateBookingTimes(parsedRequest.day(), parsedRequest.begin(), parsedRequest.end(), bookingSettingsService.getCurrentSettings());
+
+        final Room room = roomService.getRoomById(roomId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
+        final UserEntity currentUser = userService.getCurrentUser();
+        final List<Desk> roomDesks = sortRoomDesks(deskRepository.findByRoomId(roomId));
+        final List<Desk> eligibleDesks = new ArrayList<>();
+        final Set<Long> touchedDeskIds = new LinkedHashSet<>();
+
+        try {
+            for (final Desk roomDesk : roomDesks) {
+                if (roomDesk == null || roomDesk.getId() == null) {
+                    continue;
+                }
+                if (roomDesk.isHidden() || roomDesk.isBlocked()) {
+                    continue;
+                }
+
+                final Desk lockedDesk = deskRepository.findByIdForUpdate(roomDesk.getId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "A workstation in this room became unavailable during bulk booking."
+                    ));
+                touchedDeskIds.add(lockedDesk.getId());
+
+                final RoomBulkDeskEvaluation evaluation = evaluateDeskForRoomBulk(
+                    lockedDesk,
+                    parsedRequest.day(),
+                    parsedRequest.begin(),
+                    parsedRequest.end(),
+                    currentUser
+                );
+                if (evaluation.isExcluded()) {
+                    continue;
+                }
+                if (!evaluation.isBookable()) {
+                    continue;
+                }
+                eligibleDesks.add(lockedDesk);
+            }
+
+            if (eligibleDesks.isEmpty()) {
+                throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "No desks in this room are currently eligible for bulk booking."
+                );
+            }
+
+            final String bulkGroupId = UUID.randomUUID().toString();
+            final List<Booking> savedBookings = bookingRepository.saveAll(
+                eligibleDesks.stream()
+                    .map(desk -> {
+                        final Booking booking = new Booking(
+                            currentUser,
+                            room,
+                            desk,
+                            parsedRequest.day(),
+                            parsedRequest.begin(),
+                            parsedRequest.end()
+                        );
+                        booking.setBulkGroupId(bulkGroupId);
+                        booking.setCalendarUid(UUID.randomUUID().toString());
+                        booking.setCalendarSequence(0);
+                        return booking;
+                    })
+                    .toList()
+            );
+
+            calendarNotificationService.sendRoomBulkBookingCreated(savedBookings);
+
+            return new AdminRoomBulkBookingResponseDTO(
+                bulkGroupId,
+                room.getId(),
+                savedBookings.size(),
+                savedBookings.stream().map(Booking::getId).filter(Objects::nonNull).toList(),
+                savedBookings.stream()
+                    .map(Booking::getDesk)
+                    .filter(Objects::nonNull)
+                    .map(Desk::getId)
+                    .filter(Objects::nonNull)
+                    .toList(),
+                parsedRequest.day().toString(),
+                parsedRequest.begin().toString(),
+                parsedRequest.end().toString()
+            );
+        } finally {
+            if (currentUser != null) {
+                touchedDeskIds.forEach(deskId ->
+                    bookingLockService.releaseLockForUser(deskId, parsedRequest.day(), currentUser.getId())
+                );
+            }
+        }
     }
 
     /**

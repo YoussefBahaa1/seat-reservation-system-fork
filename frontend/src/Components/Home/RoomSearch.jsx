@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import {Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, TextField, IconButton, Typography} from '@mui/material';
+import {Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, TextField, IconButton, Typography, Button} from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { getRequest, postRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
 import CreateDatePicker from '../misc/CreateDatePicker';
 import CreateTimePicker from '../misc/CreateTimePicker';
@@ -42,6 +43,21 @@ const parseStoredPositiveInteger = (key, fallback) => {
   }
 };
 
+const formatDateValue = (value) => {
+  if (!(value instanceof Date) || Number.isNaN(value.valueOf())) return '';
+  const yyyy = value.getFullYear();
+  const mm = String(value.getMonth() + 1).padStart(2, '0');
+  const dd = String(value.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const buildIsoDateTime = (date, time) => {
+  if (!(date instanceof Date) || Number.isNaN(date.valueOf()) || !time) return null;
+  const normalizedTime = String(time).trim().length === 5 ? `${String(time).trim()}:00` : String(time).trim();
+  const parsed = new Date(`${formatDateValue(date)}T${normalizedTime}`);
+  return Number.isNaN(parsed.valueOf()) ? null : parsed.toISOString();
+};
+
 const sortRoomsByFavouriteIds = (list, favouriteRoomIds) => {
   return [...list].sort((a, b) => {
     const aFav = favouriteRoomIds.has(a.id) ? 1 : 0;
@@ -55,6 +71,7 @@ const RoomSearch = () => {
     const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
     const favouriteIdsRef = useRef(new Set());
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const [date, setDate] = useState(() => parseStoredDate());
     const [startTime, setStartTime] = useState(() => parseStoredTime(ROOM_SEARCH_START_KEY));
     const [endTime, setEndTime] = useState(() => parseStoredTime(ROOM_SEARCH_END_KEY));
@@ -193,6 +210,21 @@ const RoomSearch = () => {
       }
     };
 
+    const goToRoomBooking = (room) => {
+      const nextState = {
+        roomId: room.id,
+        date: date || new Date(),
+      };
+      if (hasCompleteTimeframe) {
+        const start = buildIsoDateTime(date, startTime);
+        const end = buildIsoDateTime(date, endTime);
+        if (start && end) {
+          nextState.preferredSlot = { start, end };
+        }
+      }
+      navigate('/desks', { state: nextState });
+    };
+
 
     function CreateContent() {
       return (
@@ -271,6 +303,7 @@ const RoomSearch = () => {
                   <TableCell>{t('roomRemark')}</TableCell>
                   <TableCell>{t('building')}</TableCell>
                   <TableCell>{t('floor')}</TableCell>
+                  <TableCell />
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -288,6 +321,14 @@ const RoomSearch = () => {
                     <TableCell id={`${room.id}_remark`}>{room.remark}</TableCell>
                     <TableCell id={`${room.id}_buildingName`}> {room.floor.building.name}</TableCell>
                     <TableCell id={`${room.id}_floorName`}>{room.floor.name}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant='outlined'
+                        onClick={() => goToRoomBooking(room)}
+                      >
+                        {t('book')}
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

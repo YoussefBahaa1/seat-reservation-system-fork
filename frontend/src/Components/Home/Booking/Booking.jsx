@@ -8,6 +8,8 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  ToggleButton,
+  ToggleButtonGroup,
   /*, FormControl, RadioGroup, FormControlLabel, Radio */
 } from '@mui/material';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
@@ -24,6 +26,7 @@ import LayoutPage from '../../Templates/LayoutPage.jsx';
 import { getRequest, postRequest, putRequest, deleteRequest } from '../../RequestFunctions/RequestFunctions';
 import bookingPostRequest, { checkDeskBookingOverlap, showDeskBookingConfirmation } from '../../misc/bookingPostRequest.js';
 import ReportDefectModal from '../../Defects/ReportDefectModal';
+import RoomBulkBookingPanel from './RoomBulkBookingPanel.jsx';
 import { DeskTable } from '../../misc/DesksTable.jsx';
 import { colorVars, semanticColors } from '../../../theme';
 //import { buildFullDaySlots } from './buildFullDaySlots.js';
@@ -86,7 +89,7 @@ const deskAutoSelectRank = (desk) => {
   return Number.MAX_SAFE_INTEGER;
 };
 
-const sortDesksForAutoSelection = (desks) => {
+  const sortDesksForAutoSelection = (desks) => {
   return [...(Array.isArray(desks) ? desks : [])].sort((left, right) => {
     const rankDiff = deskAutoSelectRank(left) - deskAutoSelectRank(right);
     if (rankDiff !== 0) return rankDiff;
@@ -96,6 +99,9 @@ const sortDesksForAutoSelection = (desks) => {
   });
 };
 
+const timeRangesOverlap = (leftStart, leftEnd, rightStart, rightEnd) =>
+  leftStart < rightEnd && leftEnd > rightStart;
+
 const Booking = () => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const { t, i18n } = useTranslation();
@@ -103,6 +109,8 @@ const Booking = () => {
   const location = useLocation();
   const locationState = location.state && typeof location.state === 'object' ? location.state : {};
   const storedContext = parseStoredBookingContext();
+  const isAdmin = localStorage.getItem('admin') === 'true';
+  const requestedBookingMode = 'desk';
   const localizer = momentLocalizer(moment);
   const calendarFormats = {
     timeGutterFormat: (date, culture, loc) => loc.format(date, 'HH:mm', culture),
@@ -136,6 +144,7 @@ const Booking = () => {
   // States
   const [room, setRoom] = useState(null);
   const [desks, setDesks] = useState([]);
+  const [bookingMode, setBookingMode] = useState(requestedBookingMode);
   const [events, setEvents] = useState([]);
   const [event, setEvent] = useState({});
   const [calendarDate, setCalendarDate] = useState(initialDate);
@@ -339,6 +348,20 @@ const Booking = () => {
   const minStartTime = 6;
   const maxEndTime = 22;
   const typography_sx = { margin: '5px', textAlign: 'center' };
+
+  useEffect(() => {
+    setBookingMode(requestedBookingMode);
+  }, [requestedBookingMode, roomId]);
+
+  useEffect(() => {
+    if (bookingMode !== 'room') return;
+    const lock = activeDeskLockRef.current;
+    clearLocalDeskLock();
+    clearDeskSelection();
+    if (lock?.deskId && lock?.day) {
+      releaseDeskLockByPayload(lock);
+    }
+  }, [bookingMode, clearDeskSelection, clearLocalDeskLock, releaseDeskLockByPayload]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -720,11 +743,8 @@ const Booking = () => {
       return true;
     });
 
-    const overlappingEvents = updatedEvents.filter(
-      (e) =>
-        (e.start <= startTime && startTime < e.end) ||
-        (e.start < endTime && endTime <= e.end) ||
-        (startTime <= e.start && e.end <= endTime)
+    const overlappingEvents = updatedEvents.filter((e) =>
+      timeRangesOverlap(e.start, e.end, startTime, endTime)
     );
 
     return overlappingEvents.length === 0;
@@ -788,11 +808,8 @@ const Booking = () => {
       return true;
     });
 
-    const overlappingEvents = updatedEvents.filter(
-      (e) =>
-        (e.start <= startTime && startTime < e.end) ||
-        (e.start < endTime && endTime <= e.end) ||
-        (startTime <= e.start && e.end <= endTime)
+    const overlappingEvents = updatedEvents.filter((e) =>
+      timeRangesOverlap(e.start, e.end, startTime, endTime)
     );
     if (overlappingEvents.length > 0) {
       const overlapsScheduledBlocking = overlappingEvents.some((e) => e?.isScheduledBlocking);
@@ -1263,8 +1280,8 @@ const Booking = () => {
     const overlapsOld =
       originalDeskId === clickedDeskId &&
       originalDay === newDay &&
-      (moment(newBegin, 'HH:mm:ss').isSameOrBefore(moment(originalEnd, 'HH:mm:ss')) &&
-        moment(newEnd, 'HH:mm:ss').isSameOrAfter(moment(originalBegin, 'HH:mm:ss')));
+      (moment(newBegin, 'HH:mm:ss').isBefore(moment(originalEnd, 'HH:mm:ss')) &&
+        moment(newEnd, 'HH:mm:ss').isAfter(moment(originalBegin, 'HH:mm:ss')));
 
     if (bookingPendingRef.current) return;
     setBookingPending(true);
@@ -1309,7 +1326,7 @@ const Booking = () => {
 
   //Load saved desk selection from sessionStorage
   useEffect(() => {
-    if (!desks.length) return;
+    if (bookingMode !== 'desk' || !desks.length) return;
     try {
       if (isEditMode && editBooking?.deskId) {
         const match = desks.find((desk) => desk.id === editBooking.deskId);
@@ -1331,10 +1348,10 @@ const Booking = () => {
     } catch {
       // ignore invalid stored value
     }
-  }, [acquireDeskLockAndSelect, desks, editBooking, isEditMode, selectionKey]);
+  }, [acquireDeskLockAndSelect, bookingMode, desks, editBooking, isEditMode, selectionKey]);
 
   useEffect(() => {
-    if (!preferredNavigationRef.current || isEditMode || clickedDeskId || !desks.length) {
+    if (bookingMode !== 'desk' || !preferredNavigationRef.current || isEditMode || clickedDeskId || !desks.length) {
       return;
     }
 
@@ -1395,15 +1412,18 @@ const Booking = () => {
         endTime: moment(pendingPreferredSlot.end).format('HH:mm'),
       })
     );
-  }, [acquireDeskLockAndSelect, clearStoredPreferredSlot, clickedDeskId, desks, isEditMode, roomId]);
+  }, [acquireDeskLockAndSelect, bookingMode, clearStoredPreferredSlot, clickedDeskId, desks, isEditMode, roomId]);
 
   useEffect(() => {
-    if (preferredNavigationRef.current && clickedDeskId) {
+    if (bookingMode === 'desk' && preferredNavigationRef.current && clickedDeskId) {
       clearStoredPreferredSlot();
     }
-  }, [clearStoredPreferredSlot, clickedDeskId]);
+  }, [bookingMode, clearStoredPreferredSlot, clickedDeskId]);
 
   useEffect(() => {
+    if (bookingMode !== 'desk') {
+      return;
+    }
     if (!autoSuggestedSlotActiveRef.current || autoSuggestedDeskIdRef.current == null) {
       return;
     }
@@ -1413,7 +1433,7 @@ const Booking = () => {
       autoSuggestedSlotActiveRef.current = false;
       autoSuggestedDeskIdRef.current = null;
     }
-  }, [clickedDeskId]);
+  }, [bookingMode, clickedDeskId]);
 
   const refreshFavouriteStatus = useCallback(() => {
     const userId = localStorage.getItem('userId');
@@ -1432,7 +1452,11 @@ const Booking = () => {
   }, [refreshFavouriteStatus]);
 
   // Reload bookings when clicked desk changes
-  useEffect(() => { if (clickedDeskId) loadBookings(); }, [clickedDeskId, loadBookings]);
+  useEffect(() => {
+    if (bookingMode === 'desk' && clickedDeskId) {
+      loadBookings();
+    }
+  }, [bookingMode, clickedDeskId, loadBookings]);
 
   // Set locale for calendar
   useEffect(() => { moment.locale(i18n.language === 'en' ? 'en-gb' : i18n.language); }, [i18n.language]);
@@ -1519,10 +1543,39 @@ const Booking = () => {
   return (
     <LayoutPage
       title={getHeadline()}
-      helpText={t('helpCreateBooking')}
+      helpText={bookingMode === 'room' ? t('helpCreateRoomBooking') : t('helpCreateBooking')}
       useGenericBackButton
       withPaddingX
     >
+      {isAdmin && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          <ToggleButtonGroup
+            exclusive
+            value={bookingMode}
+            onChange={(_event, value) => {
+              if (value) {
+                setBookingMode(value);
+              }
+            }}
+            color="primary"
+          >
+            <ToggleButton value="desk">{t('deskBookingMode')}</ToggleButton>
+            <ToggleButton value="room">{t('roomBookingMode')}</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      )}
+      {bookingMode === 'room' ? (
+        <RoomBulkBookingPanel
+          headers={headers.current}
+          roomId={roomId}
+          room={room}
+          initialDate={initialDate}
+          preferredSlot={preferredSlot}
+          onBooked={() => {
+            navigate('/home', { replace: true });
+          }}
+        />
+      ) : (
       <Box sx={{ display: 'flex', width: '100%' }}>
         {/* Desks List */}
         <Box id="desks" sx={{ width: '20%', paddingRight: '20px' }}>
@@ -1729,55 +1782,24 @@ const Booking = () => {
           </Box>
         </Box>
       </Box>
+      )}
 
-      <ReportDefectModal
-        isOpen={isReportDefectOpen}
-        onClose={() => setIsReportDefectOpen(false)}
-        deskId={clickedDeskId}
-      />
-      <Dialog
-        open={isAlternativeDeskDialogOpen}
-        onClose={closeAlternativeDeskDialog}
-        maxWidth="lg"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
-            {t('otherFreeDesksForSelectedTimeSlots', {
-              start: pendingSlotSuggestionRef.current?.start
-                ? moment(pendingSlotSuggestionRef.current.start).format('HH:mm')
-                : '--:--',
-              end: pendingSlotSuggestionRef.current?.end
-                ? moment(pendingSlotSuggestionRef.current.end).format('HH:mm')
-                : '--:--',
-            })}
-          </Typography>
-          <IconButton
-            onClick={closeAlternativeDeskDialog}
-            aria-label={t('close')}
-            sx={{ ml: 'auto' }}
+      {bookingMode === 'desk' && (
+        <>
+          <ReportDefectModal
+            isOpen={isReportDefectOpen}
+            onClose={() => setIsReportDefectOpen(false)}
+            deskId={clickedDeskId}
+          />
+          <Dialog
+            open={isAlternativeDeskDialogOpen}
+            onClose={closeAlternativeDeskDialog}
+            maxWidth="lg"
+            fullWidth
           >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          {isAlternativeDeskDialogLoading ? (
-            <Typography>{t('loading')}</Typography>
-          ) : (
-            <>
-              {alternativeDesks.length > 0 ? (
-                <DeskTable
-                  name="booking_alternative_desks"
-                  desks={alternativeDesks}
-                  submit_function={handleAlternativeDeskSelection}
-                  hideHeader
-                  submitLabelKey="book"
-                />
-              ) : (
-                <Typography>{t('noFreeDesksForSelectedTimeSlotInBuilding')}</Typography>
-              )}
-              <Typography variant="h6" sx={{ mt: 2, mb: 1, fontWeight: 600 }}>
-                {t('otherDesksWithSameEquipementForSelectedTimeSlots', {
+            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
+                {t('otherFreeDesksForSelectedTimeSlots', {
                   start: pendingSlotSuggestionRef.current?.start
                     ? moment(pendingSlotSuggestionRef.current.start).format('HH:mm')
                     : '--:--',
@@ -1786,44 +1808,80 @@ const Booking = () => {
                     : '--:--',
                 })}
               </Typography>
-              {sameEquipmentAlternativeDesks.length > 0 ? (
-                <DeskTable
-                  name="booking_alternative_desks_same_equipment"
-                  desks={sameEquipmentAlternativeDesks}
-                  submit_function={handleAlternativeDeskSelection}
-                  hideHeader
-                  submitLabelKey="book"
-                />
+              <IconButton
+                onClick={closeAlternativeDeskDialog}
+                aria-label={t('close')}
+                sx={{ ml: 'auto' }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
+              {isAlternativeDeskDialogLoading ? (
+                <Typography>{t('loading')}</Typography>
               ) : (
-                <Typography>{t('noFreeDesksWithSameEquipmentForSelectedTimeSlotInBuilding')}</Typography>
+                <>
+                  {alternativeDesks.length > 0 ? (
+                    <DeskTable
+                      name="booking_alternative_desks"
+                      desks={alternativeDesks}
+                      submit_function={handleAlternativeDeskSelection}
+                      hideHeader
+                      submitLabelKey="book"
+                    />
+                  ) : (
+                    <Typography>{t('noFreeDesksForSelectedTimeSlotInBuilding')}</Typography>
+                  )}
+                  <Typography variant="h6" sx={{ mt: 2, mb: 1, fontWeight: 600 }}>
+                    {t('otherDesksWithSameEquipementForSelectedTimeSlots', {
+                      start: pendingSlotSuggestionRef.current?.start
+                        ? moment(pendingSlotSuggestionRef.current.start).format('HH:mm')
+                        : '--:--',
+                      end: pendingSlotSuggestionRef.current?.end
+                        ? moment(pendingSlotSuggestionRef.current.end).format('HH:mm')
+                        : '--:--',
+                    })}
+                  </Typography>
+                  {sameEquipmentAlternativeDesks.length > 0 ? (
+                    <DeskTable
+                      name="booking_alternative_desks_same_equipment"
+                      desks={sameEquipmentAlternativeDesks}
+                      submit_function={handleAlternativeDeskSelection}
+                      hideHeader
+                      submitLabelKey="book"
+                    />
+                  ) : (
+                    <Typography>{t('noFreeDesksWithSameEquipmentForSelectedTimeSlotInBuilding')}</Typography>
+                  )}
+                  <Typography variant="h6" sx={{ mt: 2, mb: 1, fontWeight: 600 }}>
+                    {t('closestPreferredDesksForSelectedTimeSlots', {
+                      start: pendingSlotSuggestionRef.current?.start
+                        ? moment(pendingSlotSuggestionRef.current.start).format('HH:mm')
+                        : '--:--',
+                      end: pendingSlotSuggestionRef.current?.end
+                        ? moment(pendingSlotSuggestionRef.current.end).format('HH:mm')
+                        : '--:--',
+                    })}
+                  </Typography>
+                  {!hasFavouriteRooms ? (
+                    <Typography>{t('noFavoriteRooms')}</Typography>
+                  ) : preferredAlternativeDesks.length > 0 ? (
+                    <DeskTable
+                      name="booking_alternative_desks_preferred"
+                      desks={preferredAlternativeDesks}
+                      submit_function={handleAlternativeDeskSelection}
+                      hideHeader
+                      submitLabelKey="book"
+                    />
+                  ) : (
+                    <Typography>{t('noFreeDesksInFavoriteRoomsForSelectedTimeSlot')}</Typography>
+                  )}
+                </>
               )}
-              <Typography variant="h6" sx={{ mt: 2, mb: 1, fontWeight: 600 }}>
-                {t('closestPreferredDesksForSelectedTimeSlots', {
-                  start: pendingSlotSuggestionRef.current?.start
-                    ? moment(pendingSlotSuggestionRef.current.start).format('HH:mm')
-                    : '--:--',
-                  end: pendingSlotSuggestionRef.current?.end
-                    ? moment(pendingSlotSuggestionRef.current.end).format('HH:mm')
-                    : '--:--',
-                })}
-              </Typography>
-              {!hasFavouriteRooms ? (
-                <Typography>{t('noFavoriteRooms')}</Typography>
-              ) : preferredAlternativeDesks.length > 0 ? (
-                <DeskTable
-                  name="booking_alternative_desks_preferred"
-                  desks={preferredAlternativeDesks}
-                  submit_function={handleAlternativeDeskSelection}
-                  hideHeader
-                  submitLabelKey="book"
-                />
-              ) : (
-                <Typography>{t('noFreeDesksInFavoriteRoomsForSelectedTimeSlot')}</Typography>
-              )}
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </LayoutPage>
   );
 };

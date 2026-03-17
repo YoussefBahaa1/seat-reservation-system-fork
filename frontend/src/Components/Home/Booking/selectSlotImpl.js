@@ -1,5 +1,8 @@
 import { toast } from "react-toastify";
 
+const timeRangesOverlap = (leftStart, leftEnd, rightStart, rightEnd) =>
+  leftStart < rightEnd && leftEnd > rightStart;
+
 export const selectSlotImpl = (data, deskEvents, events, currentEvent, setEvents, setEvent, t) => {
   if (!data) return;
     
@@ -22,10 +25,7 @@ export const selectSlotImpl = (data, deskEvents, events, currentEvent, setEvents
 
   // Überschneidungen prüfen
   const isOverlap = updatedEvents.some(
-    (existingEvent) =>
-      (existingEvent.start <= startTime && startTime < existingEvent.end) ||
-      (existingEvent.start < endTime && endTime <= existingEvent.end) ||
-      (startTime <= existingEvent.start && existingEvent.end <= endTime)
+    (existingEvent) => timeRangesOverlap(existingEvent.start, existingEvent.end, startTime, endTime)
   );
 
   if (isOverlap) {

@@ -169,14 +169,42 @@ public class CalendarNotificationService {
         sendSeriesEmail(bookings, content, german, true);
     }
 
+    public void sendRoomBulkBookingCreated(@NonNull List<Booking> bookings) {
+        if (!notificationsEnabled || bookings.isEmpty()) return;
+
+        final Booking referenceBooking = bookings.stream()
+            .filter(java.util.Objects::nonNull)
+            .min(Comparator.comparing(Booking::getDay).thenComparing(Booking::getBegin))
+            .orElse(null);
+        if (referenceBooking == null) return;
+
+        final UserEntity user = referenceBooking.getUser();
+        if (user == null || isBlank(user.getEmail())) return;
+        if (!user.isNotifyBookingCreate()) return;
+
+        bookings.stream()
+            .filter(java.util.Objects::nonNull)
+            .forEach(this::ensureUidAndSequence);
+
+        final boolean german = isGerman(user);
+        final BookingCalendarFormatter.RenderedCalendarContent content =
+            bookingCalendarFormatter.buildRoomBulkRequestContent(bookings, german);
+        sendSeriesEmail(bookings, content, german, false);
+    }
+
     private void ensureUidAndSequence(Booking booking) {
+        boolean changed = false;
         if (booking.getCalendarUid() == null) {
             booking.setCalendarUid(UUID.randomUUID().toString());
+            changed = true;
         }
         if (booking.getCalendarSequence() == null) {
             booking.setCalendarSequence(0);
+            changed = true;
         }
-        bookingRepository.save(booking);
+        if (changed) {
+            bookingRepository.save(booking);
+        }
     }
 
     private void sendRequest(Booking booking, boolean isUpdate, boolean german) {

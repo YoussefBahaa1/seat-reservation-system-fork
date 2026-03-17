@@ -83,6 +83,9 @@ public class Booking {
     @Column(name = "calendar_sequence", columnDefinition = "int default 0")
     private Integer calendarSequence = 0;
 
+    @Column(name = "bulk_group_id", length = 36)
+    private String bulkGroupId;
+
     
     public Booking(UserEntity user, Room room, Desk desk, Date day, Time begin, Time end) {
         this.user = user;

@@ -22,6 +22,17 @@ const PARKING_TYPE_VALUES = ['STANDARD', 'ACCESSIBLE', 'E_CHARGING_STATION', 'SP
 const TECHNOLOGY_FILTER_VALUES = ['dockingStation', 'webcam', 'headset'];
 const WORKSTATION_TYPE_VALUE_SET = new Set(WORKSTATION_TYPE_VALUES);
 const MAX_SELECTED_FILTERS = 30;
+
+const httpErrorKey = (statusCode) => {
+  if (!Number.isInteger(statusCode)) {
+    return 'httpOther';
+  }
+  const candidate = `http${statusCode}`;
+  return ['http401', 'http403', 'http405', 'http500'].includes(candidate)
+    ? candidate
+    : 'httpOther';
+};
+
 const toSentenceCase = (value) => {
   const normalized = String(value || '').toLowerCase();
   if (!normalized) return '';
@@ -122,9 +133,9 @@ const Home = () => {
           }
           setEvents(eventsForMonth);  // Ereignisse für den Monat setzen
         },
-        (errorCode) => { 
+        (errorCode) => {
           console.log('Fehler beim Abrufen der Buchungen:', errorCode);
-          toast.error(t(errorCode+''));          
+          toast.error(t(httpErrorKey(errorCode)));
         },
         JSON.stringify(daysInMonth)  // Tage des Monats an den Server senden
       );
@@ -161,7 +172,7 @@ const Home = () => {
       (errorCode) => {
         console.log('Error fetching day desk bookings:', errorCode);
         if (errorCode !== 400) {
-          toast.error(t(errorCode + ''));
+          toast.error(t(httpErrorKey(errorCode)));
         }
         setDayDeskEvents([]);
       }
@@ -173,7 +184,7 @@ const Home = () => {
       (errorCode) => {
         console.log('Error fetching day parking bookings:', errorCode);
         if (errorCode !== 400) {
-          toast.error(t(errorCode + ''));
+          toast.error(t(httpErrorKey(errorCode)));
         }
         setDayParkingEvents([]);
       }
@@ -827,7 +838,12 @@ const Home = () => {
         return;
       }
       lastRoomIdRef.current = nextRoomId;
-      navigate('/desks', { state: { roomId: nextRoomId, date: selectedDate } });
+      navigate('/desks', {
+        state: {
+          roomId: nextRoomId,
+          date: selectedDate,
+        },
+      });
     },
     [navigate, selectedDate]
   );

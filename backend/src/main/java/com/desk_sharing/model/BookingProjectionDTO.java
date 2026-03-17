@@ -15,6 +15,7 @@ import lombok.Data;
 public class BookingProjectionDTO {
     private static final int LEGACY_PROJECTION_SIZE = 9;
     private static final int EXTENDED_PROJECTION_SIZE = 16;
+    private static final int BULK_GROUP_PROJECTION_SIZE = 17;
 
     private Long booking_id;
     private Date day;
@@ -29,6 +30,7 @@ public class BookingProjectionDTO {
     private String roomRemark;
     private String building;
     private Long seriesId;
+    private String bulkGroupId;
     private Long deskId;
     private Long roomId;
     private Long buildingId;
@@ -44,6 +46,22 @@ public class BookingProjectionDTO {
         end = (Time) object[3];
         email = (String) object[4];
 
+        if (object.length >= BULK_GROUP_PROJECTION_SIZE) {
+            name = (String) object[5];
+            surname = (String) object[6];
+            roleName = (String) object[7];
+            department = (String) object[8];
+            deskRemark = (String) object[9];
+            roomRemark = (String) object[10];
+            building = (String) object[11];
+            seriesId = (Long) object[12];
+            bulkGroupId = (String) object[13];
+            deskId = (Long) object[14];
+            roomId = (Long) object[15];
+            buildingId = (Long) object[16];
+            return;
+        }
+
         if (object.length >= EXTENDED_PROJECTION_SIZE) {
             name = (String) object[5];
             surname = (String) object[6];
@@ -53,6 +71,7 @@ public class BookingProjectionDTO {
             roomRemark = (String) object[10];
             building = (String) object[11];
             seriesId = (Long) object[12];
+            bulkGroupId = null;
             deskId = (Long) object[13];
             roomId = (Long) object[14];
             buildingId = (Long) object[15];

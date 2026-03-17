@@ -37,6 +37,9 @@ import com.desk_sharing.model.AdminParkingReservationEditRequestDTO;
 import com.desk_sharing.model.AdminEditCandidateRequestDTO;
 import com.desk_sharing.model.AdminDeskCandidateDTO;
 import com.desk_sharing.model.AdminParkingSpotCandidateDTO;
+import com.desk_sharing.model.AdminRoomBulkBookingPreviewDTO;
+import com.desk_sharing.model.AdminRoomBulkBookingRequestDTO;
+import com.desk_sharing.model.AdminRoomBulkBookingResponseDTO;
 import com.desk_sharing.model.DeskDTO;
 import com.desk_sharing.entities.Booking;
 import com.desk_sharing.entities.Desk;
@@ -133,6 +136,36 @@ public class AdminController {
             @RequestBody AdminEditCandidateRequestDTO request) {
         logger.info("getCandidateDesksForAdminEdit( {} )", id);
         return new ResponseEntity<>(bookingService.getCandidateDesksForAdminEdit(id, request), HttpStatus.OK);
+    }
+
+    @PostMapping("/rooms/{roomId}/bulk-booking-preview")
+    public ResponseEntity<?> previewRoomBulkBooking(
+            @NonNull @PathVariable("roomId") Long roomId,
+            @RequestBody AdminRoomBulkBookingRequestDTO request) {
+        logger.info("previewRoomBulkBooking( {} )", roomId);
+        try {
+            final AdminRoomBulkBookingPreviewDTO preview = bookingService.previewRoomBulkBooking(roomId, request);
+            return new ResponseEntity<>(preview, HttpStatus.OK);
+        } catch (ResponseStatusException ex) {
+            Map<String, String> body = new HashMap<>();
+            body.put("error", ex.getReason() == null ? "Room bulk booking preview failed" : ex.getReason());
+            return new ResponseEntity<>(body, ex.getStatusCode());
+        }
+    }
+
+    @PostMapping("/rooms/{roomId}/bulk-bookings")
+    public ResponseEntity<?> createRoomBulkBooking(
+            @NonNull @PathVariable("roomId") Long roomId,
+            @RequestBody AdminRoomBulkBookingRequestDTO request) {
+        logger.info("createRoomBulkBooking( {} )", roomId);
+        try {
+            final AdminRoomBulkBookingResponseDTO response = bookingService.createRoomBulkBooking(roomId, request);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (ResponseStatusException ex) {
+            Map<String, String> body = new HashMap<>();
+            body.put("error", ex.getReason() == null ? "Room bulk booking failed" : ex.getReason());
+            return new ResponseEntity<>(body, ex.getStatusCode());
+        }
     }
 
     @PostMapping("/parkingReservations/{id}/candidate-spots")
