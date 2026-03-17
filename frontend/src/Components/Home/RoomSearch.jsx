@@ -11,6 +11,7 @@ import { semanticColors } from '../../theme';
 const ROOM_SEARCH_DATE_KEY = 'roomSearchSelectedDate';
 const ROOM_SEARCH_START_KEY = 'roomSearchStartTime';
 const ROOM_SEARCH_END_KEY = 'roomSearchEndTime';
+const ROOM_SEARCH_MIN_DESKS_KEY = 'roomSearchMinDesks';
 
 const parseStoredDate = () => {
   try {
@@ -31,6 +32,16 @@ const parseStoredTime = (key) => {
   }
 };
 
+const parseStoredPositiveInteger = (key, fallback) => {
+  try {
+    const raw = sessionStorage.getItem(key);
+    const parsed = Number.parseInt(String(raw ?? ''), 10);
+    return Number.isInteger(parsed) && parsed >= 1 ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 const sortRoomsByFavouriteIds = (list, favouriteRoomIds) => {
   return [...list].sort((a, b) => {
     const aFav = favouriteRoomIds.has(a.id) ? 1 : 0;
@@ -47,7 +58,7 @@ const RoomSearch = () => {
     const [date, setDate] = useState(() => parseStoredDate());
     const [startTime, setStartTime] = useState(() => parseStoredTime(ROOM_SEARCH_START_KEY));
     const [endTime, setEndTime] = useState(() => parseStoredTime(ROOM_SEARCH_END_KEY));
-    const [minimalAmountOfWorkstations, setminimalAmountOfWorkstations] = useState(1);
+    const [minimalAmountOfWorkstations, setminimalAmountOfWorkstations] = useState(() => parseStoredPositiveInteger(ROOM_SEARCH_MIN_DESKS_KEY, 1));
     const [rooms, setRooms] = useState([]);
     const [favouriteIds, setFavouriteIds] = useState(new Set());
     const hasCompleteTimeframe = Boolean(date && startTime && endTime && endTime > startTime);
@@ -107,6 +118,14 @@ const RoomSearch = () => {
         // ignore storage issues
       }
     }, [endTime]);
+
+    useEffect(() => {
+      try {
+        sessionStorage.setItem(ROOM_SEARCH_MIN_DESKS_KEY, String(minimalAmountOfWorkstations));
+      } catch {
+        // ignore storage issues
+      }
+    }, [minimalAmountOfWorkstations]);
 
     useEffect(()=>{
       if (hasCompleteTimeframe) {
