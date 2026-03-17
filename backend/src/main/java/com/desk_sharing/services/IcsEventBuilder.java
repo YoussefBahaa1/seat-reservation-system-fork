@@ -1,4 +1,4 @@
-package com.desk_sharing.services.calendar;
+package com.desk_sharing.services;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;

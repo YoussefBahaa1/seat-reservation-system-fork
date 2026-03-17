@@ -3,7 +3,7 @@ package com.desk_sharing.services;
 import com.desk_sharing.entities.ParkingReservation;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.repositories.UserRepository;
-import com.desk_sharing.services.parking.ParkingNotificationService;
+import com.desk_sharing.services.ParkingNotificationService;
 
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;

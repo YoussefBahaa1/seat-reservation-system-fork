@@ -179,6 +179,7 @@
     "workstationPresetDeleteMessage": "Delete preset \"{{name}}\"?",
     "noFiltersApplied": "No filters applied",
     "spacesFound": "{{count}} spaces found",
+    "roomsFound": "{{count}} rooms found",
     "resetFilters": "Reset filters",
     "choose": "Choose a booking",
     "editBookingTime": "Edit Booking Time",

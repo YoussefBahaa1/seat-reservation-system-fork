@@ -15,7 +15,7 @@ import com.desk_sharing.entities.Booking;
 import com.desk_sharing.entities.Desk;
 import com.desk_sharing.entities.Room;
 import com.desk_sharing.entities.UserEntity;
-import com.desk_sharing.services.calendar.BookingCalendarFormatter;
+import com.desk_sharing.services.BookingCalendarFormatter;
 
 class BookingCalendarFormatterTest {
 

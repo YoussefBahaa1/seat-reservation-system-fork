@@ -1,4 +1,4 @@
-package com.desk_sharing.services.calendar;
+package com.desk_sharing.services;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;

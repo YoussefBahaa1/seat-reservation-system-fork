@@ -22,7 +22,7 @@ import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.services.BookingService;
 import com.desk_sharing.services.UserService;
-import com.desk_sharing.services.calendar.CalendarNotificationService;
+import com.desk_sharing.services.CalendarNotificationService;
 
 @ExtendWith(MockitoExtension.class)
 class BookingControllerIcsTest {

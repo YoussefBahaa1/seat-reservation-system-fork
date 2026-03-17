@@ -22,7 +22,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.desk_sharing.entities.ParkingReservation;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.repositories.UserRepository;
-import com.desk_sharing.services.parking.ParkingNotificationService;
+import com.desk_sharing.services.ParkingNotificationService;
 
 import jakarta.mail.BodyPart;
 import jakarta.mail.Multipart;

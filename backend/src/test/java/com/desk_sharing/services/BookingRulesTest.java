@@ -13,7 +13,7 @@ import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
 import com.desk_sharing.repositories.RoomRepository;
 import com.desk_sharing.repositories.ScheduledBlockingRepository;
-import com.desk_sharing.services.calendar.CalendarNotificationService;
+import com.desk_sharing.services.CalendarNotificationService;
 import com.desk_sharing.services.BookingLockService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

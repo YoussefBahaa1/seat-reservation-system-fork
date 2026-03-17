@@ -1,4 +1,4 @@
-package com.desk_sharing.services.calendar;
+package com.desk_sharing.services;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Comparator;

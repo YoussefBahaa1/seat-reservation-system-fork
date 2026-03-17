@@ -24,7 +24,7 @@ import com.desk_sharing.repositories.DeskRepository;
 import com.desk_sharing.repositories.RoleRepository;
 import com.desk_sharing.repositories.ScheduledBlockingRepository;
 import com.desk_sharing.repositories.UserRepository;
-import com.desk_sharing.services.calendar.CalendarNotificationService;
+import com.desk_sharing.services.CalendarNotificationService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

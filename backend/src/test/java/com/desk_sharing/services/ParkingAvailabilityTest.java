@@ -12,7 +12,7 @@ import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
 import com.desk_sharing.repositories.ParkingSpotRepository;
 import com.desk_sharing.repositories.UserRepository;
-import com.desk_sharing.services.parking.ParkingNotificationService;
+import com.desk_sharing.services.ParkingNotificationService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
