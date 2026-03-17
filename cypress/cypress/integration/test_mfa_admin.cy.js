@@ -98,7 +98,7 @@ describe('Admin MFA flow', () => {
       });
 
       cy.url().should('include', '/home');
-      cy.get('#sidebar_admin').should('exist');
+      cy.get('#sidebar_admin0').should('exist');
 
       openMfaSettings();
       cy.get('body').then(($body) => {

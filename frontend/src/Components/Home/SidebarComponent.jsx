@@ -13,7 +13,7 @@ import NotificationSettings from "./NotificationSettings";
 import { CiLogout } from 'react-icons/ci';
 import { MdGTranslate, MdSecurity } from 'react-icons/md';
 import { AiFillPlusCircle } from 'react-icons/ai';
-import { IoIosCheckbox, IoIosSettings, IoIosAlbums } from 'react-icons/io';
+import { IoIosSettings, IoIosAlbums } from 'react-icons/io';
 import { IoSearchSharp } from 'react-icons/io5';
 import { HiOutlineSparkles } from 'react-icons/hi2';
 import { MdVisibility } from 'react-icons/md';
@@ -42,10 +42,21 @@ const SidebarComponent = () => {
   const [isMfaSettingsOpen, setIsMfaSettingsOpen] = useState(false);
   const [isVisibilityModalOpen, setIsVisibilityModalOpen] = useState(false);
   const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
+  const [isAdminSubMenuOpen, setIsAdminSubMenuOpen] = useState(false);
   
   useEffect(() => {
-    if (location.pathname === '/admin') {
-      setActiveTab('admin');
+    if (location.pathname.startsWith('/admin')) {
+      if (location.pathname === '/admin/room-management') {
+        setActiveTab('adminRoomManagement');
+      } else if (location.pathname === '/admin/booking-management') {
+        setActiveTab('adminBookingManagement');
+      } else if (location.pathname === '/admin/booking-settings') {
+        setActiveTab('adminBookingSettings');
+      } else if (location.pathname === '/admin/user-management') {
+        setActiveTab('adminUserManagement');
+      } else {
+        setActiveTab('admin');
+      }
       //setSeriesSubMenuOpen(false);
     }
     if (location.pathname === '/home') {
@@ -78,7 +89,7 @@ const SidebarComponent = () => {
       setActiveTab('defects');
     }
 
-  }, [location.pathname, activeTab]);
+  }, [location.pathname]);
 
   const handleClick = (name) => {
     switch (name) {
@@ -91,8 +102,24 @@ const SidebarComponent = () => {
         navigate("/home", { replace: true });
         break;
 
-      case "admin":
-        navigate("/admin", { replace: true });
+      case "adminUserManagement":
+        setIsAdminSubMenuOpen(false);
+        navigate("/admin/user-management", { replace: true });
+        break;
+
+      case "adminRoomManagement":
+        setIsAdminSubMenuOpen(false);
+        navigate("/admin/room-management", { replace: true });
+        break;
+
+      case "adminBookingManagement":
+        setIsAdminSubMenuOpen(false);
+        navigate("/admin/booking-management", { replace: true });
+        break;
+
+      case "adminBookingSettings":
+        setIsAdminSubMenuOpen(false);
+        navigate("/admin/booking-settings", { replace: true });
         break;
 
       case "bookings":
@@ -235,14 +262,43 @@ const SidebarComponent = () => {
             {localStorage.getItem("name") ? `${t("hello")}, ${localStorage.getItem("name")}` : `${t("hello")}!`}
           </MenuItem>
           {localStorage.getItem("admin") === 'true' && (
-            <MenuItem
-              id='sidebar_admin'
-              active={activeTab === "admin"}
+            <SubMenu
+              id='sidebar_admin0'
               icon={<RiAdminFill />}
-              onClick={() => handleClick("admin")}
+              label={t('admin')}
+              active={activeTab.startsWith('admin')}
+              open={isAdminSubMenuOpen}
+              onOpenChange={setIsAdminSubMenuOpen}
             >
-              {t("admin")}
-            </MenuItem>
+              <MenuItem
+                id='sidebar_admin_userManagement'
+                active={activeTab === 'adminUserManagement'}
+                onClick={() => handleClick('adminUserManagement')}
+              >
+                {t('userManagement')}
+              </MenuItem>
+              <MenuItem
+                id='sidebar_admin_roomManagement'
+                active={activeTab === 'adminRoomManagement'}
+                onClick={() => handleClick('adminRoomManagement')}
+              >
+                {t('roomManagement')}
+              </MenuItem>
+              <MenuItem
+                id='sidebar_admin_bookingManagement'
+                active={activeTab === 'adminBookingManagement'}
+                onClick={() => handleClick('adminBookingManagement')}
+              >
+                {t('bookingManagement')}
+              </MenuItem>
+              <MenuItem
+                id='sidebar_admin_bookingSettings'
+                active={activeTab === 'adminBookingSettings'}
+                onClick={() => handleClick('adminBookingSettings')}
+              >
+                {t('bookingSettings')}
+              </MenuItem>
+            </SubMenu>
           )}
           {(localStorage.getItem("admin") === 'true' || localStorage.getItem("servicePersonnel") === 'true') && (
             <MenuItem

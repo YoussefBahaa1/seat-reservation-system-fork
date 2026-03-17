@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { FaAddressBook, FaPlusMinus } from 'react-icons/fa6';
-import { FaBook, FaCog } from 'react-icons/fa';
-import './AdminPage.css'; // Import the CSS file for AdminPage
+import './AdminPage.css';
 import AddRoom from './Room/AddRoom';
 import DeleteRoom from './Room/DeleteRoom';
 import EditRoom from './Room/EditRoom';
@@ -16,18 +14,25 @@ import DeactivateUser from './UserManagement/DeactivateUser';
 import OverviewBookings from './Bookings/OverviewBookings';
 import BookingSettings from './Bookings/BookingSettings';
 import { useTranslation } from 'react-i18next';
-import {BootstrapEmployeeDialog, BootstrapWorkstationDialog, BootstrapDialog } from '../Bootstrap';
+import { Navigate, useParams } from 'react-router-dom';
+import { BootstrapEmployeeDialog, BootstrapWorkstationDialog, BootstrapDialog } from '../Bootstrap';
 import LayoutPageAdmin from '../Templates/LayoutPageAdmin';
 import { getRequest } from '../RequestFunctions/RequestFunctions';
 import { toast } from 'react-toastify';
 import ParkingReview from './Parking/ParkingReview';
 
+const SECTION_TO_TITLE = {
+  'user-management': 'userManagement',
+  'room-management': 'roomManagement',
+  'booking-management': 'bookingManagement',
+  'booking-settings': 'bookingSettings',
+};
+
 const AdminPage = () => {
   const { t } = useTranslation();
+  const { section } = useParams();
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
-  const [showUserButtons, setShowUserButtons] = useState(false);
-  const [showWorkstationButtons, setShowWorkstationButtons] = useState(false);
-  const [showBookingButtons, setShowBookingButtons] = useState(false);
+
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
   const [isDeleteRoomOpen, setIsDeleteRoomOpen] = useState(false);
   const [isEditRoomOpen, setIsEditRoomOpen] = useState(false);
@@ -44,33 +49,7 @@ const AdminPage = () => {
   const [isParkingReviewOpen, setIsParkingReviewOpen] = useState(false);
   const [pendingParkingCount, setPendingParkingCount] = useState(0);
   const pendingParkingCountRef = useRef(0);
-  const [isBookingSettingsOpen, setIsBookingSettingsOpen] = useState(false);
 
-  const toggleUserButtons = () => {
-    setShowUserButtons(!showUserButtons);
-    if (showUserButtons === false) {
-      setShowWorkstationButtons(false);
-      setShowBookingButtons(false);
-    }
-  };
-
-  const toggleWorkstationButtons = () => {
-    setShowWorkstationButtons(!showWorkstationButtons);
-    if (showWorkstationButtons === false) {
-      setShowUserButtons(false);
-      setShowBookingButtons(false);
-    }
-  };
-
-  const toggleBookingButtons = () => {
-    setShowBookingButtons(!showBookingButtons);
-    if (showBookingButtons === false) {
-      setShowUserButtons(false);
-      setShowWorkstationButtons(false);
-    }
-  };
-  const toggleBookingSettingsModal = () => setIsBookingSettingsOpen(!isBookingSettingsOpen);
-  
   const toggleAddRoomModal = () => setIsAddRoomOpen(!isAddRoomOpen);
   const toggleDeleteRoomModal = () => setIsDeleteRoomOpen(!isDeleteRoomOpen);
   const toggleEditRoomModal = () => setIsEditRoomOpen(!isEditRoomOpen);
@@ -101,6 +80,10 @@ const AdminPage = () => {
   };
 
   useEffect(() => {
+    if (section !== 'booking-management') {
+      return undefined;
+    }
+
     let timer = null;
 
     const stopPolling = () => {
@@ -111,12 +94,9 @@ const AdminPage = () => {
     };
 
     const startPolling = () => {
-      // Ensure no duplicate intervals
       stopPolling();
       if (document.visibilityState === 'visible') {
-        // Refresh immediately when becoming visible
         refreshPendingParkingCount();
-        // Use a less aggressive polling interval (30 seconds)
         timer = setInterval(refreshPendingParkingCount, 30000);
       }
     };
@@ -129,7 +109,6 @@ const AdminPage = () => {
       }
     };
 
-    // Initial setup based on current visibility
     startPolling();
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
@@ -138,89 +117,78 @@ const AdminPage = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
+  }, [section]);
+
+  if (!section || !SECTION_TO_TITLE[section]) {
+    return <Navigate to='/admin/user-management' replace />;
+  }
+
   return (
-    <LayoutPageAdmin
-      title={t('adminPanel')}
-      helpText={''}
-    >
-      
-      <div className='user-management-container'>
-        <button id='userManagement' className='user-management-button' onClick={toggleUserButtons}>
-          {t('userManagement')}
-        </button>
-        <FaAddressBook className='logo' />
-      </div>
-      <div className="edit-rooms-container">
-        <button id='roomManagement' className='edit-rooms-button' onClick={toggleWorkstationButtons}>
-        {t("roomManagement")}
-        </button>
-        <FaPlusMinus className='logo' />
-      </div>
-      <div className='manage-bookings-container'>
-        <button id='bookingManagement' className='manage-bookings-button' onClick={toggleBookingButtons}>
-        {t("bookingManagement")}
-        </button>
-        <FaBook className='logo' />
-      </div>
-      <div className='manage-bookings-container'>
-        <button id='bookingSettings' className='manage-bookings-button' onClick={toggleBookingSettingsModal}>
-          {t("bookingSettings")}
-        </button>
-        <FaCog className='logo' />
-      </div>
-    
-    <div className={`button-wrapper ${showUserButtons ? 'visible' : ''}`}>
-      <button id='addUser' className='my-button' onClick={toggleAddUserModal}>
-        {t('addUser')}
-      </button>
-      <button id='editUser' className='my-button' onClick={toggleEditUserModal}>
-        {t('editUser')}
-      </button>
-      <button id='deactivateReactivateUser' className='my-button' onClick={toggleDeactivateUserModal}>
-        {t('deactivateReactivateUser')}
-      </button>
-      <button id='deleteUser' className='my-button' onClick={toggleDeleteUserModal}>
-        {t('deleteUser')}
-      </button>
-    </div>
-    <div className={`button-wrapper ${showWorkstationButtons ? 'visible' : ''}`}>
-      <button id='addRoom' className='my-button' onClick={toggleAddRoomModal}>
-        {t('addRoom')}
-      </button>
-      <button id='deleteRoom' className='my-button' onClick={toggleDeleteRoomModal}>
-        {t('deleteRoom')}
-      </button>
-      <button id='editRoom' className='my-button' onClick={toggleEditRoomModal}>
-        {t('editRoom')}
-      </button>
-      <button id='addWorkstation' className='my-button' onClick={toggleAddWorkstationModal}>
-        {t('addWorkstation')}
-      </button>
-      <button id='deleteWorkstation' className='my-button' onClick={toggleDeleteWorkstationModal}>
-        {t('deleteWorkstation')}
-      </button>
-      <button id='editWorkstation' className='my-button' onClick={toggleEditWorkstationModal}>
-        {t('editWorkstation')}
-      </button>
-      <button id='hideShowFixed' className='my-button' onClick={toggleHideShowFixedModal}>
-        {t('hideShowFixed')}
-      </button>
-    </div>
-    <div className={`button-wrapper ${showBookingButtons ? 'visible' : ''}`}>
-      <button id='overviewBooking' className='my-button' onClick={setIsOverviewBookingsOpen.bind(null, true)}>
-        {t('overviewBooking')}
-      </button>
-      <button id='parkingReview' className='my-button' onClick={toggleParkingReviewModal}>
-        {t('parkingReview')}{pendingParkingCount > 0 ? ` (${pendingParkingCount})` : ''}
-      </button>
-    </div>
+    <LayoutPageAdmin title={t(SECTION_TO_TITLE[section])} helpText=''>
+      {section === 'user-management' && (
+        <div className='admin-section-actions'>
+          <button id='addUser' className='my-button' onClick={toggleAddUserModal}>
+            {t('addUser')}
+          </button>
+          <button id='editUser' className='my-button' onClick={toggleEditUserModal}>
+            {t('editUser')}
+          </button>
+          <button id='deactivateReactivateUser' className='my-button' onClick={toggleDeactivateUserModal}>
+            {t('deactivateReactivateUser')}
+          </button>
+          <button id='deleteUser' className='my-button' onClick={toggleDeleteUserModal}>
+            {t('deleteUser')}
+          </button>
+        </div>
+      )}
 
-      <AddRoom isOpen={isAddRoomOpen} onClose={setIsAddRoomOpen.bind(null,false)}/>
+      {section === 'room-management' && (
+        <div className='admin-section-actions'>
+          <button id='addRoom' className='my-button' onClick={toggleAddRoomModal}>
+            {t('addRoom')}
+          </button>
+          <button id='deleteRoom' className='my-button' onClick={toggleDeleteRoomModal}>
+            {t('deleteRoom')}
+          </button>
+          <button id='editRoom' className='my-button' onClick={toggleEditRoomModal}>
+            {t('editRoom')}
+          </button>
+          <button id='addWorkstation' className='my-button' onClick={toggleAddWorkstationModal}>
+            {t('addWorkstation')}
+          </button>
+          <button id='deleteWorkstation' className='my-button' onClick={toggleDeleteWorkstationModal}>
+            {t('deleteWorkstation')}
+          </button>
+          <button id='editWorkstation' className='my-button' onClick={toggleEditWorkstationModal}>
+            {t('editWorkstation')}
+          </button>
+          <button id='hideShowFixed' className='my-button' onClick={toggleHideShowFixedModal}>
+            {t('hideShowFixed')}
+          </button>
+        </div>
+      )}
 
-      <BootstrapDialog onClose={setIsDeleteRoomOpen.bind(null,!isDeleteRoomOpen)} aria-labelledby='customized-dialog-title' open={isDeleteRoomOpen}>
-        <DeleteRoom  open={isDeleteRoomOpen} close={setIsDeleteRoomOpen.bind(null, !isDeleteRoomOpen)} />
+      {section === 'booking-management' && (
+        <div className='admin-section-actions'>
+          <button id='overviewBooking' className='my-button' onClick={setIsOverviewBookingsOpen.bind(null, true)}>
+            {t('overviewBooking')}
+          </button>
+          <button id='parkingReview' className='my-button' onClick={toggleParkingReviewModal}>
+            {t('parkingReview')}{pendingParkingCount > 0 ? ` (${pendingParkingCount})` : ''}
+          </button>
+        </div>
+      )}
+
+      {section === 'booking-settings' && (
+        <div className='admin-section-content'>
+          <BookingSettings />
+        </div>
+      )}
+
+      <AddRoom isOpen={isAddRoomOpen} onClose={setIsAddRoomOpen.bind(null, false)} />
+
+      <BootstrapDialog onClose={setIsDeleteRoomOpen.bind(null, !isDeleteRoomOpen)} aria-labelledby='customized-dialog-title' open={isDeleteRoomOpen}>
+        <DeleteRoom open={isDeleteRoomOpen} close={setIsDeleteRoomOpen.bind(null, !isDeleteRoomOpen)} />
       </BootstrapDialog>
 
       <BootstrapDialog onClose={setIsEditRoomOpen.bind(null, !isEditRoomOpen)} aria-labelledby='customized-dialog-title' open={isEditRoomOpen}>
@@ -230,7 +198,7 @@ const AdminPage = () => {
       <AddWorkstation isOpen={isAddWorkstationOpen} onClose={setIsAddWorkstationOpen.bind(null, !isAddWorkstationOpen)} />
 
       <BootstrapDialog onClose={setIsEditWorkstationOpen.bind(null, !isEditWorkstationOpen)} aria-labelledby='customized-dialog-title' open={isEditWorkstationOpen}>
-        <EditWorkstation isOpen={isEditWorkstationOpen}  onClose={setIsEditWorkstationOpen.bind(null, !isEditWorkstationOpen)}/>
+        <EditWorkstation isOpen={isEditWorkstationOpen} onClose={setIsEditWorkstationOpen.bind(null, !isEditWorkstationOpen)} />
       </BootstrapDialog>
 
       <BootstrapDialog onClose={setIsHideShowFixedOpen.bind(null, !isHideShowFixedOpen)} aria-labelledby='customized-dialog-title' open={isHideShowFixedOpen}>
@@ -239,7 +207,7 @@ const AdminPage = () => {
           onClose={setIsHideShowFixedOpen.bind(null, !isHideShowFixedOpen)}
         />
       </BootstrapDialog>
-      
+
       <BootstrapDialog onClose={setIsDeleteWorkstationOpen.bind(null, !isDeleteWorkstationOpen)} aria-labelledby='customized-dialog-title' open={isDeleteWorkstationOpen}>
         <DeleteWorkstation isOpen={isDeleteWorkstationOpen} onClose={setIsDeleteWorkstationOpen.bind(null, !isDeleteWorkstationOpen)} />
       </BootstrapDialog>
@@ -261,7 +229,7 @@ const AdminPage = () => {
       </BootstrapEmployeeDialog>
 
       <BootstrapEmployeeDialog onClose={setIsOverviewBookingsOpen.bind(null, !isOverviewBookingsOpen)} aria-labelledby='customized-dialog-title' open={isOverviewBookingsOpen}>
-        <OverviewBookings isOpen={isOverviewBookingsOpen} onClose={setIsOverviewBookingsOpen.bind(null, !isOverviewBookingsOpen)}/>
+        <OverviewBookings isOpen={isOverviewBookingsOpen} onClose={setIsOverviewBookingsOpen.bind(null, !isOverviewBookingsOpen)} />
       </BootstrapEmployeeDialog>
 
       <ParkingReview
@@ -269,12 +237,7 @@ const AdminPage = () => {
         onClose={toggleParkingReviewModal}
         onChanged={refreshPendingParkingCount}
       />
-
-      <BootstrapEmployeeDialog onClose={setIsBookingSettingsOpen.bind(null, !isBookingSettingsOpen)} aria-labelledby='customized-dialog-title' open={isBookingSettingsOpen}>
-        <BookingSettings isOpen={isBookingSettingsOpen} onClose={setIsBookingSettingsOpen.bind(null, !isBookingSettingsOpen)} />
-      </BootstrapEmployeeDialog>
-      
-      </LayoutPageAdmin>
+    </LayoutPageAdmin>
   );
 };
 

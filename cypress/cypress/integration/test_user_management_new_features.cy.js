@@ -24,9 +24,8 @@ describe('User management - new features', () => {
   });
 
   it('deactivate/reactivate blocks and restores login', () => {
-    cy.visit('/admin')
-      .url().should('contains', '/admin')
-      .get('button#userManagement').click()
+    cy.visit('/admin/user-management')
+      .url().should('contains', '/admin/user-management')
       .get('button#deactivateReactivateUser').click()
       .then(() => {
         cy.on('window:confirm', () => true);
@@ -46,8 +45,7 @@ describe('User management - new features', () => {
         ],
       })
       .login(Cypress.env('TEST_ADMIN_MAIL'), Cypress.env('TEST_ADMIN_PW'))
-      .visit('/admin')
-      .get('button#userManagement').click()
+      .visit('/admin/user-management')
       .get('button#deactivateReactivateUser').click()
       .then(() => {
         cy.on('window:confirm', () => true);
@@ -64,9 +62,8 @@ describe('User management - new features', () => {
   it('admin can reset a user password', () => {
     const newPassword = `${password}1`;
 
-    cy.visit('/admin')
-      .url().should('contains', '/admin')
-      .get('button#userManagement').click()
+    cy.visit('/admin/user-management')
+      .url().should('contains', '/admin/user-management')
       .then(() => cy.clickFirst(['button#editUser', 'button#editEmployee']))
       .then(() => cy.filterUsersByEmail(testMail))
       .then(() => {

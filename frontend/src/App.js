@@ -57,7 +57,23 @@ function AppRoutes() {
         <Route path="/desks" element={isAuthenticated ? <Booking /> : <Navigate to="/" replace />} />
         <Route
           path="/admin"
+          element={
+            isAuthenticated && canAccessAdmin
+              ? <Navigate to="/admin/user-management" replace />
+              : <Navigate to={isAuthenticated ? "/home" : "/"} replace />
+          }
+        />
+        <Route
+          path="/admin/:section"
           element={isAuthenticated && canAccessAdmin ? <AdminPage /> : <Navigate to={isAuthenticated ? "/home" : "/"} replace />}
+        />
+        <Route
+          path="/admin/*"
+          element={
+            isAuthenticated && canAccessAdmin
+              ? <Navigate to="/admin/user-management" replace />
+              : <Navigate to={isAuthenticated ? "/home" : "/"} replace />
+          }
         />
         <Route path="/mybookings" element={isAuthenticated ? <MyBookings /> : <Navigate to="/" replace />} />
         <Route path="/manageseries" element={isAuthenticated ? <ManageSeries /> : <Navigate to="/" replace />} />

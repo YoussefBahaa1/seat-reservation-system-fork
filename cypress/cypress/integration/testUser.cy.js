@@ -26,10 +26,9 @@ describe('', ()=>{
     
 	    it('test register with same mail', ()=>{
 	        cy.login()
-	        .visit('/admin')
-	        .url().should('contains', '/admin')
-	        .get('button#userManagement').click()
-	        .then(() => cy.clickFirst(['button#addUser', 'button#addEmployee']))
+		        .visit('/admin/user-management')
+		        .url().should('contains', '/admin/user-management')
+		        .then(() => cy.clickFirst(['button#addUser', 'button#addEmployee']))
 	        .get('h2').should('be.visible').then(()=>{
 	          cy.get('body').then(($body) => {
 	            const isNew = $body.find('div#addUser-setEmail').length > 0;
@@ -52,10 +51,9 @@ describe('', ()=>{
 
 	    it('test register with same mail with leading whitespace', ()=>{
 	        cy.login()
-	        .visit('/admin')
-	        .url().should('contains', '/admin')
-	        .get('button#userManagement').click()
-	        .then(() => cy.clickFirst(['button#addUser', 'button#addEmployee']))
+		        .visit('/admin/user-management')
+		        .url().should('contains', '/admin/user-management')
+		        .then(() => cy.clickFirst(['button#addUser', 'button#addEmployee']))
 	        .get('h2').should('be.visible').then(()=>{
 	          cy.get('body').then(($body) => {
 	            const isNew = $body.find('div#addUser-setEmail').length > 0;
@@ -79,13 +77,12 @@ describe('', ()=>{
 	    it('test change admin', ()=>{
 	        cy.login(mail, pw1).then(()=>{
 	        // No admin
-	        cy.get('#sidebar_admin').should('not.exist');
+	        cy.get('#sidebar_admin0').should('not.exist');
 
 	        cy.logout()
 	        .login(Cypress.env('TEST_ADMIN_MAIL'), Cypress.env('TEST_ADMIN_PW'))
-	        .visit('/admin')
-	        .get('button#userManagement').click()
-	        .then(() => cy.clickFirst(['button#editUser', 'button#editEmployee']))
+		        .visit('/admin/user-management')
+		        .then(() => cy.clickFirst(['button#editUser', 'button#editEmployee']))
 	        .then(() => cy.filterUsersByEmail(mail))
 	        // Set user with mail to admin
 	        .then(() => {
@@ -98,12 +95,11 @@ describe('', ()=>{
 	        .logout()
 	        .login(mail, pw1).then(()=>{
 	            // admin
-	            cy.get('#sidebar_admin').should('exist');
+	            cy.get('#sidebar_admin0').should('exist');
 	            cy.logout()
 	            .login(Cypress.env('TEST_ADMIN_MAIL'), Cypress.env('TEST_ADMIN_PW'))
-	            .visit('/admin')
-	            .get('button#userManagement').click()
-	            .then(() => cy.clickFirst(['button#editUser', 'button#editEmployee']))
+		            .visit('/admin/user-management')
+		            .then(() => cy.clickFirst(['button#editUser', 'button#editEmployee']))
 	            .then(() => cy.filterUsersByEmail(mail))
 	            // Reset user with mail to non admin
 		            .then(() => {
@@ -116,7 +112,7 @@ describe('', ()=>{
 	            .logout()
 	            .login(mail, pw1).then(()=>{
 	                // No admin
-	                cy.get('#sidebar_admin').should('not.exist');
+	                cy.get('#sidebar_admin0').should('not.exist');
 	            })
 	        })
 	        })
@@ -126,7 +122,7 @@ describe('', ()=>{
 	    it('test change password', ()=>{
 	        cy.login(mail, pw1).then(()=>{
 	            // No admin
-	            cy.get('#sidebar_admin').should('not.exist').then(()=>{
+	            cy.get('#sidebar_admin0').should('not.exist').then(()=>{
 	                // Change pw
 	                cy.get('a#sidebar_settings0').click().then(()=>{
 	                cy.get('a#sidebar_changePassword').click().then(()=>{
@@ -143,7 +139,7 @@ describe('', ()=>{
 	                                cy.logout().then(()=>{
 	                                    cy.login(mail, pw2).then(()=>{
 	                                        // No admin
-	                                        cy.get('#sidebar_admin').should('not.exist').then(()=>{
+	                                        cy.get('#sidebar_admin0').should('not.exist').then(()=>{
 	                                            // Rechange pw
 	                                            cy.get('a#sidebar_settings0').click().then(()=>{
 	                                                cy.get('a#sidebar_changePassword').click().then(()=>{
@@ -156,7 +152,7 @@ describe('', ()=>{
 	                                                            cy.logout().then(()=>{                    
 	                                                                cy.login(mail, pw1).then(()=>{
 	                                                                    // No admin
-	                                                                    cy.get('#sidebar_admin').should('not.exist').then(()=>{
+	                                                                    cy.get('#sidebar_admin0').should('not.exist').then(()=>{
 	                                                                        cy.logout().then(()=>{});
 	                                                                    });
 	                                                                })
@@ -179,10 +175,9 @@ describe('', ()=>{
 
 	    it('test change name', ()=>{
 	        cy.login()
-	        .visit('/admin')
-	        .url().should('contains', '/admin')
-	        .get('button#userManagement').click()
-	        .then(() => cy.clickFirst(['button#editUser', 'button#editEmployee']))
+		        .visit('/admin/user-management')
+		        .url().should('contains', '/admin/user-management')
+		        .then(() => cy.clickFirst(['button#editUser', 'button#editEmployee']))
 	        .then(() => cy.filterUsersByEmail(mail))
 	        .then(() => {
 	          cy.get(`[id="${mail}"]`).find('button').click();
@@ -193,17 +188,16 @@ describe('', ()=>{
 	        .logout()
 	        .login(mail, pw1).then(()=>{
 	          cy.get('#sidebar_collapse').should('contain.text', vorname2);
-	          cy.get('#sidebar_admin').should('not.exist');
+	          cy.get('#sidebar_admin0').should('not.exist');
 	          cy.logout();
 	        });
 	})
 
 	it('test change email', ()=>{
 	    cy.login()
-	    .visit('/admin')
-	    .url().should('contains', '/admin')
-	    .get('button#userManagement').click()
-	    .then(() => cy.clickFirst(['button#editUser', 'button#editEmployee']))
+		    .visit('/admin/user-management')
+		    .url().should('contains', '/admin/user-management')
+		    .then(() => cy.clickFirst(['button#editUser', 'button#editEmployee']))
 	    .then(() => cy.filterUsersByEmail(mail))
 	    .then(() => {
 	      cy.get(`[id="${mail}"]`).find('button').click();
@@ -215,7 +209,7 @@ describe('', ()=>{
 	    .logout()
 	    .login(mail2, pw1).then(()=>{
 	      cy.get('#sidebar_collapse').should('contain.text', vorname2);
-	      cy.get('#sidebar_admin').should('not.exist');
+	      cy.get('#sidebar_admin0').should('not.exist');
 	      cy.logout();
 	    });
 	})

@@ -17,9 +17,8 @@ describe('Test desk properties ', ()=> {
         .rmAllRooms(buildingId, floorId, newRoomRemark, imgSrc)
         .addRoom(buildingId, floorId, roomRemark, imgSrc)
         .addDesk(buildingId, floorId, roomRemark, imgSrc, deskRemark)
-        .visit('/admin')
+        .visit('/admin/room-management')
         // 1. check
-        .get('button#roomManagement').click()
         .get('button#editWorkstation').click()
         .setFloor(buildingId, floorId, imgSrc)
         .get(`button#icon_button_${roomRemark}`).click()
