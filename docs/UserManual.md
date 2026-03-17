@@ -170,6 +170,22 @@ Notes:
 - `Special Features` is optional and has a character limit.
 - Setting `Fixed` to `Yes` removes the workstation from normal user booking/search flows, but admins can still manage it here.
 
+### Hide/Show fixed workstations
+Use this function to control whether fixed desks are visible in normal user booking and search flows.
+
+1. Login as user with ADMIN role.
+2. On the left side click `Admin` to open the Admin Panel.
+3. Click on `Room/Desk Management`.
+4. Click on `Hide/Show Fixed`.
+5. Choose the floor you want to manage.
+6. A list of fixed desks for that floor is shown.
+7. Click `Hide` or `Show` on the target desk.
+
+Notes:
+- This action is intended for fixed desks.
+- Hidden desks are excluded from normal desk booking/search lists.
+- Showing a fixed desk makes it available again in standard user flows.
+
 ## Booking settings
 Configure global booking rules that apply to every booking.
 
@@ -216,9 +232,24 @@ Often you want to sit next to your colleagues. To do so you must know the rooms 
 3. Three search options will be shown.
 4. Click on `Colleagues`.
 5. You see the Colleagues page. 
-6. Paste a comma seperated list of the mails of the colleagues in question. Also enter a date. If ldap/AD is correctly configured you can also click on `Groups` to display all your AD groups. Select one and all email addresses of the group members will be paste as a comma seperated list in the textbox. 
+6. Paste a comma separated list of colleague identifiers and enter a date. Supported identifiers are:
+   - email addresses
+   - full names
+   - abbreviations
 7. Click `SEARCH`.
 8. In the lower part of the page a list of all colleagues will appear with all their bookings on the given date.
+
+Notes:
+- Admin users can also see colleagues configured with `Anonymous` visibility.
+- Non-admin users cannot see anonymous colleagues.
+
+### Search of Service contacts
+If you need to find contact details of admins or service personel (ie. phone numbers or emails), you complete these steps.
+1. Login
+2. On the left side menu you will see the row called `Search`. Click on it.
+3. Click on 'Service Contacts'
+4. View or copy-and-paste contact details of the admins or service personel
+5. OR Use the mssaging form (placeholder in Sprint 2)
 
 ## Settings
 
@@ -316,6 +347,26 @@ The `Home` page is the main entry point for both desk and parking workflows.
 ### Floor toolbar
 - In floor view, the toolbar provides `Today`, `Back`, and `Next` for day navigation.
 
+### Filters on Home
+In calendar mode, the filter area can be used to narrow the daily booking list.
+
+Desk mode filters:
+- `Building` (single active building selector)
+- `Rooms` (dependent on selected building)
+- `Ergonomics`
+- `Monitors`
+- `Desk Type` (adjustable / not adjustable)
+- `Technology` (docking station, webcam, headset)
+- `Special Features` (yes/no)
+
+Parking mode filters:
+- `Parking types`
+- `Covered`
+
+Notes:
+- Filter combinations are normalized automatically.
+- The UI enforces a maximum number of selected filters.
+
 ### Daily list (bottom panel) and color rules
 - The lower list shows bookings for the selected day in the active mode.
 - Colors indicate ownership and status:
@@ -335,11 +386,17 @@ For this we assume that an admin already include at least a building with a floo
 5. Open the floor selection view for that date. Here you can choose a building and a floor in this building. The image in the center is the floor plan of the selected floor. Every blue icon indicates a room. A room can have 0..n desks in it.
 6. Select a room by left-clicking one of the blue icons.
 7. You see the desk view for the chosen room. If the room has desks in it, you will see them on the left side.
-8. Choose a desk by left-clicking one of the desks on the left. The chosen desk changes color.
-9. Select a time range. To do so right click in the table. Hold the left button and move the mouse to the wanted end time of your booking. Release the left mouse button. If your desired time range collides with another booking, an error message appears.
+8. Choose a desk by left-clicking one of the desks on the left. The chosen desk changes color and a temporary booking lock is acquired.
+9. Select a time range in the timeline by click-dragging to the desired end time. If your selected range collides with another booking, a warning appears.
 10. After you choose a valid time range it appears grey.
 11. Click `BOOK` on the bottom of the view.
-12. You will be asked if you like to commit this booking. Click either yes or no. If you clicked yes a message appears confirming the booking was successful.
+12. A confirmation dialog appears with booking details. Click `Confirm` to finalize or `Cancel` to abort.
+13. If confirmed, a message appears confirming the booking was successful.
+
+Notes:
+- Desk locking uses a 3-minute lock window. If the lock expires, you must reselect the desk.
+- If another user currently holds the lock for that desk/day, booking is blocked and a warning is shown.
+- If your selected slot overlaps, the UI can show alternative desk suggestions.
 
 ## Create a parking spot booking
 This tool allows any logged-in user to reserve and book a parking spot.
@@ -366,10 +423,14 @@ This tool allows any logged-in user to reserve and book a parking spot.
 1. Login.
 2. Open `My Bookings` from the sidebar.
 3. The calendar shows your bookings and includes historical entries with a lookback window of 90 days.
-4. Click one booking to open the booking details modal.
-5. Use `Delete` in the modal to remove the booking (updated delete UI/flow).
-6. Use `Edit Booking` to open the desk booking screen in edit mode and update date/time/desk.
-7. Use `Export ICS` to download the selected booking as a `.ics` calendar file.
+4. Click one booking to open the booking details modal (day, time, building, room, desk, equipment).
+5. For current/future bookings:
+   - Use `Cancel Booking` to remove the booking.
+   - Use `Edit Booking` to open the desk booking screen in edit mode and update date/time/desk.
+   - Use `Export ICS` to download the selected booking as a `.ics` calendar file.
+6. For past bookings:
+   - The details modal and `Export ICS` remain available.
+   - Edit and cancel actions are not available.
 
 ## Create and manage series bookings
 A series allows users to create bookings at fixed intervals on a chosen desk between a start date and an end date.
@@ -536,7 +597,7 @@ This approach is prone to errors. A better solution for the future is to store t
 For now you have to follow the following steps to add a new building or new floors to existing buildings.
 
 1. Add a new entry to the table building. (only if you want to create a new building)
-2. Add a new entry to the table floor with floor_id as a foreign key to the needed building row. Note the name of the new floor.
+2. Add a new entry to the table floor with floor_id as a foreign key to the needed building row. Set `name` and `name_of_img` correctly.
 3. In `$PROJECT_PATH/frontend/public/Assets/` create a new folder with the name of the building. The folder may be named `$PROJECT_PATH/frontend/public/Assets/Mustergebäude`.
-4. For every floor you must have a png file representing the floor plan. The png file must have exact the same name as the freshly added floor in the floors table.
+4. For every floor you must have a png file representing the floor plan. The effective file reference is `floors.name_of_img`, so the png filename must match `name_of_img`.
 5. If you restart your application (`./scripts/build_and_run.sh`) and choose the building and the floor you can add new rooms with new desks (if you have admin rights). After this these desks can be booked.
