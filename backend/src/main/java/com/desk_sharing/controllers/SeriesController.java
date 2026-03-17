@@ -6,9 +6,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.desk_sharing.entities.Desk;
+import com.desk_sharing.model.BookingOverlapCheckResponseDTO;
 import com.desk_sharing.model.DatesAndTimesDTO;
 import com.desk_sharing.model.RangeDTO;
 import com.desk_sharing.model.SeriesDTO;
+import com.desk_sharing.model.SeriesOverlapCheckRequestDTO;
+import com.desk_sharing.model.SeriesOverlapCheckResponseDTO;
 import com.desk_sharing.model.WorkstationSearchRequestDTO;
 import com.desk_sharing.services.SeriesService;
 
@@ -77,6 +80,19 @@ public class SeriesController {
         final List<Date> dates = seriesService.getDatesBetween(rangeDTO);
         return new ResponseEntity<List<Date>>(dates, HttpStatus.OK);
     };
+
+    @PostMapping("/overlap-check")
+    public ResponseEntity<?> checkSeriesOverlap(@RequestBody SeriesOverlapCheckRequestDTO request) {
+        logger.info("checkSeriesOverlap( {} )", request);
+        try {
+            SeriesOverlapCheckResponseDTO response = seriesService.checkConfirmedOverlapWithOtherDeskForSeries(request);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (ResponseStatusException ex) {
+            final Map<String, String> body = new HashMap<>();
+            body.put("error", ex.getReason() == null ? "Series overlap check failed" : ex.getReason());
+            return new ResponseEntity<>(body, ex.getStatusCode());
+        }
+    }
 
     @PostMapping
     public ResponseEntity<?> createSeries(@RequestBody SeriesDTO seriesDto) {

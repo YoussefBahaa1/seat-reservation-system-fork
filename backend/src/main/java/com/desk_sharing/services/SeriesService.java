@@ -29,8 +29,11 @@ import com.desk_sharing.entities.Series;
 import com.desk_sharing.entities.ScheduledBlockingStatus;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.model.DatesAndTimesDTO;
+import com.desk_sharing.model.BookingOverlapCheckResponseDTO;
 import com.desk_sharing.model.RangeDTO;
 import com.desk_sharing.model.SeriesDTO;
+import com.desk_sharing.model.SeriesOverlapCheckRequestDTO;
+import com.desk_sharing.model.SeriesOverlapCheckResponseDTO;
 import com.desk_sharing.model.WorkstationSearchFiltersDTO;
 import com.desk_sharing.model.WorkstationSearchRequestDTO;
 import com.desk_sharing.repositories.BookingRepository;
@@ -39,6 +42,8 @@ import com.desk_sharing.repositories.DeskRepository;
 import com.desk_sharing.repositories.ScheduledBlockingRepository;
 import com.desk_sharing.repositories.SeriesRepository;
 import com.desk_sharing.repositories.UserRepository;
+import com.desk_sharing.services.calendar.CalendarNotificationService;
+import com.desk_sharing.services.UserService;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -56,6 +61,8 @@ public class SeriesService {
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final ScheduledBlockingRepository scheduledBlockingRepository;
+    private final CalendarNotificationService calendarNotificationService;
+    private final UserService userService;
 
 
     /**
@@ -300,8 +307,37 @@ public class SeriesService {
             System.out.println("bookings is null in SeriesService.createSeries().");
             return false;
         }
-        bookingRepository.saveAll(bookings);
+        final List<Booking> savedBookings = bookingRepository.saveAll(bookings);
+        calendarNotificationService.sendSeriesCreated(savedBookings);
         return true;
+    }
+
+    public SeriesOverlapCheckResponseDTO checkConfirmedOverlapWithOtherDeskForSeries(
+            final SeriesOverlapCheckRequestDTO request) {
+        if (request == null || request.getDeskId() == null || request.getDates() == null
+            || request.getDates().isEmpty() || request.getStartTime() == null || request.getEndTime() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Series overlap-check data is incomplete");
+        }
+
+        final UserEntity currentUser = userService.getCurrentUser();
+        if (currentUser == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found");
+        }
+
+        final List<Booking> overlaps = bookingRepository.findConfirmedOverlapsForUserOtherDeskOnDates(
+            currentUser.getId(),
+            request.getDeskId(),
+            request.getDates(),
+            timestringToTime(request.getStartTime()),
+            timestringToTime(request.getEndTime())
+        );
+        final List<Date> conflictingDates = overlaps == null ? List.of() : overlaps.stream()
+            .map(Booking::getDay)
+            .filter(Objects::nonNull)
+            .distinct()
+            .sorted()
+            .toList();
+        return new SeriesOverlapCheckResponseDTO(!conflictingDates.isEmpty(), conflictingDates);
     }
 
     private List<Desk> filterOutDesksWithScheduledBlockingConflicts(

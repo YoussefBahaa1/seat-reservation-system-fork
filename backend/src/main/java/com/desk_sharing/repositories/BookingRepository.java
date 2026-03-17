@@ -65,6 +65,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 		@Param("startTime") Time startTime,
 		@Param("endTime") Time endTime
 	);
+
+	@Query(value = "SELECT * FROM bookings WHERE user_id = :userId "
+			+ "AND booking_in_progress = 0 "
+			+ "AND desk_id <> :deskId "
+			+ "AND day IN (:days) "
+			+ "AND (:startTime < end AND :endTime > begin)",
+			nativeQuery = true)
+	List<Booking> findConfirmedOverlapsForUserOtherDeskOnDates(
+		@Param("userId") int userId,
+		@Param("deskId") Long deskId,
+		@Param("days") List<Date> days,
+		@Param("startTime") Time startTime,
+		@Param("endTime") Time endTime
+	);
 	
 
 	List<Booking> findAllByBookingInProgress(boolean inProg);

@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Chip, Divider, Paper, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Divider, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { FaRegStar, FaStar } from 'react-icons/fa';
 import { getRequest, postRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
 import CreateDatePicker from '../misc/CreateDatePicker';
 import { colorVars, semanticColors } from '../../theme';
@@ -115,6 +116,13 @@ const formatDayPathValue = (d) => {
 const normalizeTimeValue = (raw) => {
   if (typeof raw !== 'string') return '';
   return raw.length === 5 ? `${raw}:00` : raw;
+};
+
+const toShortTimeValue = (raw) => {
+  if (typeof raw !== 'string') return '';
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  return trimmed.length >= 5 ? trimmed.slice(0, 5) : trimmed;
 };
 
 const buildDateTimeForDay = (day, timeValue) => {
@@ -390,6 +398,8 @@ const CarparkView = ({
   })();
   const initialTimeRangeRef = useRef(getDefaultTimeRangeForDate(initialSelectedDate));
   const reservationStatusSnapshotRef = useRef(new Map());
+  const pendingRouteSpotLabelRef = useRef('');
+  const lastAppliedRouteKeyRef = useRef('');
 
   const [selectedSpot, setSelectedSpot] = useState(null);
   const [hoveredSpot, setHoveredSpot] = useState(null);
@@ -403,6 +413,8 @@ const CarparkView = ({
   const [startTime, setStartTime] = useState(initialTimeRangeRef.current.startTime);
   const [endTime, setEndTime] = useState(initialTimeRangeRef.current.endTime);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [svgReady, setSvgReady] = useState(false);
+  const [isFavourite, setIsFavourite] = useState(false);
 
   const effectiveShowHover = showHoverDetails ?? detailsVariant === 'panel';
   const selectedDate = controlledSelectedDate ?? internalDate;
@@ -411,6 +423,7 @@ const CarparkView = ({
   const isAdminUser = localStorage.getItem('admin') === 'true';
   const currentUserId = localStorage.getItem('userId');
   const localizer = momentLocalizer(moment);
+  const requestedSpotLabel = String(location.state?.spotLabel || '').trim();
   const timelineFormats = useMemo(() => ({
     timeGutterFormat: (date, culture, loc) => loc.format(date, 'HH:mm', culture),
     eventTimeRangeFormat: ({ start, end }, culture, loc) =>
@@ -537,6 +550,27 @@ const CarparkView = ({
     setSelectedSpot(null);
   }, []);
 
+  const applySelectedRect = useCallback((rect) => {
+    if (!rect || !isSpotSelectableForCurrentUser(rect)) return false;
+    const adminEditModeActive = rect.dataset.spotAdminEditMode === 'true' && localStorage.getItem('admin') === 'true';
+    const status = rect.dataset.spotStatus;
+    if (!adminEditModeActive && status === 'INACTIVE') return false;
+    if (selectedRectRef.current && selectedRectRef.current !== rect) {
+      selectedRectRef.current.classList.remove('carpark-selected');
+    }
+    selectedRectRef.current = rect;
+    rect.classList.add('carpark-selected');
+    setSelectedSpot(getSpotMetaFromDataset(rect));
+    return true;
+  }, []);
+
+  const selectSpotByLabel = useCallback((spotLabel) => {
+    const normalizedLabel = String(spotLabel || '').trim();
+    if (!normalizedLabel) return false;
+    const rect = spotRectsByLabelRef.current.get(normalizedLabel);
+    return applySelectedRect(rect);
+  }, [applySelectedRect]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -548,6 +582,7 @@ const CarparkView = ({
       spotLabelTextByLabelRef.current = new Map();
       spotIconTextByLabelRef.current = new Map();
       spotCatalogByLabelRef.current = new Map();
+      setSvgReady(false);
       if (containerRef.current) containerRef.current.replaceChildren();
     };
 
@@ -699,16 +734,7 @@ const CarparkView = ({
         );
 
         const setSelectedRect = () => {
-          if (!isSpotSelectableForCurrentUser(rect)) return;
-          const adminEditModeActive = rect.dataset.spotAdminEditMode === 'true' && localStorage.getItem('admin') === 'true';
-          const status = rect.dataset.spotStatus;
-          if (!adminEditModeActive && status === 'INACTIVE') return;
-          if (selectedRectRef.current && selectedRectRef.current !== rect) {
-            selectedRectRef.current.classList.remove('carpark-selected');
-          }
-          selectedRectRef.current = rect;
-          rect.classList.add('carpark-selected');
-          setSelectedSpot(getSpotMetaFromDataset(rect));
+          applySelectedRect(rect);
         };
 
         const onMouseEnter = () => {
@@ -779,6 +805,7 @@ const CarparkView = ({
       refreshSpotCatalog(() => {
         if (!cancelled) {
           containerRef.current?.appendChild(svg);
+          setSvgReady(true);
           refreshAvailability();
         }
       });
@@ -793,7 +820,7 @@ const CarparkView = ({
       cancelled = true;
       cleanupCurrent();
     };
-  }, [effectiveShowHover, allowSelectUnavailable, clearSelection]);
+  }, [applySelectedRect, effectiveShowHover, allowSelectUnavailable, clearSelection]);
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -807,8 +834,68 @@ const CarparkView = ({
   }, [selectedDate]);
 
   useEffect(() => {
+    if (!svgReady || !requestedSpotLabel) return;
+    if (pendingRouteSpotLabelRef.current === requestedSpotLabel) return;
+    if (selectSpotByLabel(requestedSpotLabel)) {
+      pendingRouteSpotLabelRef.current = requestedSpotLabel;
+    }
+  }, [requestedSpotLabel, selectSpotByLabel, svgReady]);
+
+  useEffect(() => {
+    if (lastAppliedRouteKeyRef.current === location.key) {
+      return;
+    }
+    lastAppliedRouteKeyRef.current = location.key;
+
+    const nextDate = location.state?.date ? new Date(location.state.date) : null;
+    const hasRouteDate = nextDate instanceof Date && !Number.isNaN(nextDate.valueOf());
+    const requestedRange = location.state?.preferredTimeRange;
+    const requestedStartTime = toShortTimeValue(requestedRange?.startTime);
+    const requestedEndTime = toShortTimeValue(requestedRange?.endTime);
+    const shouldApplyExplicitTimeSelection = location.state?.applyExplicitTimeSelection === true;
+
+    if (hasRouteDate) {
+      setSelectedDate(nextDate);
+    }
+
+    if (location.state && Object.prototype.hasOwnProperty.call(location.state, 'applyExplicitTimeSelection')) {
+      if (shouldApplyExplicitTimeSelection && requestedStartTime && requestedEndTime) {
+        setStartTime(requestedStartTime);
+        setEndTime(requestedEndTime);
+        setHasExplicitTimeSelection(true);
+      } else {
+        const nextRange = getDefaultTimeRangeForDate(hasRouteDate ? nextDate : selectedDate);
+        setStartTime(nextRange.startTime);
+        setEndTime(nextRange.endTime);
+        setHasExplicitTimeSelection(false);
+      }
+    }
+
+    if (requestedSpotLabel) {
+      pendingRouteSpotLabelRef.current = '';
+    }
+  }, [location.key, requestedSpotLabel, selectedDate, setSelectedDate]);
+
+  useEffect(() => {
     moment.locale(i18n.language === 'en' ? 'en-gb' : i18n.language);
   }, [i18n.language]);
+
+  const refreshFavouriteStatus = useCallback(() => {
+    if (!currentUserId || !selectedSpot?.label) {
+      setIsFavourite(false);
+      return;
+    }
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/favourites/${currentUserId}/parking/${encodeURIComponent(selectedSpot.label)}/isFavourite`,
+      headersRef.current,
+      (res) => setIsFavourite(Boolean(res)),
+      () => setIsFavourite(false)
+    );
+  }, [currentUserId, selectedSpot?.label]);
+
+  useEffect(() => {
+    refreshFavouriteStatus();
+  }, [refreshFavouriteStatus]);
 
   const refreshDayParkingEvents = useCallback(() => {
     if (!selectedDate || Number.isNaN(selectedDate.valueOf())) {
@@ -881,7 +968,7 @@ const CarparkView = ({
         reservedByMe: true,
       },
     };
-  }, [endTime, hasExplicitTimeSelection, selectedDate, startTime, t]);
+  }, [endTime, hasExplicitTimeSelection, selectedDate, startTime]);
 
   const timelineEvents = useMemo(() => (
     timelineSelectionEvent ? [...timelineReservationEvents, timelineSelectionEvent] : timelineReservationEvents
@@ -1032,6 +1119,36 @@ const CarparkView = ({
     setEndTime(nextRange.endTime);
     setHasExplicitTimeSelection(false);
   }, [selectedDate]);
+
+  const toggleFavourite = useCallback(() => {
+    if (!currentUserId || !selectedSpot?.label) return;
+
+    const onSuccess = () => {
+      setIsFavourite((prev) => !prev);
+      toast.success(!isFavourite ? t('addFavourite') : t('removeFavourite'));
+    };
+    const onFail = () => {
+      refreshFavouriteStatus();
+      toast.error(t('favouriteToggleError'));
+    };
+
+    if (isFavourite) {
+      deleteRequest(
+        `${process.env.REACT_APP_BACKEND_URL}/favourites/${currentUserId}/parking/${encodeURIComponent(selectedSpot.label)}`,
+        headersRef.current,
+        onSuccess,
+        onFail
+      );
+      return;
+    }
+
+    postRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/favourites/${currentUserId}/parking/${encodeURIComponent(selectedSpot.label)}`,
+      headersRef.current,
+      onSuccess,
+      onFail
+    );
+  }, [currentUserId, isFavourite, refreshFavouriteStatus, selectedSpot?.label, t]);
 
   useEffect(() => {
     if (!selectedDate || Number.isNaN(selectedDate.valueOf())) return;
@@ -1322,7 +1439,7 @@ const CarparkView = ({
       )}
       {spotForPanel && (
         <>
-          <Typography variant="body1" sx={{ fontWeight: 700 }}>
+          <Typography variant="body1" sx={{ fontWeight: 700, pr: 1 }}>
             {t('carparkSpot')} {spotForPanel.displayLabel || spotForPanel.label}
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -1511,9 +1628,27 @@ const CarparkView = ({
 
           {(detailsVariant === 'panel' || detailsVariant === 'modal') && (
             <Paper variant="outlined" sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                {t('carparkDetails')}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 1 }}>
+                <Typography variant="h6">
+                  {t('carparkDetails')}
+                </Typography>
+                {selectedSpot && (
+                  <Tooltip title={isFavourite ? t('removeFavourite') : t('addFavourite')}>
+                    <IconButton
+                      onClick={toggleFavourite}
+                      aria-label="toggle-favourite"
+                      sx={{
+                        color: isFavourite ? semanticColors.booking.favourite.active : semanticColors.booking.favourite.inactive,
+                        fontSize: '22px',
+                        mt: '-6px',
+                        mr: '-6px',
+                      }}
+                    >
+                      {isFavourite ? <FaStar /> : <FaRegStar />}
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
               {detailsBody}
             </Paper>
           )}

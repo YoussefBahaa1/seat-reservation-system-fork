@@ -40,6 +40,16 @@ const parseStoredBookingContext = () => {
   }
 };
 
+const parsePreferredSlot = (preferredSlot) => {
+  if (!preferredSlot || typeof preferredSlot !== 'object') return null;
+  const start = preferredSlot.start ? new Date(preferredSlot.start) : null;
+  const end = preferredSlot.end ? new Date(preferredSlot.end) : null;
+  if (!(start instanceof Date) || Number.isNaN(start.valueOf())) return null;
+  if (!(end instanceof Date) || Number.isNaN(end.valueOf())) return null;
+  if (end <= start) return null;
+  return { start, end };
+};
+
 const toFiniteNumber = (value, fallback = Number.MAX_SAFE_INTEGER) => {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
@@ -77,6 +87,7 @@ const Booking = () => {
   };
   const roomId = locationState.roomId ?? storedContext?.roomId ?? null;
   const date = locationState.date ?? storedContext?.date ?? null;
+  const preferredSlot = parsePreferredSlot(locationState.preferredSlot ?? storedContext?.preferredSlot ?? null);
   const editBooking = locationState.editBooking || null;
   const isEditMode = Boolean(editBooking && editBooking.bookingId);
   const parsedDate = date ? new Date(date) : null;
@@ -119,6 +130,7 @@ const Booking = () => {
   const pendingSlotSuggestionRef = useRef(null);
   const activeDeskLockRef = useRef(null);
   const lockExpiryTimeoutRef = useRef(null);
+  const preferredSlotRef = useRef(preferredSlot);
 
   const setBookingPending = useCallback((value) => {
     bookingPendingRef.current = value;
@@ -285,8 +297,14 @@ const Booking = () => {
   useEffect(() => {
     if (!roomId) return;
     const contextPayload = contextDateIso ? { roomId, date: contextDateIso } : { roomId };
+    if (preferredSlot) {
+      contextPayload.preferredSlot = {
+        start: preferredSlot.start.toISOString(),
+        end: preferredSlot.end.toISOString(),
+      };
+    }
     sessionStorage.setItem(BOOKING_CONTEXT_KEY, JSON.stringify(contextPayload));
-  }, [roomId, contextDateIso]);
+  }, [roomId, contextDateIso, preferredSlot]);
 
   /** ----- API FETCH FUNCTIONS ----- */
   const fetchRoom = useCallback(() => {
@@ -590,72 +608,11 @@ const Booking = () => {
     );
   }, [clearLocalDeskLock, closeAlternativeDeskDialog, navigate, roomId, setBookingPending, t]);
 
-  const loadBookings = useCallback(() => {
-    if (!clickedDeskId) return;
-    const baseDate = calendarDate instanceof Date && !Number.isNaN(calendarDate.valueOf())
-      ? calendarDate
-      : new Date();
-    const rangeStart = moment(baseDate).startOf(calendarView === 'week' ? 'week' : 'day');
-    const rangeEnd = moment(baseDate).endOf(calendarView === 'week' ? 'week' : 'day');
-    const from = rangeStart.format('YYYY-MM-DDTHH:mm:ss');
-    const to = rangeEnd.format('YYYY-MM-DDTHH:mm:ss');
+  useEffect(() => {
+    preferredSlotRef.current = preferredSlot;
+  }, [preferredSlot]);
 
-    getRequest(
-      `${process.env.REACT_APP_BACKEND_URL}/bookings/bookingsForDesk/${clickedDeskId}`,
-      headers.current,
-      (bookings) => {
-        const filteredBookings = isEditMode && editBooking?.bookingId
-          ? bookings.filter((b) => b.booking_id !== editBooking.bookingId)
-          : bookings;
-        const bookingEvents = filteredBookings.map((b) => ({
-          start: new Date(`${b.day}T${b.begin}`),
-          end: new Date(`${b.day}T${b.end}`),
-          title:
-            b.user_id.toString() === localStorage.getItem('userId')
-              ? t('you')
-              : (localStorage.getItem('admin') === 'true'
-                  ? `${b.name || ''} ${b.surname || ''}`.trim() || b.displayName || ''
-                  : b.displayName || ''),
-          id: b.booking_id,
-        }));
-
-        const applyCalendarEvents = (scheduledBlockingEvents = []) => {
-          const mergedEvents = [...bookingEvents, ...scheduledBlockingEvents];
-          if (isEditMode && editBooking?.deskId === clickedDeskId) {
-            const editStart = new Date(`${editBooking.day}T${editBooking.begin}`);
-            const editEnd = new Date(`${editBooking.day}T${editBooking.end}`);
-            const editSelection = { start: editStart, end: editEnd, id: 1 };
-            setEvents([...mergedEvents, editSelection]);
-            setEvent(editSelection);
-          } else {
-            setEvents(mergedEvents);
-            setEvent({});
-          }
-        };
-
-        getRequest(
-          `${process.env.REACT_APP_BACKEND_URL}/bookings/scheduled-blockings-for-desk/${clickedDeskId}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
-          headers.current,
-          (scheduledBlockings) => {
-            const scheduledBlockingEvents = (Array.isArray(scheduledBlockings) ? scheduledBlockings : []).map((blocking) => ({
-              start: new Date(blocking.startDateTime),
-              end: new Date(blocking.endDateTime),
-              title: t('scheduledBlockingLabel'),
-              id: `scheduled-blocking-${blocking.id}`,
-              isScheduledBlocking: true,
-            }));
-            applyCalendarEvents(scheduledBlockingEvents);
-          },
-          () => {
-            applyCalendarEvents([]);
-          }
-        );
-      },
-      () => console.error('Failed to fetch bookings')
-    );
-  }, [calendarDate, calendarView, clickedDeskId, editBooking, isEditMode, t]);
-
-  const selectSlot = useCallback((slotData, currentEventId) => {
+  const applySlotSelection = useCallback((slotData, currentEventId, calendarEvents = eventsRef.current) => {
     if (!slotData) return;
 
     const startTime = new Date(slotData.start);
@@ -707,7 +664,7 @@ const Booking = () => {
       }
     }
 
-    const updatedEvents = eventsRef.current.filter((e) => {
+    const updatedEvents = calendarEvents.filter((e) => {
       if (e.id === currentEventId) return false;
       if (isEditMode && editBooking?.bookingId && e.id === editBooking.bookingId) return false;
       return true;
@@ -723,12 +680,12 @@ const Booking = () => {
       const overlapsScheduledBlocking = overlappingEvents.some((e) => e?.isScheduledBlocking);
       toast.warning(overlapsScheduledBlocking ? t('scheduledBlockingBookingConflict') : t('overlap'));
       openAlternativeDeskDialogForSlot(startTime, endTime);
-      return;
+      return false;
     }
 
     const newEvent = { start: slotData.start, end: slotData.end, id: 1 };
     setEvents([
-      ...eventsRef.current.filter((e) => e.id !== 1),
+      ...calendarEvents.filter((e) => e.id !== 1),
       newEvent,
     ]);
 
@@ -737,8 +694,99 @@ const Booking = () => {
       ensureDeskLockForDay(clickedDeskId, moment(startTime).format('YYYY-MM-DD'));
     }
     pendingSlotSuggestionRef.current = null;
-
+    return true;
   }, [bookingSettings, clickedDeskId, editBooking, ensureDeskLockForDay, isEditMode, openAlternativeDeskDialogForSlot, t]);
+
+  const selectSlot = useCallback((slotData, currentEventId) => {
+    applySlotSelection(slotData, currentEventId, eventsRef.current);
+  }, [applySlotSelection]);
+
+  const loadBookings = useCallback(() => {
+    if (!clickedDeskId) return;
+    const baseDate = calendarDate instanceof Date && !Number.isNaN(calendarDate.valueOf())
+      ? calendarDate
+      : new Date();
+    const rangeStart = moment(baseDate).startOf(calendarView === 'week' ? 'week' : 'day');
+    const rangeEnd = moment(baseDate).endOf(calendarView === 'week' ? 'week' : 'day');
+    const from = rangeStart.format('YYYY-MM-DDTHH:mm:ss');
+    const to = rangeEnd.format('YYYY-MM-DDTHH:mm:ss');
+
+    getRequest(
+      `${process.env.REACT_APP_BACKEND_URL}/bookings/bookingsForDesk/${clickedDeskId}`,
+      headers.current,
+      (bookings) => {
+        const filteredBookings = isEditMode && editBooking?.bookingId
+          ? bookings.filter((b) => b.booking_id !== editBooking.bookingId)
+          : bookings;
+        const bookingEvents = filteredBookings.map((b) => ({
+          start: new Date(`${b.day}T${b.begin}`),
+          end: new Date(`${b.day}T${b.end}`),
+          title:
+            b.user_id.toString() === localStorage.getItem('userId')
+              ? t('you')
+              : (localStorage.getItem('admin') === 'true'
+                  ? `${b.name || ''} ${b.surname || ''}`.trim() || b.displayName || ''
+                  : b.displayName || ''),
+          id: b.booking_id,
+        }));
+
+        const applyCalendarEvents = (scheduledBlockingEvents = []) => {
+          const mergedEvents = [...bookingEvents, ...scheduledBlockingEvents];
+          if (isEditMode && editBooking?.deskId === clickedDeskId) {
+            const editStart = new Date(`${editBooking.day}T${editBooking.begin}`);
+            const editEnd = new Date(`${editBooking.day}T${editBooking.end}`);
+            const editSelection = { start: editStart, end: editEnd, id: 1 };
+            setEvents([...mergedEvents, editSelection]);
+            setEvent(editSelection);
+          } else {
+            eventsRef.current = mergedEvents;
+            setEvents(mergedEvents);
+            setEvent({});
+            const pendingPreferredSlot = preferredSlotRef.current;
+            if (pendingPreferredSlot?.start && pendingPreferredSlot?.end) {
+              preferredSlotRef.current = null;
+              try {
+                const nextContext = JSON.parse(sessionStorage.getItem(BOOKING_CONTEXT_KEY) || 'null');
+                if (nextContext && typeof nextContext === 'object') {
+                  delete nextContext.preferredSlot;
+                  sessionStorage.setItem(BOOKING_CONTEXT_KEY, JSON.stringify(nextContext));
+                }
+              } catch {
+                // ignore invalid stored booking context
+              }
+              applySlotSelection(
+                {
+                  start: pendingPreferredSlot.start,
+                  end: pendingPreferredSlot.end,
+                },
+                undefined,
+                mergedEvents
+              );
+            }
+          }
+        };
+
+        getRequest(
+          `${process.env.REACT_APP_BACKEND_URL}/bookings/scheduled-blockings-for-desk/${clickedDeskId}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+          headers.current,
+          (scheduledBlockings) => {
+            const scheduledBlockingEvents = (Array.isArray(scheduledBlockings) ? scheduledBlockings : []).map((blocking) => ({
+              start: new Date(blocking.startDateTime),
+              end: new Date(blocking.endDateTime),
+              title: t('scheduledBlockingLabel'),
+              id: `scheduled-blocking-${blocking.id}`,
+              isScheduledBlocking: true,
+            }));
+            applyCalendarEvents(scheduledBlockingEvents);
+          },
+          () => {
+            applyCalendarEvents([]);
+          }
+        );
+      },
+      () => console.error('Failed to fetch bookings')
+    );
+  }, [applySlotSelection, calendarDate, calendarView, clickedDeskId, editBooking, isEditMode, t]);
 
   /** ----- EVENT FUNCTIONS ----- */
   const booking = async () => {

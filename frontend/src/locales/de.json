@@ -44,7 +44,7 @@
     "you": "Du",
     "visibilityHelper": "Wählen Sie aus, wie Ihr Name anderen Nutzern angezeigt wird.",
     "favourites": "Favoriten",
-    "favouritesHelper": "Speichere häufig genutzte Räume. Klick zum Buchen; Stern zum Entfernen.",
+    "favouritesHelper": "Speichere häufig genutzte Räume und Parkplätze. Optional kannst du Datum und Zeitraum wählen, um die Verfügbarkeit vor dem Öffnen der Buchungsansicht zu sehen.",
     "addFavourite": "Zu Favoriten hinzugefügt",
     "removeFavourite": "Aus Favoriten entfernt",
     "favouritesEmpty": "Noch keine Favoriten. Markiere einen Raum mit dem Stern.",
@@ -53,6 +53,10 @@
     "rooms": "Räume",
     "parking": "Parken",
     "parkingComingSoon": "Parkplatz-Favoriten folgen bald.",
+    "favouritesParkingSpotName": "Parkplatz {{spot}}",
+    "favouritesParkingEmpty": "Du hast noch keine Parkplatz-Favoriten. Markiere einen Parkplatz mit dem Stern.",
+    "favouritesAvailable": "Verfügbar",
+    "favouritesUnavailable": "Belegt",
     "loading": "Lade",
     "roomSection": "Räume",
     "parkingSection": "Parkplätze (bald verfügbar)",
@@ -191,6 +195,7 @@
     "maximum": "Aufenthaltsdauer maximal 9 Stunden",
     "overlap": "Die Auswahl überschneidet sich mit einer anderen Buchung für diesen Arbeitsplatz",
     "bookingOverlapOtherDeskWarning": "Sie haben bereits eine andere Buchung in diesem Zeitraum an einem anderen Arbeitsplatz.",
+    "conflictingDates": "Konflikttermine",
     "bookingOverlapCheckFailed": "Die Prüfung auf andere überlappende Buchungen konnte nicht durchgeführt werden.",
     "continue": "Fortfahren",
     "bookingConfirmationTitle": "Buchungsbestaetigung fuer {{desk}}",
@@ -207,6 +212,7 @@
     "scheduledBlockingLabel": "Geplante Sperrung",
     "selectDeskMessage": "Bitte wählen Sie zuerst einen Arbeitsplatz",
     "blank": "Bitte wählen Sie zuerst einen Arbeitsplatz und Zeitraum vor der Buchung",
+    "selectDateTimeFirst": "Bitte wählen Sie zuerst Datum und Uhrzeit aus.",
     "bookingTimeAlignmentError": "Bitte wählen Sie Start- und Endzeit im 30-Minuten-Raster (z. B. 08:00 oder 08:30).",
     "deskUpdate": "Arbeitsplatz erfolgreich aktualisiert",
     "deskUpdateFailed": "Arbeitsplatz konnte nicht aktualisiert werden",
@@ -295,6 +301,7 @@
     "agenda": "Agenda",
     "noEventsInRange": "In diesem Bereich liegen keine Buchungen vor",
     "date": "Datum",
+    "dates": "Daten",
     "time": "Zeit",
     "event": "Buchung",
     "toDate": "Zu einem bestimmten Datum",
@@ -376,7 +383,9 @@
     ,"startDateBiggerThanStartDate":"Start des Datumsintervalls darf nicht größer als Ende sein."
     ,"startTimeBiggerThanStartTime":"Start des Zeitintervalls darf nicht größer als Ende sein."
     ,"seriesDurationTooLong":"Die Dauer der Serienbuchung ist zu groß."
+    ,"seriesBookingConfirmationTitle":"Serienbuchungsbestaetigung fuer {{desk}}"
     ,"noDesksForRange":"Für die angegebene Zeitspanne/Gebäude konnte kein Arbeitsplatz gefunden werden."
+    ,"noDesksForCurrentSelection":"Keine Arbeitsplätze passen zur aktuellen Auswahl."
     ,"datePassed": "Dieses Datum liegt in der Vergangenheit."
     ,"timePassed": "Diese Uhrzeit liegt bereits in der Vergangenheit."
     
@@ -411,6 +420,7 @@
     ,"carparkTypeStall":"Markierter Platz"
     ,"carparkTypeEmpty":"Unmarkierter Platz"
     ,"carparkStandard":"Standard"
+    ,"carparkAccessible":"Barrierefrei"
     ,"carparkSpecialCase":"Sonderfall"
     ,"carparkContactStaff":"Bitte wenden Sie sich an das Personal, um diesen Platz zu reservieren."
     ,"carparkReserve":"Reservieren"

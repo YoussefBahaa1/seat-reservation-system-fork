@@ -1,15 +1,48 @@
 import { useEffect, useState, useRef } from 'react';
-import { FormControl,Select, MenuItem, InputLabel } from '@mui/material';
+import { Box, FormControl,Select, MenuItem, InputLabel } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { postRequest, getRequest } from '../RequestFunctions/RequestFunctions';
 import CreateDatePicker from '../misc/CreateDatePicker';
 import CreateTimePicker from '../misc/CreateTimePicker';
+import { exportSeriesIcsFiles, showDeskBookingConfirmation } from '../misc/bookingPostRequest';
 import { toast } from 'react-toastify';
 import { formatDate_yyyymmdd_to_ddmmyyyy } from '../misc/formatDate';
 import {DeskTable} from '../misc/DesksTable';
 import LayoutPage from '../Templates/LayoutPage';
 import ReportDefectModal from '../Defects/ReportDefectModal';
 import { colorVars } from '../../theme';
+
+const CREATE_SERIES_START_DATE_KEY = 'createSeriesStartDate';
+const CREATE_SERIES_END_DATE_KEY = 'createSeriesEndDate';
+const CREATE_SERIES_START_TIME_KEY = 'createSeriesStartTime';
+const CREATE_SERIES_END_TIME_KEY = 'createSeriesEndTime';
+
+const parseStoredDate = (key) => {
+    try {
+        const raw = sessionStorage.getItem(key);
+        if (!raw) return null;
+        const parsed = new Date(raw);
+        return Number.isNaN(parsed.valueOf()) ? null : parsed;
+    } catch {
+        return null;
+    }
+};
+
+const parseStoredTime = (key) => {
+    try {
+        return sessionStorage.getItem(key) || '';
+    } catch {
+        return '';
+    }
+};
+
+const filterDesksByBuilding = (desks, selectedBuilding, allBuildingsValue) => {
+    return (Array.isArray(desks) ? desks : []).filter((desk) => {
+        const buildingMatches = String(selectedBuilding) === String(allBuildingsValue)
+            || String(desk?.room?.floor?.building?.id ?? '') === String(selectedBuilding);
+        return buildingMatches && !Boolean(desk?.blocked) && !Boolean(desk?.hidden);
+    });
+};
 
 /**
  * Interface to create series (=recurrent) bookings.
@@ -23,16 +56,17 @@ const CreateSeries = () => {
     const [selectedBuilding, setSelectedBuilding] = useState(valueForAllBuildings.current);
     const [possibleDesks, setPossibleDesks] = useState([]);
     const [dates, setDates] = useState([]);
-    const [startDate, setStartDate] = useState(new Date()); 
-    const [endDate, setEndDate] = useState(new Date());
-    const [startTime, setStartTime] = useState(`${process.env.REACT_APP_CREATE_SERIES_DEFAULT_STARTTIME}`);
-    const [endTime, setEndTime] = useState(`${process.env.REACT_APP_CREATE_SERIES_DEFAULT_ENDTIME}`);
+    const [startDate, setStartDate] = useState(() => parseStoredDate(CREATE_SERIES_START_DATE_KEY)); 
+    const [endDate, setEndDate] = useState(() => parseStoredDate(CREATE_SERIES_END_DATE_KEY));
+    const [startTime, setStartTime] = useState(() => parseStoredTime(CREATE_SERIES_START_TIME_KEY));
+    const [endTime, setEndTime] = useState(() => parseStoredTime(CREATE_SERIES_END_TIME_KEY));
     const [frequency, setFrequency] = useState(`${process.env.REACT_APP_CREATE_SERIES_DEFAULT_FREQUENCY}`);
     const [repaint, setRepaint] = useState(false)
     const [dayOfTheWeek, setDayOfTheWeek] = useState(0);
     const [buildings, setBuildings] = useState([]);
     const [reportDefectDeskId, setReportDefectDeskId] = useState(null);
     const [isReportDefectOpen, setIsReportDefectOpen] = useState(false);
+    const hasCompleteTimeframe = Boolean(startDate && endDate && startTime && endTime && endTime > startTime);
     
     function create_headline() {
         return i18n.language === 'de' ? 'Erstellen von Serienterminen' : 'Creation of Series Bookings';
@@ -71,6 +105,54 @@ const CreateSeries = () => {
         );
     }, []);
 
+    useEffect(() => {
+        try {
+            if (startDate instanceof Date && !Number.isNaN(startDate.valueOf())) {
+                sessionStorage.setItem(CREATE_SERIES_START_DATE_KEY, startDate.toISOString());
+            } else {
+                sessionStorage.removeItem(CREATE_SERIES_START_DATE_KEY);
+            }
+        } catch {
+            // ignore storage issues
+        }
+    }, [startDate]);
+
+    useEffect(() => {
+        try {
+            if (endDate instanceof Date && !Number.isNaN(endDate.valueOf())) {
+                sessionStorage.setItem(CREATE_SERIES_END_DATE_KEY, endDate.toISOString());
+            } else {
+                sessionStorage.removeItem(CREATE_SERIES_END_DATE_KEY);
+            }
+        } catch {
+            // ignore storage issues
+        }
+    }, [endDate]);
+
+    useEffect(() => {
+        try {
+            if (startTime) {
+                sessionStorage.setItem(CREATE_SERIES_START_TIME_KEY, startTime);
+            } else {
+                sessionStorage.removeItem(CREATE_SERIES_START_TIME_KEY);
+            }
+        } catch {
+            // ignore storage issues
+        }
+    }, [startTime]);
+
+    useEffect(() => {
+        try {
+            if (endTime) {
+                sessionStorage.setItem(CREATE_SERIES_END_TIME_KEY, endTime);
+            } else {
+                sessionStorage.removeItem(CREATE_SERIES_END_TIME_KEY);
+            }
+        } catch {
+            // ignore storage issues
+        }
+    }, [endTime]);
+
     /**
      * Creates an message that indicates if the series creation was successful or not.
      * @param {*} ret The param that indicates if the creation was successful or not.
@@ -89,17 +171,16 @@ const CreateSeries = () => {
      * Fetch dates between startDate and endDate.
      */
     useEffect(() => {
+        if (!hasCompleteTimeframe) {
+            setDates([]);
+            return;
+        }
         // The date as iso format. Cut off the time etc to achieve a date like YYYY-MM-DD.
         const startDateStr = new Date(startDate).toISOString().split('T')[0];
         const endDateStr = new Date(endDate).toISOString().split('T')[0];
 
         if (startDateStr > endDateStr) {
             toast.error(t('startDateBiggerThanStartDate'));
-            setDates([]);
-            return;
-        }
-        if (startTime > endTime) {
-            toast.error(t('startTimeBiggerThanStartTime'));
             setDates([]);
             return;
         }
@@ -132,12 +213,26 @@ const CreateSeries = () => {
                 dayOfTheWeek: dayOfTheWeek
             })
         );
-        }, [t, startDate, endDate, startTime, endTime, frequency, dayOfTheWeek, repaint]); 
+        }, [t, startDate, endDate, startTime, endTime, frequency, dayOfTheWeek, repaint, hasCompleteTimeframe]); 
 
     /**
      * Fetch all available desks for dates and times.
      */
     useEffect(() => {
+        if (!hasCompleteTimeframe || dates.length === 0) {
+            getRequest(
+                `${process.env.REACT_APP_BACKEND_URL}/desks`,
+                headers.current,
+                (data) => {
+                    setPossibleDesks(filterDesksByBuilding(data, selectedBuilding, valueForAllBuildings.current));
+                },
+                () => {
+                    console.log('Error fetching desks in CreateSeries');
+                    setPossibleDesks([]);
+                }
+            );
+            return;
+        }
         if (dates.length > 0) {
             const url = selectedBuilding === valueForAllBuildings.current ? 
                 `${process.env.REACT_APP_BACKEND_URL}/series/desksForDatesAndTimes` : 
@@ -154,16 +249,14 @@ const CreateSeries = () => {
                     startTime: startTime,
                     endTime: endTime
                 }));
-        } else {
-            setPossibleDesks([]);
         }
-    }, [dates, endTime, startTime, selectedBuilding, t]);
+    }, [dates, endTime, startTime, selectedBuilding, hasCompleteTimeframe]);
 
     /**
      * Create an series object on the backend side.
      * @param {*} desk The desk object for which an series shall be created.
      */
-    function addSeries(desk) {
+    function submitSeries(desk) {
         postRequest(
             `${process.env.REACT_APP_BACKEND_URL}/series`,
             headers.current,
@@ -198,129 +291,181 @@ const CreateSeries = () => {
                 'email':localStorage.getItem('email')
             })
         );
-    };
+    }
+
+    function addSeries(desk) {
+        if (!hasCompleteTimeframe) {
+            toast.warning(t('selectDateTimeFirst'));
+            return;
+        }
+
+        if (!Array.isArray(dates) || dates.length === 0) {
+            toast.warning(t('noDesksForCurrentSelection'));
+            return;
+        }
+
+        const openSeriesConfirmation = (hasOverlap = false, conflictingDates = []) => {
+            const confirmationBookingData = {
+                day: dates[0],
+                begin: startTime,
+                end: endTime,
+            };
+            showDeskBookingConfirmation({
+                t,
+                title: t('seriesBookingConfirmationTitle', { desk: desk.remark }),
+                deskRemark: desk.remark,
+                deskDetails: desk,
+                bookingData: confirmationBookingData,
+                bookingDates: dates,
+                hasOverlap,
+                conflictingDates,
+                showExportIcs: true,
+                onExportIcs: () => exportSeriesIcsFiles({
+                    bookingDates: dates,
+                    bookingData: confirmationBookingData,
+                    deskRemark: desk.remark,
+                    t,
+                }),
+                onConfirm: () => submitSeries(desk),
+                onCancel: () => {},
+            });
+        };
+
+        postRequest(
+            `${process.env.REACT_APP_BACKEND_URL}/series/overlap-check`,
+            headers.current,
+            (data) => {
+                openSeriesConfirmation(Boolean(data?.hasOverlap), data?.conflictingDates || []);
+            },
+            () => {
+                openSeriesConfirmation(false);
+            },
+            JSON.stringify({
+                deskId: desk.id,
+                dates,
+                startTime,
+                endTime,
+            })
+        );
+    }
 
     function CreateContent() {
         return (
-            <>
-                <div
-                    data-testid='startDate'
-                    id='startDate'
-                >
-                    <CreateDatePicker
-                        
-                        date={startDate}
-                        setter={setStartDate}
-                        label={t('startDate')}
-                    />
-                </div>
-                <br/><br/>
-                <div
-                    data-testid='endDate'
-                    id='endDate'
-                >
-                <CreateDatePicker
-                    date={endDate}
-                    setter={setEndDate}
-                    label={t('endDate')}
-                />
-                </div>
-                <br/><br/>
-                <div
-                    data-testid='startTime'
-                    id='startTime'
-                >
-                <CreateTimePicker
-
-                    time={startTime}
-                    setter={setStartTime}
-                    label={t('startTime')}
-                />
-                </div>
-                <br/><br/>
-                <div
-                    data-testid='endTime'
-                    id='endTime'
-                >
-                <CreateTimePicker
-                    time={endTime}
-                    setter={setEndTime}
-                    label={t('endTime')}
-                />
-                </div>
-                <br/><br/>
-                <div
-                    data-testid='frequence_select'
-                    id='frequence_select'
-                >                
-                    <FormControl id='createSeries_setFrequency' required={true} fullWidth>
-                        <InputLabel id='demo-simple-select-label'>{t('frequency')}</InputLabel>
-                        <Select
-                            labelId='demo-simple-select-label'
-                            value={frequency} 
-                            label={t('frequency')}
-                            onChange={(e)=>{
-                                setFrequency(e.target.value);
-                            }}
-                        >
-                            <MenuItem value='daily'>{t('daily')}</MenuItem>
-                            <MenuItem value='weekly'>{t('weekly')}</MenuItem>
-                            <MenuItem value='twoweeks'>{t('twoweeks')}</MenuItem>
-                            <MenuItem value='threeweeks'>{t('threeweeks')}</MenuItem>
-                            <MenuItem value='monthly'>{t('monthly')}</MenuItem>
-                        </Select>
-                    </FormControl>
-                </div>
-                <br/><br/>
-                <div id='div_createSeries_selectBuilding'>
-                <FormControl id='createSeries_selectBuilding' required={true} fullWidth>
-                    <InputLabel id='demo-simple-select-label'>{t('building')}</InputLabel>
-                    <Select
-                        value={selectedBuilding} 
-                        label={t('Building')}
-                        onChange={(e)=>{
-                            setSelectedBuilding(e.target.value);
-                        }}
-                    >
-                        {
-                            [
-                                <MenuItem id={`createSeries_building_all`} key={valueForAllBuildings.current} value={valueForAllBuildings.current}>{t('any')}</MenuItem>,
-                                ...buildings.map(e => (
-                                <MenuItem id={`createSeries_building_${e.id}`} key={e.id} value={e.id}>
-                                    {e.name}
-                                </MenuItem>
-                                ))
-                            ]
-                        }
-                    </Select>
-                </FormControl>
-                </div>
-                <br/><br/>
-                <div
-                    data-testid='dayOfTheWeek_select'
-                    id='dayOfTheWeek_select'
-                >
-                <FormControl id='createSeries_setDayOfTheWeek' disabled={frequency === 'daily'} required={true} fullWidth>
-                    <InputLabel id='demo-simple-select-label'>{t('dayOfTheWeek')}</InputLabel>
-                    <Select
-                        value={dayOfTheWeek} 
-                        label={t('dayOfTheWeek')}
-                        onChange={(e)=>{
-                            setDayOfTheWeek(e.target.value);
-                        }}
-                    >
-                        <MenuItem value='0'>{t('monday')}</MenuItem>
-                        <MenuItem value='1'>{t('tuesday')}</MenuItem>
-                        <MenuItem value='2'>{t('wednesday')}</MenuItem>
-                        <MenuItem value='3'>{t('thursday')}</MenuItem>
-                        <MenuItem value='4'>{t('friday')}</MenuItem>
-                    </Select>
-                </FormControl>
-                </div>
-                <br/><br/>
-                <div id='dates_labels'>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minHeight: 'calc(100vh - 260px)' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 860 }}>
+                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                        <Box data-testid='startDate' id='startDate' sx={{ width: 200 }}>
+                            <CreateDatePicker
+                                date={startDate}
+                                setter={setStartDate}
+                                label={t('startDate')}
+                                required={false}
+                                clearable
+                                size='small'
+                            />
+                        </Box>
+                        <Box data-testid='endDate' id='endDate' sx={{ width: 200 }}>
+                            <CreateDatePicker
+                                date={endDate}
+                                setter={setEndDate}
+                                label={t('endDate')}
+                                required={false}
+                                clearable
+                                size='small'
+                            />
+                        </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                        <Box data-testid='startTime' id='startTime' sx={{ width: 200 }}>
+                            <CreateTimePicker
+                                time={startTime}
+                                setter={setStartTime}
+                                label={t('startTime')}
+                                stepSeconds={60}
+                                required={false}
+                                size='small'
+                            />
+                        </Box>
+                        <Box data-testid='endTime' id='endTime' sx={{ width: 200 }}>
+                            <CreateTimePicker
+                                time={endTime}
+                                setter={setEndTime}
+                                label={t('endTime')}
+                                stepSeconds={60}
+                                required={false}
+                                size='small'
+                            />
+                        </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                        <Box data-testid='frequence_select' id='frequence_select' sx={{ width: 200 }}>                
+                            <FormControl id='createSeries_setFrequency' required={true} fullWidth size='small'>
+                                <InputLabel id='demo-simple-select-label'>{t('frequency')}</InputLabel>
+                                <Select
+                                    labelId='demo-simple-select-label'
+                                    value={frequency} 
+                                    label={t('frequency')}
+                                    size='small'
+                                    onChange={(e)=>{
+                                        setFrequency(e.target.value);
+                                    }}
+                                >
+                                    <MenuItem value='daily'>{t('daily')}</MenuItem>
+                                    <MenuItem value='weekly'>{t('weekly')}</MenuItem>
+                                    <MenuItem value='twoweeks'>{t('twoweeks')}</MenuItem>
+                                    <MenuItem value='threeweeks'>{t('threeweeks')}</MenuItem>
+                                    <MenuItem value='monthly'>{t('monthly')}</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                        <Box data-testid='dayOfTheWeek_select' id='dayOfTheWeek_select' sx={{ width: 200 }}>
+                            <FormControl id='createSeries_setDayOfTheWeek' disabled={frequency === 'daily'} required={true} fullWidth size='small'>
+                                <InputLabel id='demo-simple-select-label'>{t('dayOfTheWeek')}</InputLabel>
+                                <Select
+                                    value={dayOfTheWeek} 
+                                    label={t('dayOfTheWeek')}
+                                    size='small'
+                                    onChange={(e)=>{
+                                        setDayOfTheWeek(e.target.value);
+                                    }}
+                                >
+                                    <MenuItem value='0'>{t('monday')}</MenuItem>
+                                    <MenuItem value='1'>{t('tuesday')}</MenuItem>
+                                    <MenuItem value='2'>{t('wednesday')}</MenuItem>
+                                    <MenuItem value='3'>{t('thursday')}</MenuItem>
+                                    <MenuItem value='4'>{t('friday')}</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                    </Box>
+                    <Box id='div_createSeries_selectBuilding' sx={{ width: 200 }}>
+                        <FormControl id='createSeries_selectBuilding' required={true} fullWidth size='small'>
+                            <InputLabel id='demo-simple-select-label'>{t('building')}</InputLabel>
+                            <Select
+                                value={selectedBuilding} 
+                                label={t('Building')}
+                                size='small'
+                                onChange={(e)=>{
+                                    setSelectedBuilding(e.target.value);
+                                }}
+                            >
+                                {
+                                    [
+                                        <MenuItem id={`createSeries_building_all`} key={valueForAllBuildings.current} value={valueForAllBuildings.current}>{t('any')}</MenuItem>,
+                                        ...buildings.map(e => (
+                                        <MenuItem id={`createSeries_building_${e.id}`} key={e.id} value={e.id}>
+                                            {e.name}
+                                        </MenuItem>
+                                        ))
+                                    ]
+                                }
+                            </Select>
+                        </FormControl>
+                    </Box>
+                </Box>
+                <Box id='dates_labels'>
                     <FormControl id='createSeries_calculateDates' disabled={true} fullWidth>
-                        {dates.length > 0 ? (
+                        {hasCompleteTimeframe && dates.length > 0 ? (
                             <div
                                 data-testid='dates_label'
                                 id='dates_label'
@@ -334,14 +479,12 @@ const CreateSeries = () => {
                                 )))}
                                 </div>
                             </div>
-                        ) : 
-                        <h3>{t('timerangeIsNotValid')}</h3>
+                        ) : null
                     }
                     </FormControl>
-                </div>
-                <br/><br/>
+                </Box>
                 {
-                    dates && dates.length > 0 && (possibleDesks && possibleDesks.length > 0 ? <DeskTable name={'createSeries'} desks={possibleDesks} submit_function={addSeries} onReportDefect={(desk) => {
+                    possibleDesks && possibleDesks.length > 0 ? <DeskTable name={'createSeries'} desks={possibleDesks} submit_function={addSeries} tableContainerSx={{ flex: 1, minHeight: 0, maxHeight: 'none' }} onReportDefect={(desk) => {
                         getRequest(
                             `${process.env.REACT_APP_BACKEND_URL}/defects/active?deskId=${desk.id}`,
                             headers.current,
@@ -355,9 +498,9 @@ const CreateSeries = () => {
                                 }
                             }
                         );
-                    }}/> : <div>{t('noDesksForRange')}</div>)
+                    }}/> : <div>{t(hasCompleteTimeframe ? 'noDesksForRange' : 'noDesksForCurrentSelection')}</div>
                 }
-            </>
+            </Box>
         );
     };
     
@@ -365,7 +508,7 @@ const CreateSeries = () => {
         <>
         <LayoutPage
             title={create_headline()}
-            helpText={i18n.language === 'de' ? 'Wählen Sie zunächst das Start- und Endedatum, wie auch den Start- und Endzeitpunkt aus.<br/>Legen Sie im Anschluss eine Frequenz und das gewünschte Gebäude fest. Gegegebenfalls können Sie noch einen Wochentag setzen.<br/>In der unteren Tabelle können Sie nun ein mögliches Zimmer für Ihre Serienbuchungen auswählen.' : 'First, select the start and end date, as well as the start and end time.</br>Then, choose a frequency and the desired building. If necessary, you can also set a weekday.</br>In the table below, you can now select a possible room for your recurring bookings'}
+            helpText={i18n.language === 'de' ? 'Wählen Sie optional Startdatum, Enddatum, Startzeit und Endzeit aus. Sobald alle vier Angaben gesetzt sind, werden die Serientermine berechnet.<br/>Legen Sie im Anschluss Frequenz, Gebäude und bei Bedarf den Wochentag fest.<br/>In der unteren Tabelle können Sie dann einen passenden Arbeitsplatz für die Serienbuchung auswählen.' : 'Optionally select the start date, end date, start time, and end time. As soon as all four values are set, the recurring dates are calculated.<br/>Then choose a frequency, a building, and a weekday if needed.<br/>In the table below, you can then select a suitable workspace for the recurring booking.'}
             withPaddingX={true}
         >
             <CreateContent/>

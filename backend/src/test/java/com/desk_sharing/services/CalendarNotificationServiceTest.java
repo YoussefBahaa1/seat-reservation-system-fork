@@ -20,6 +20,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -79,6 +80,31 @@ class CalendarNotificationServiceTest {
         verify(mailSender).send(any(MimeMessage.class));
     }
 
+    @Test
+    void seriesNotification_sendsSingleMailWithAllIcsAttachments() throws Exception {
+        MimeMessage mimeMessage = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+
+        Booking first = baseBooking();
+        first.setId(11L);
+        first.getUser().setNotifyBookingCreate(true);
+
+        Booking second = baseBooking();
+        second.setId(12L);
+        second.setDay(Date.valueOf(LocalDate.now().plusDays(8)));
+        second.setUser(first.getUser());
+        second.setDesk(first.getDesk());
+        second.setRoom(first.getRoom());
+
+        service.sendSeriesCreated(List.of(first, second));
+
+        verify(mailSender).send(any(MimeMessage.class));
+        var multipart = (jakarta.mail.Multipart) mimeMessage.getContent();
+        assertThat(multipart.getCount()).isGreaterThanOrEqualTo(3);
+        assertThat(mimeMessage.getSubject()).contains("series booking confirmed");
+        assertThat(mimeMessage.getContent().toString()).isNotNull();
+    }
+
     private Booking baseBooking() {
         Booking b = new Booking();
         b.setDay(Date.valueOf(LocalDate.now().plusDays(1)));
@@ -86,7 +112,16 @@ class CalendarNotificationServiceTest {
         b.setEnd(Time.valueOf(LocalTime.of(11, 0)));
         UserEntity user = new UserEntity();
         user.setEmail("user@test.local");
+        user.setName("Desk");
+        user.setSurname("User");
+        user.setNotifyBookingCreate(true);
         b.setUser(user);
+        com.desk_sharing.entities.Desk desk = new com.desk_sharing.entities.Desk();
+        desk.setRemark("Desk A1");
+        b.setDesk(desk);
+        com.desk_sharing.entities.Room room = new com.desk_sharing.entities.Room();
+        room.setRemark("Room 1");
+        b.setRoom(room);
         return b;
     }
 }
