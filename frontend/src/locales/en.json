@@ -44,7 +44,7 @@
     "you": "You",
     "visibilityHelper": "Choose how your name is shown to other users.",
     "favourites": "Favourites",
-    "favouritesHelper": "Save rooms you book often. Click to open booking; unstar to remove.",
+    "favouritesHelper": "Save rooms and parking spots you use often. Optionally select a date and time range to see availability before opening the booking screen.",
     "addFavourite": "Added to favourites",
     "removeFavourite": "Removed from favourites",
     "favouritesEmpty": "You have no favourites yet. Star a room to save it.",
@@ -53,6 +53,10 @@
     "rooms": "Rooms",
     "parking": "Parking",
     "parkingComingSoon": "Parking favourites coming soon.",
+    "favouritesParkingEmpty": "You have no parking favourites yet. Star a parking spot to save it.",
+    "favouritesParkingSpotName": "Parking Spot {{spot}}",
+    "favouritesAvailable": "Available",
+    "favouritesUnavailable": "Occupied",
     "loading": "Loading",
     "roomSection": "Rooms",
     "parkingSection": "Parking (coming soon)",
@@ -190,6 +194,7 @@
     "maximum": "Maximum booking duration is 9 hours",
     "overlap": "This slot overlaps with another booking for this desk",
     "bookingOverlapOtherDeskWarning": "You already have another booking in this time window on a different workstation.",
+    "conflictingDates": "Conflicting dates",
     "bookingOverlapCheckFailed": "Could not check for your other overlapping bookings.",
     "continue": "Continue",
     "bookingConfirmationTitle": "Booking Confirmation for {{desk}}",
@@ -206,6 +211,7 @@
     "scheduledBlockingLabel": "Scheduled Blocking",
     "selectDeskMessage": "Please first select a desk",
     "blank": "Please choose a desk and time before booking.",
+    "selectDateTimeFirst": "Please select a date and time first.",
     "bookingTimeAlignmentError": "Please choose start and end times on 30-minute boundaries (for example 08:00 or 08:30).",
     "deskUpdate": "Desk updated successfully",
     "deskUpdateFailed": "Desk updated was not successfully",
@@ -294,6 +300,7 @@
     "agenda": "Agenda",
     "noEventsInRange": "There are no events in this range",
     "date": "Date",
+    "dates": "Dates",
     "time": "Time",
     "event": "Booking",
     "toDate": "At an defined date",
@@ -375,7 +382,9 @@
     ,"startDateBiggerThanStartDate":"Start date must not be greater than the end date."
     ,"startTimeBiggerThanStartTime":"Start time must not be greater than the end time."
     ,"seriesDurationTooLong":"The duration of the series booking is too long."
+    ,"seriesBookingConfirmationTitle":"Series Booking Confirmation for {{desk}}"
     ,"noDesksForRange":"For the specified time range and building no desk is available."
+    ,"noDesksForCurrentSelection":"No desks match the current selection."
     ,"datePassed": "This date has passed."
     ,"timePassed": "This time has already passed."
 
@@ -410,6 +419,7 @@
     ,"carparkTypeStall":"Marked spot"
     ,"carparkTypeEmpty":"Unmarked spot"
     ,"carparkStandard":"Standard"
+    ,"carparkAccessible":"Accessible"
     ,"carparkSpecialCase":"Special case"
     ,"carparkContactStaff":"Contact staff to reserve this spot."
     ,"carparkReserve":"Reserve"

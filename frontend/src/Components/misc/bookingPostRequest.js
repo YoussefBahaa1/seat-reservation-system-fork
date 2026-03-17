@@ -8,6 +8,8 @@ const modalStyles = {
     container: {
         width: 'min(560px, calc(100vw - 32px))',
         maxWidth: '100%',
+        maxHeight: 'min(80vh, 720px)',
+        overflowY: 'auto',
         padding: '24px',
         borderRadius: '16px',
         backgroundColor: colorVars.surface.paper,
@@ -40,6 +42,18 @@ const modalStyles = {
     detailValue: {
         color: colorVars.text.body,
         overflowWrap: 'anywhere',
+    },
+    dateList: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+    },
+    dateListItem: {
+        padding: '6px 10px',
+        borderRadius: '8px',
+        backgroundColor: colorVars.surface.subtle,
+        border: `1px solid ${colorVars.border.faint}`,
+        color: colorVars.text.body,
     },
     warningBox: {
         marginTop: '18px',
@@ -145,15 +159,27 @@ const normalizeBookingForCalendar = (bookingData, bookingId, deskRemark) => ({
     end: new Date(`${bookingData.day}T${bookingData.end}`),
 });
 
-const renderBookingDetails = ({ t, bookingData, deskRemark, deskDetails }) => {
+const renderBookingDetails = ({ t, bookingData, deskRemark, deskDetails, bookingDates = [] }) => {
     const equipment = formatEquipmentSummary(t, deskDetails);
     const roomRemark = deskDetails?.room?.remark || '';
     const buildingName = deskDetails?.room?.floor?.building?.name || '';
+    const normalizedDates = Array.isArray(bookingDates)
+        ? bookingDates.filter(Boolean).map((date) => formatDate_yyyymmdd_to_ddmmyyyy(date))
+        : [];
+    const hasMultipleDates = normalizedDates.length > 0;
 
     return (
         <div style={modalStyles.detailsGrid}>
-            <span style={modalStyles.detailLabel}>{t('date')}:</span>
-            <span style={modalStyles.detailValue}>{formatDate_yyyymmdd_to_ddmmyyyy(bookingData.day)}</span>
+            <span style={modalStyles.detailLabel}>{t(hasMultipleDates ? 'dates' : 'date')}:</span>
+            {hasMultipleDates ? (
+                <div style={modalStyles.dateList}>
+                    {normalizedDates.map((dateValue) => (
+                        <span key={dateValue} style={modalStyles.dateListItem}>{dateValue}</span>
+                    ))}
+                </div>
+            ) : (
+                <span style={modalStyles.detailValue}>{formatDate_yyyymmdd_to_ddmmyyyy(bookingData.day)}</span>
+            )}
             <span style={modalStyles.detailLabel}>{t('time')}:</span>
             <span style={modalStyles.detailValue}>
                 {trimSeconds(bookingData.begin)} {t('to')} {trimSeconds(bookingData.end)}
@@ -168,12 +194,26 @@ const renderBookingDetails = ({ t, bookingData, deskRemark, deskDetails }) => {
     );
 };
 
-const renderOverlapWarningBox = (t) => (
-    <div style={modalStyles.warningBox}>
-        <p style={modalStyles.warningTitle}>{t('warning')}</p>
-        <p style={modalStyles.warningText}>{t('bookingOverlapOtherDeskWarning')}</p>
-    </div>
-);
+const renderOverlapWarningDetails = (t, conflictingDates = []) => {
+    const normalizedDates = Array.isArray(conflictingDates)
+        ? conflictingDates.filter(Boolean).map((date) => formatDate_yyyymmdd_to_ddmmyyyy(date))
+        : [];
+
+    return (
+        <div style={modalStyles.warningBox}>
+            <p style={modalStyles.warningTitle}>{t('warning')}</p>
+            <p style={modalStyles.warningText}>{t('bookingOverlapOtherDeskWarning')}</p>
+            {normalizedDates.length > 0 ? (
+                <div style={{ ...modalStyles.dateList, marginTop: '10px' }}>
+                    <span style={modalStyles.detailLabel}>{t('conflictingDates')}:</span>
+                    {normalizedDates.map((dateValue) => (
+                        <span key={dateValue} style={modalStyles.dateListItem}>{dateValue}</span>
+                    ))}
+                </div>
+            ) : null}
+        </div>
+    );
+};
 
 const escapeIcsText = (text) => {
     if (!text) return '';
@@ -198,7 +238,7 @@ const formatIcsDateTime = (day, timeValue) => {
     return `${dayPart}T${normalizeTime(timeValue)}`;
 };
 
-const exportIcsFile = ({ bookingData, deskRemark, t }) => {
+export const exportIcsFile = ({ bookingData, deskRemark, t }) => {
     const dtstamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
     const dtstart = formatIcsDateTime(bookingData.day, bookingData.begin);
     const dtend = formatIcsDateTime(bookingData.day, bookingData.end);
@@ -230,6 +270,22 @@ const exportIcsFile = ({ bookingData, deskRemark, t }) => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(link.href);
+};
+
+export const exportSeriesIcsFiles = ({ bookingDates, bookingData, deskRemark, t }) => {
+    const normalizedDates = Array.isArray(bookingDates) ? bookingDates.filter(Boolean) : [];
+    normalizedDates.forEach((dateValue, index) => {
+        window.setTimeout(() => {
+            exportIcsFile({
+                bookingData: {
+                    ...bookingData,
+                    day: dateValue,
+                },
+                deskRemark,
+                t,
+            });
+        }, index * 150);
+    });
 };
 
 const getErrorMessage = (t, status, data) => {
@@ -313,6 +369,8 @@ export function showDeskBookingConfirmation({
     cancelLabel,
     exportLabel,
     showExportIcs = false,
+    bookingDates = [],
+    conflictingDates = [],
 }) {
     confirmAlert({
         closeOnEscape: false,
@@ -320,8 +378,8 @@ export function showDeskBookingConfirmation({
         customUI: ({ onClose }) => (
             <div style={modalStyles.container}>
                 <h1 style={modalStyles.title}>{title || t('bookingConfirmationTitle', { desk: deskRemark })}</h1>
-                {renderBookingDetails({ t, bookingData, deskRemark, deskDetails })}
-                {hasOverlap ? renderOverlapWarningBox(t) : null}
+                {renderBookingDetails({ t, bookingData, deskRemark, deskDetails, bookingDates })}
+                {hasOverlap ? renderOverlapWarningDetails(t, conflictingDates) : null}
                 <div style={modalStyles.footer}>
                     <div style={modalStyles.primaryActions}>
                         <button

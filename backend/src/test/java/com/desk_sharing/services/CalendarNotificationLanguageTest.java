@@ -103,6 +103,33 @@ class CalendarNotificationLanguageTest {
             .contains("  Besondere Merkmale: Nein");
     }
 
+    @Test
+    void seriesCreateMail_includesDateListAndAttachments() throws Exception {
+        Booking first = baseBooking("en");
+        first.setId(201L);
+        first.setDay(Date.valueOf(LocalDate.of(2026, 5, 4)));
+
+        Booking second = baseBooking("en");
+        second.setId(202L);
+        second.setUser(first.getUser());
+        second.setDesk(first.getDesk());
+        second.setRoom(first.getRoom());
+        second.setDay(Date.valueOf(LocalDate.of(2026, 5, 11)));
+
+        service.sendSeriesCreated(List.of(first, second));
+
+        assertThat(mailSender.sentMessages).hasSize(1);
+        MimeMessage sent = mailSender.sentMessages.get(0);
+        assertThat(sent.getSubject()).contains("Desk series booking confirmed");
+        assertThat(extractBodyText(sent))
+            .contains("Your desk series booking was confirmed.")
+            .contains("Dates:")
+            .contains("2026-05-04")
+            .contains("2026-05-11");
+        Multipart multipart = (Multipart) sent.getContent();
+        assertThat(multipart.getCount()).isGreaterThanOrEqualTo(3);
+    }
+
     private Booking baseBooking(String language) {
         Booking booking = new Booking();
         booking.setId(123L);

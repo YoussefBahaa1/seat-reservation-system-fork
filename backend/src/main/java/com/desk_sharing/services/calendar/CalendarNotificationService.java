@@ -1,6 +1,8 @@
 package com.desk_sharing.services.calendar;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -59,6 +61,29 @@ public class CalendarNotificationService {
         sendCancel(booking, german);
     }
 
+    public void sendSeriesCreated(@NonNull List<Booking> bookings) {
+        if (!notificationsEnabled || bookings.isEmpty()) return;
+
+        final Booking referenceBooking = bookings.stream()
+            .filter(java.util.Objects::nonNull)
+            .min(Comparator.comparing(Booking::getDay).thenComparing(Booking::getBegin))
+            .orElse(null);
+        if (referenceBooking == null) return;
+
+        final UserEntity user = referenceBooking.getUser();
+        if (user == null || isBlank(user.getEmail())) return;
+        if (!user.isNotifyBookingCreate()) return;
+
+        bookings.stream()
+            .filter(java.util.Objects::nonNull)
+            .forEach(this::ensureUidAndSequence);
+
+        final boolean german = isGerman(user);
+        final BookingCalendarFormatter.RenderedCalendarContent content =
+            bookingCalendarFormatter.buildSeriesRequestContent(bookings, german);
+        sendSeriesEmail(bookings, content);
+    }
+
     private void ensureUidAndSequence(Booking booking) {
         if (booking.getCalendarUid() == null) {
             booking.setCalendarUid(UUID.randomUUID().toString());
@@ -104,6 +129,41 @@ public class CalendarNotificationService {
         } catch (MessagingException | MailException e) {
             // Calendar email issues must never break booking CRUD flows.
             log.warn("Failed to send calendar notification for booking {}: {}", booking.getId(), e.getMessage());
+        }
+    }
+
+    private void sendSeriesEmail(List<Booking> bookings, BookingCalendarFormatter.RenderedCalendarContent content) {
+        try {
+            Booking referenceBooking = bookings.stream()
+                .filter(java.util.Objects::nonNull)
+                .min(Comparator.comparing(Booking::getDay).thenComparing(Booking::getBegin))
+                .orElseThrow();
+
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            helper.setFrom(mailFrom);
+            helper.setTo(referenceBooking.getUser().getEmail());
+            helper.setSubject(content.subject());
+            helper.setText(content.textBody(), false);
+
+            mimeMessage.addHeader("Content-Class", "urn:content-classes:calendarmessage");
+            mimeMessage.addHeader("Method", "REQUEST");
+
+            for (Booking booking : bookings.stream()
+                .filter(java.util.Objects::nonNull)
+                .sorted(Comparator.comparing(Booking::getDay).thenComparing(Booking::getBegin))
+                .toList()) {
+                final boolean german = isGerman(referenceBooking.getUser());
+                helper.addAttachment(
+                    "booking-" + booking.getId() + ".ics",
+                    new ByteArrayResource(buildRequestIcsForExport(booking, german).getBytes(StandardCharsets.UTF_8))
+                );
+            }
+
+            mailSender.send(mimeMessage);
+        } catch (MessagingException | MailException e) {
+            log.warn("Failed to send calendar notification for series {}: {}",
+                bookings.stream().map(Booking::getId).toList(), e.getMessage());
         }
     }
 

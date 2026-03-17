@@ -42,6 +42,9 @@ import {
 
 const FILTER_STORAGE_KEY = 'freeDesksAdvancedFilters';
 const BUILDING_STORAGE_KEY = 'freeDesksSelectedBuilding';
+const DATE_STORAGE_KEY = 'freeDesksSelectedDate';
+const START_TIME_STORAGE_KEY = 'freeDesksStartTime';
+const END_TIME_STORAGE_KEY = 'freeDesksEndTime';
 const MAX_PRESET_NAME_LENGTH = 40;
 const MAX_PRESETS = 5;
 const emptyFilters = Object.freeze({
@@ -68,6 +71,53 @@ const normalizeFilters = (filters) => ({
         : [],
 });
 
+const technologyFieldBySelection = {
+    DockingStation: 'technologyDockingStation',
+    Webcam: 'technologyWebcam',
+    Headset: 'technologyHeadset',
+};
+
+const hasDeskSpecialFeatures = (desk) => String(desk?.specialFeatures || '').trim().length > 0;
+
+const deskMatchesFilters = (desk, filters) => {
+    const normalized = normalizeFilters(filters);
+    const workstationType = String(desk?.workstationType || 'Standard');
+    const monitorCount = Number(desk?.monitorsQuantity ?? 1);
+    const isAdjustable = Boolean(desk?.deskHeightAdjustable);
+    const hasSpecialFeatures = hasDeskSpecialFeatures(desk);
+
+    if (normalized.types.length > 0 && !normalized.types.includes(workstationType)) {
+        return false;
+    }
+    if (normalized.monitorCounts.length > 0 && !normalized.monitorCounts.includes(monitorCount)) {
+        return false;
+    }
+    if (normalized.deskHeightAdjustable.length > 0 && !normalized.deskHeightAdjustable.includes(isAdjustable)) {
+        return false;
+    }
+    if (normalized.specialFeatures.length > 0 && !normalized.specialFeatures.includes(hasSpecialFeatures)) {
+        return false;
+    }
+    if (normalized.technologySelections.length > 0) {
+        const hasAllSelectedTechnologies = normalized.technologySelections.every((selection) =>
+            Boolean(desk?.[technologyFieldBySelection[selection]])
+        );
+        if (!hasAllSelectedTechnologies) {
+            return false;
+        }
+    }
+    return true;
+};
+
+const filterDesksForSearch = (desks, selectedBuilding, allBuildingsValue, filters) => {
+    return (Array.isArray(desks) ? desks : []).filter((desk) => {
+        const buildingMatches = String(selectedBuilding) === String(allBuildingsValue)
+            || String(desk?.room?.floor?.building?.id ?? '') === String(selectedBuilding);
+        const deskIsBookable = !Boolean(desk?.blocked) && !Boolean(desk?.hidden);
+        return buildingMatches && deskIsBookable && deskMatchesFilters(desk, filters);
+    });
+};
+
 const parseStoredFilters = () => {
     try {
         return normalizeFilters(JSON.parse(sessionStorage.getItem(FILTER_STORAGE_KEY) || 'null') || emptyFilters);
@@ -82,6 +132,25 @@ const parseStoredBuilding = () => {
         return storedBuilding === null ? null : String(storedBuilding);
     } catch {
         return null;
+    }
+};
+
+const parseStoredDate = () => {
+    try {
+        const raw = sessionStorage.getItem(DATE_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = new Date(raw);
+        return Number.isNaN(parsed.valueOf()) ? null : parsed;
+    } catch {
+        return null;
+    }
+};
+
+const parseStoredTime = (key) => {
+    try {
+        return sessionStorage.getItem(key) || '';
+    } catch {
+        return '';
     }
 };
 
@@ -121,7 +190,7 @@ const FreeDesks = () => {
     const shouldPersistSelectedBuilding = useRef(parseStoredBuilding() !== null);
     const [selectedBuilding, setSelectedBuilding] = useState(parseStoredBuilding() ?? valueForAllBuildings.current);
     const [possibleDesks, setPossibleDesks] = useState([]);
-    const [bookingDate, setBookingDate] = useState(new Date());
+    const [bookingDate, setBookingDate] = useState(() => parseStoredDate());
     const [repaint, setRepaint] = useState(false);
     const [buildings, setBuildings] = useState([]);
     const [reportDefectDeskId, setReportDefectDeskId] = useState(null);
@@ -138,30 +207,9 @@ const FreeDesks = () => {
     const [presetName, setPresetName] = useState('');
     const [presetNameError, setPresetNameError] = useState('');
 
-    const roundUpToNextHalfHour = (d) => {
-        const copy = new Date(d);
-        copy.setSeconds(0, 0);
-        const mins = copy.getMinutes();
-        if (mins === 0 || mins === 30) return copy;
-        if (mins < 30) {
-            copy.setMinutes(30);
-        } else {
-            copy.setHours(copy.getHours() + 1);
-            copy.setMinutes(0);
-        }
-        return copy;
-    };
-
-    const formatTime24 = (d) =>
-        d.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit' });
-
-    const defaultStartDate = roundUpToNextHalfHour(bookingDate);
-    const defaultStartTime = formatTime24(defaultStartDate);
-    const bookingEndDate = new Date(defaultStartDate);
-    bookingEndDate.setHours(bookingEndDate.getHours() + 2);
-    const defaultEndTime = formatTime24(bookingEndDate);
-    const [startTime, setStartTime] = useState(defaultStartTime);
-    const [endTime, setEndTime] = useState(defaultEndTime);
+    const [startTime, setStartTime] = useState(() => parseStoredTime(START_TIME_STORAGE_KEY));
+    const [endTime, setEndTime] = useState(() => parseStoredTime(END_TIME_STORAGE_KEY));
+    const hasCompleteTimeframe = Boolean(bookingDate && startTime && endTime && endTime > startTime);
 
     const normalizeTimeToSql = (timeValue) => {
         if (!timeValue) return '';
@@ -506,6 +554,42 @@ const FreeDesks = () => {
     }, [filters]);
 
     useEffect(() => {
+        try {
+            if (bookingDate instanceof Date && !Number.isNaN(bookingDate.valueOf())) {
+                sessionStorage.setItem(DATE_STORAGE_KEY, bookingDate.toISOString());
+            } else {
+                sessionStorage.removeItem(DATE_STORAGE_KEY);
+            }
+        } catch {
+            // ignore storage issues
+        }
+    }, [bookingDate]);
+
+    useEffect(() => {
+        try {
+            if (startTime) {
+                sessionStorage.setItem(START_TIME_STORAGE_KEY, startTime);
+            } else {
+                sessionStorage.removeItem(START_TIME_STORAGE_KEY);
+            }
+        } catch {
+            // ignore storage issues
+        }
+    }, [startTime]);
+
+    useEffect(() => {
+        try {
+            if (endTime) {
+                sessionStorage.setItem(END_TIME_STORAGE_KEY, endTime);
+            } else {
+                sessionStorage.removeItem(END_TIME_STORAGE_KEY);
+            }
+        } catch {
+            // ignore storage issues
+        }
+    }, [endTime]);
+
+    useEffect(() => {
         if (!openFilterPanel) {
             return undefined;
         }
@@ -551,9 +635,23 @@ const FreeDesks = () => {
     }, [selectedBuilding]);
 
     useEffect(() => {
-        if (startTime > endTime) {
-            toast.error(t('startTimeBiggerThanStartTime'));
-            setPossibleDesks([]);
+        if (!hasCompleteTimeframe) {
+            getRequest(
+                `${process.env.REACT_APP_BACKEND_URL}/desks`,
+                headers.current,
+                (data) => {
+                    setPossibleDesks(filterDesksForSearch(
+                        data,
+                        selectedBuilding,
+                        valueForAllBuildings.current,
+                        filters
+                    ));
+                },
+                () => {
+                    console.log('Error fetching desks in FreeDesks');
+                    setPossibleDesks([]);
+                }
+            );
             return;
         }
         const url = selectedBuilding === valueForAllBuildings.current
@@ -568,14 +666,18 @@ const FreeDesks = () => {
             },
             JSON.stringify({
                 dates: [bookingDate],
-                startTime: startTime,
-                endTime: endTime,
+                startTime,
+                endTime,
                 filters,
             })
         );
-    }, [bookingDate, selectedBuilding, t, endTime, startTime, repaint, filters]);
+    }, [bookingDate, selectedBuilding, endTime, startTime, repaint, filters, hasCompleteTimeframe]);
 
     function addBooking(selectedDesk) {
+        if (!hasCompleteTimeframe) {
+            toast.warning(t('selectDateTimeFirst'));
+            return;
+        }
         if (!isHalfHourAligned(startTime) || !isHalfHourAligned(endTime)) {
             toast.warning(t('bookingTimeAlignmentError'));
             return;
@@ -635,52 +737,63 @@ const FreeDesks = () => {
 
     function CreateContent() {
         return (
-            <>
-                <div id='freeDesks_bookingDate'>
-                    <CreateDatePicker
-                        date={bookingDate}
-                        setter={setBookingDate}
-                        label={t('day')}
-                    />
-                </div>
-                <br/><br/>
-                <div id='freeDesks_startTime'>
-                    <CreateTimePicker
-                        time={startTime}
-                        setter={setStartTime}
-                        label={t('startTime')}
-                        stepSeconds={1800}
-                    />
-                </div>
-                <br/><br/>
-                <div id='freeDesks_endTime'>
-                    <CreateTimePicker
-                        time={endTime}
-                        setter={setEndTime}
-                        label={t('endTime')}
-                        stepSeconds={1800}
-                    />
-                </div>
-                <br/><br/>
-                <FormControl id='freeDesks_selectBuilding' required={true} fullWidth>
-                    <InputLabel id='demo-simple-select-label'>{t('building')}</InputLabel>
-                    <Select
-                        value={selectedBuilding}
-                        label={t('building')}
-                        onChange={(e)=>{
-                            setSelectedBuilding(String(e.target.value));
-                        }}
-                    >
-                        {[
-                            <MenuItem id='createSeries_building_all' key={valueForAllBuildings.current} value={valueForAllBuildings.current}>{t('any')}</MenuItem>,
-                            ...buildings.map(e => (
-                                <MenuItem id={`createSeries_building_${e.id}`} key={e.id} value={String(e.id)}>
-                                    {e.name}
-                                </MenuItem>
-                            ))
-                        ]}
-                    </Select>
-                </FormControl>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0, minHeight: 'calc(100vh - 260px)' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 900 }}>
+                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                        <Box id='freeDesks_bookingDate' sx={{ width: 200 }}>
+                            <CreateDatePicker
+                                date={bookingDate}
+                                setter={setBookingDate}
+                                label={t('day')}
+                                required={false}
+                                clearable
+                                size='small'
+                            />
+                        </Box>
+                        <Box id='freeDesks_startTime' sx={{ width: 200 }}>
+                            <CreateTimePicker
+                                time={startTime}
+                                setter={setStartTime}
+                                label={t('startTime')}
+                                stepSeconds={1800}
+                                required={false}
+                                size='small'
+                            />
+                        </Box>
+                        <Box id='freeDesks_endTime' sx={{ width: 200 }}>
+                            <CreateTimePicker
+                                time={endTime}
+                                setter={setEndTime}
+                                label={t('endTime')}
+                                stepSeconds={1800}
+                                required={false}
+                                size='small'
+                            />
+                        </Box>
+                        <Box sx={{ width: 200 }}>
+                        <FormControl id='freeDesks_selectBuilding' required={true} fullWidth size='small'>
+                            <InputLabel id='demo-simple-select-label'>{t('building')}</InputLabel>
+                            <Select
+                                value={selectedBuilding}
+                                label={t('building')}
+                                size='small'
+                                onChange={(e)=>{
+                                    setSelectedBuilding(String(e.target.value));
+                                }}
+                            >
+                                {[
+                                    <MenuItem id='createSeries_building_all' key={valueForAllBuildings.current} value={valueForAllBuildings.current}>{t('any')}</MenuItem>,
+                                    ...buildings.map(e => (
+                                        <MenuItem id={`createSeries_building_${e.id}`} key={e.id} value={String(e.id)}>
+                                            {e.name}
+                                        </MenuItem>
+                                    ))
+                                ]}
+                            </Select>
+                        </FormControl>
+                        </Box>
+                    </Box>
+                </Box>
                 <br/><br/>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 2 }}>
                     {filterSelectConfigs.map((config) => {
@@ -771,13 +884,15 @@ const FreeDesks = () => {
                         </Button>
                     </Box>
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 2, gap: 2, flexWrap: 'wrap' }}>
-                    <Typography id='freeDesks_spacesFound' variant='subtitle2'>
-                        {t('spacesFound', { count: possibleDesks.length })}
-                    </Typography>
-                </Box>
+                {possibleDesks.length > 0 && (
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 2, gap: 2, flexWrap: 'wrap' }}>
+                        <Typography id='freeDesks_spacesFound' variant='subtitle2'>
+                            {t('spacesFound', { count: possibleDesks.length })}
+                        </Typography>
+                    </Box>
+                )}
                 {(possibleDesks && possibleDesks.length > 0
-                    ? <DeskTable name='freeDesks' desks={possibleDesks} submit_function={addBooking} onReportDefect={(desk) => {
+                    ? <DeskTable name='freeDesks' desks={possibleDesks} submit_function={addBooking} tableContainerSx={{ flex: 1, minHeight: 0, maxHeight: 'none' }} onReportDefect={(desk) => {
                         getRequest(
                             `${process.env.REACT_APP_BACKEND_URL}/defects/active?deskId=${desk.id}`,
                             headers.current,
@@ -792,15 +907,15 @@ const FreeDesks = () => {
                             }
                         );
                     }} />
-                    : <div>{t('noDesksForRange')}</div>)}
-            </>
+                    : <div>{t(hasCompleteTimeframe ? 'noDesksForRange' : 'noDesksForCurrentSelection')}</div>)}
+            </Box>
         );
     }
 
     function create_helpText() {
         return i18n.language === 'de'
-            ? 'Wahlen Sie einen Tag, die Start- und Endzeit sowie ein Gebaude aus. Uber die erweiterten Filter konnen Sie freie Arbeitsplatze weiter eingrenzen. Die Filter werden mit UND verknupft.'
-            : 'Select a day, start and end time, and a building. Use the advanced filters to narrow the available workstations. Filters combine with AND logic.';
+            ? 'Wählen Sie optional Tag, Startzeit und Endzeit aus. Sobald alle drei Angaben gesetzt sind, werden freie Arbeitsplätze für diesen Zeitraum geladen. Über die erweiterten Filter können Sie die Ergebnisse weiter eingrenzen.'
+            : 'Optionally select a day, start time, and end time. As soon as all three values are set, available workstations for that time range are loaded. Use the advanced filters to narrow the results further.';
     }
 
     return (

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -52,6 +53,23 @@ public class BookingCalendarFormatter {
 
     public String buildRequestIcs(Booking booking, boolean german) {
         return new IcsEventBuilder(bookingTimezoneId, mailFrom).buildRequest(buildPayload(booking, german));
+    }
+
+    public RenderedCalendarContent buildSeriesRequestContent(List<Booking> bookings, boolean german) {
+        if (bookings == null || bookings.isEmpty()) {
+            throw new IllegalArgumentException("Bookings are required for series content");
+        }
+
+        Booking referenceBooking = bookings.stream()
+            .filter(java.util.Objects::nonNull)
+            .min(Comparator.comparing(Booking::getDay).thenComparing(Booking::getBegin))
+            .orElseThrow(() -> new IllegalArgumentException("Bookings are required for series content"));
+
+        return new RenderedCalendarContent(
+            buildSeriesSubject(referenceBooking, bookings, german),
+            buildSeriesTextBody(referenceBooking, bookings, german),
+            buildRequestIcs(referenceBooking, german)
+        );
     }
 
     public static boolean isGermanLanguage(String language) {
@@ -124,6 +142,15 @@ public class BookingCalendarFormatter {
         return String.join("\n", lines);
     }
 
+    private String buildSeriesTextBody(Booking booking, List<Booking> bookings, boolean german) {
+        List<String> lines = new ArrayList<>();
+        lines.add(german
+            ? "Ihre Schreibtisch-Serienbuchung wurde bestätigt."
+            : "Your desk series booking was confirmed.");
+        lines.addAll(buildSeriesDetailLines(booking, bookings, german));
+        return String.join("\n", lines);
+    }
+
     private List<String> buildDetailLines(Booking booking, boolean german, boolean notificationBody) {
         List<String> lines = new ArrayList<>();
         lines.add(label(german, "Schreibtisch", "Desk") + ": " + deskRemark(booking));
@@ -140,6 +167,30 @@ public class BookingCalendarFormatter {
         if (!isBlank(frontendBaseUrl)) {
             lines.add(label(german, "Verwalten oder anzeigen in der App", "Manage or view in app") + ": "
                 + frontendBaseUrl + "/home");
+        }
+        return lines;
+    }
+
+    private List<String> buildSeriesDetailLines(Booking booking, List<Booking> bookings, boolean german) {
+        List<String> lines = new ArrayList<>();
+        lines.add(label(german, "Schreibtisch", "Desk") + ": " + deskRemark(booking));
+        lines.add(label(german, "Raum", "Room") + ": " + roomRemark(booking));
+        lines.add(label(german, "Daten", "Dates") + ":");
+        bookings.stream()
+            .filter(java.util.Objects::nonNull)
+            .sorted(Comparator.comparing(Booking::getDay).thenComparing(Booking::getBegin))
+            .forEach(seriesBooking -> lines.add("  " + seriesBooking.getDay()));
+        lines.add(label(german, "Zeit", "Time") + ": " + booking.getBegin() + " - " + booking.getEnd());
+        lines.add(label(german, "Ausstattung", "Equipment") + ":");
+        lines.add("  " + label(german, "Ergonomie", "Ergonomics") + ": " + ergonomicsValue(booking.getDesk(), german));
+        lines.add("  " + label(german, "Monitore", "Monitors") + ": " + monitorsValue(booking.getDesk()));
+        lines.add("  " + label(german, "Tischtyp", "Desk type") + ": " + deskTypeValue(booking.getDesk(), german));
+        lines.add("  " + label(german, "Technik", "Technology") + ": " + technologyValue(booking.getDesk(), german));
+        lines.add("  " + label(german, "Besondere Merkmale", "Special features") + ": "
+            + specialFeaturesValue(booking.getDesk(), german, true));
+        if (!isBlank(frontendBaseUrl)) {
+            lines.add(label(german, "Verwalten oder anzeigen in der App", "Manage or view in app") + ": "
+                + frontendBaseUrl + "/series");
         }
         return lines;
     }
@@ -214,6 +265,20 @@ public class BookingCalendarFormatter {
         }
         return String.format("Desk booking %s: %s / %s on %s %s", action, roomName, deskName,
             booking.getDay().toString(), booking.getBegin().toString());
+    }
+
+    private String buildSeriesSubject(Booking booking, List<Booking> bookings, boolean german) {
+        String roomName = safeTrim(booking.getRoom() != null ? booking.getRoom().getRemark() : null);
+        String deskName = safeTrim(booking.getDesk() != null ? booking.getDesk().getRemark() : null);
+        if (roomName.isEmpty()) roomName = german ? "Raum" : "room";
+        if (deskName.isEmpty()) deskName = german ? "Schreibtisch" : "desk";
+        int bookingCount = (int) bookings.stream().filter(java.util.Objects::nonNull).count();
+        if (german) {
+            return String.format("Serienbuchung bestätigt: %s / %s ab %s %s (%d Termine)",
+                roomName, deskName, booking.getDay().toString(), booking.getBegin().toString(), bookingCount);
+        }
+        return String.format("Desk series booking confirmed: %s / %s starting %s %s (%d bookings)",
+            roomName, deskName, booking.getDay().toString(), booking.getBegin().toString(), bookingCount);
     }
 
     private String withPlaceholder(String value) {

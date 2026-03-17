@@ -18,7 +18,8 @@ const DeskTable = ({
     hideHeader = false,
     submitLabelKey = 'submit',
     submitLabelKeyForDesk = null,
-    submitButtonSxForDesk = null
+    submitButtonSxForDesk = null,
+    tableContainerSx = null,
 }) =>{
     const { t } = useTranslation();
 
@@ -54,6 +55,7 @@ const DeskTable = ({
         <TableContainer component={Paper} sx={{
             maxHeight: 400,
             overflowY: 'auto',
+            ...(tableContainerSx || {}),
         }}>
             <Table stickyHeader={!hideHeader} id='room_table' sx={{ tableLayout: 'fixed' }}>
                 {!hideHeader && (

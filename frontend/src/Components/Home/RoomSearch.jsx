@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, TextField, Checkbox, FormControlLabel, IconButton} from '@mui/material';
+import {Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, TextField, IconButton} from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { getRequest, postRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
 import CreateDatePicker from '../misc/CreateDatePicker';
@@ -8,20 +8,49 @@ import LayoutPage from '../Templates/LayoutPage';
 import { FaStar, FaRegStar } from 'react-icons/fa';
 import { semanticColors } from '../../theme';
 
+const ROOM_SEARCH_DATE_KEY = 'roomSearchSelectedDate';
+const ROOM_SEARCH_START_KEY = 'roomSearchStartTime';
+const ROOM_SEARCH_END_KEY = 'roomSearchEndTime';
+
+const parseStoredDate = () => {
+  try {
+    const raw = sessionStorage.getItem(ROOM_SEARCH_DATE_KEY);
+    if (!raw) return null;
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.valueOf()) ? null : parsed;
+  } catch {
+    return null;
+  }
+};
+
+const parseStoredTime = (key) => {
+  try {
+    return sessionStorage.getItem(key) || '';
+  } catch {
+    return '';
+  }
+};
+
+const sortRoomsByFavouriteIds = (list, favouriteRoomIds) => {
+  return [...list].sort((a, b) => {
+    const aFav = favouriteRoomIds.has(a.id) ? 1 : 0;
+    const bFav = favouriteRoomIds.has(b.id) ? 1 : 0;
+    if (aFav !== bFav) return bFav - aFav;
+    return (a.remark || '').localeCompare(b.remark || '');
+  });
+};
+
 const RoomSearch = () => {
     const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
+    const favouriteIdsRef = useRef(new Set());
     const { t, i18n } = useTranslation();
-    const [date, setDate] = useState(new Date());
-    const formatTime24 = (d) => d.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const defaultStartTime = formatTime24(date);
-    const [startTime, setStartTime] = useState(defaultStartTime);
-    // Default endTime is 2 hours ahead.
-    const defaultEndTime = formatTime24(date);
-    const [endTime, setEndTime] = useState(defaultEndTime);
-    const [onDate, setOnDate] = useState(false);
-    const [minimalAmountOfWorkstations, setminimalAmountOfWorkstations] = useState(2);
+    const [date, setDate] = useState(() => parseStoredDate());
+    const [startTime, setStartTime] = useState(() => parseStoredTime(ROOM_SEARCH_START_KEY));
+    const [endTime, setEndTime] = useState(() => parseStoredTime(ROOM_SEARCH_END_KEY));
+    const [minimalAmountOfWorkstations, setminimalAmountOfWorkstations] = useState(1);
     const [rooms, setRooms] = useState([]);
     const [favouriteIds, setFavouriteIds] = useState(new Set());
+    const hasCompleteTimeframe = Boolean(date && startTime && endTime && endTime > startTime);
 
     const userId = localStorage.getItem('userId');
 
@@ -32,55 +61,84 @@ const RoomSearch = () => {
         headers.current,
         (data) => {
           const ids = new Set((data || []).map((r) => r.roomId));
+          favouriteIdsRef.current = ids;
           setFavouriteIds(ids);
-          setRooms((prev) => sortRooms(prev, ids));
+          setRooms((prev) => sortRoomsByFavouriteIds(prev, ids));
         },
-        () => setFavouriteIds(new Set())
+        () => {
+          favouriteIdsRef.current = new Set();
+          setFavouriteIds(new Set());
+        }
       );
     }, [userId]);
 
-    const sortRooms = (list, favSet = favouriteIds) => {
-      return [...list].sort((a, b) => {
-        const aFav = favSet.has(a.id) ? 1 : 0;
-        const bFav = favSet.has(b.id) ? 1 : 0;
-        if (aFav !== bFav) return bFav - aFav; // favourites first
-        return (a.remark || '').localeCompare(b.remark || '');
-      });
-    };
+    useEffect(() => {
+      try {
+        if (date instanceof Date && !Number.isNaN(date.valueOf())) {
+          sessionStorage.setItem(ROOM_SEARCH_DATE_KEY, date.toISOString());
+        } else {
+          sessionStorage.removeItem(ROOM_SEARCH_DATE_KEY);
+        }
+      } catch {
+        // ignore storage issues
+      }
+    }, [date]);
+
+    useEffect(() => {
+      try {
+        if (startTime) {
+          sessionStorage.setItem(ROOM_SEARCH_START_KEY, startTime);
+        } else {
+          sessionStorage.removeItem(ROOM_SEARCH_START_KEY);
+        }
+      } catch {
+        // ignore storage issues
+      }
+    }, [startTime]);
+
+    useEffect(() => {
+      try {
+        if (endTime) {
+          sessionStorage.setItem(ROOM_SEARCH_END_KEY, endTime);
+        } else {
+          sessionStorage.removeItem(ROOM_SEARCH_END_KEY);
+        }
+      } catch {
+        // ignore storage issues
+      }
+    }, [endTime]);
 
     useEffect(()=>{
-      // We want to get all free rooms on an fixed date. 
-      if (onDate) {
+      if (hasCompleteTimeframe) {
         postRequest(
           `${process.env.REACT_APP_BACKEND_URL}/rooms/byMinimalAmountOfWorkstationsAndFreeOnDate/${minimalAmountOfWorkstations}`,
           headers.current,
           (data) => {
-            const sorted = sortRooms(data || []);
+            const sorted = sortRoomsByFavouriteIds(data || [], favouriteIdsRef.current);
             setRooms(sorted);
             refreshFavourites();
           },
           () => {console.log('Error fetching rooms in RoomSearch.jsx');},
           JSON.stringify({
             dates: [date],
-            startTime: startTime,
-            endTime: endTime
+            startTime,
+            endTime
           })
         );
       }
-      // We want an overview of all rooms that have an specified amount of workstations.
       else {
         getRequest(
           `${process.env.REACT_APP_BACKEND_URL}/rooms/byMinimalAmountOfWorkstations/${minimalAmountOfWorkstations}`,
           headers.current,
           (data) => {
-            const sorted = sortRooms(data || []);
+            const sorted = sortRoomsByFavouriteIds(data || [], favouriteIdsRef.current);
             setRooms(sorted);
             refreshFavourites();
           },
           () => {console.log('Error fetching rooms in RoomSearch.jsx');}
         );
       }
-    }, [onDate, minimalAmountOfWorkstations, date, startTime, endTime, refreshFavourites]);
+    }, [hasCompleteTimeframe, minimalAmountOfWorkstations, date, startTime, endTime, refreshFavourites]);
 
     const toggleFavourite = (roomId) => {
       if (!userId) return;
@@ -89,11 +147,12 @@ const RoomSearch = () => {
         const updated = new Set(favouriteIds);
         if (isFav) {
           updated.delete(roomId);
-          setRooms((prev) => sortRooms(prev, updated));
+          setRooms((prev) => sortRoomsByFavouriteIds(prev, updated));
         } else {
           updated.add(roomId);
-          setRooms((prev) => sortRooms(prev, updated));
+          setRooms((prev) => sortRoomsByFavouriteIds(prev, updated));
         }
+        favouriteIdsRef.current = updated;
         setFavouriteIds(updated);
       };
       const onFail = () => refreshFavourites();
@@ -118,114 +177,103 @@ const RoomSearch = () => {
 
     function CreateContent() {
       return (
-        <>
-        <div id='div_minimalAmountOfWorkstationsInput'>
-          <Tooltip title={i18n.language === 'de' ? 'Die Mindestanzahl der Arbeitsplätze im Raum' : 'The minimal amount of workstations in room'}>
-            <TextField
-              id='minimalAmountOfWorkstationsInput'
-              label={i18n.language === 'de' ? 'Mindestanzahl der Arbeitsplätze' : 'Minimal amount of desks in room'}
-              type='number'
-              variant='outlined'
-              size='small'
-              value={minimalAmountOfWorkstations}
-              onChange={(e) => {
-                const value = parseInt(e.target.value, 10);
-                setminimalAmountOfWorkstations(value < 1 ? minimalAmountOfWorkstations : value);
-              }}
-              inputProps={{ min: 1 }}
-              sx={{ width: '250px' }}
-            />
-          </Tooltip>
-          </div>
-          <br/><br/>
-          <div>
-          <Tooltip title={i18n.language === 'de' ? 'Aktiviere dies um Räume mit n Arbeitsplätzen zu einem festen Datum zu finden.' : 'Enable this to find rooms with n workstations on a fixed date'}>
-          <FormControlLabel 
-            id='onDate_checkbox'  
-            control={
-              <Checkbox checked={onDate}   
-                onChange={
-                  e=>setOnDate(e.target.checked)} 
-              />
-            } 
-            label={i18n.language === 'de' ? 'Zu bestimmten Datum' : 'On an fixed date'} 
-            />
-            </Tooltip>
-            </div>
-            <br/><br/>
-            <div
-              id='roomSearch_date'
-            >
-              <CreateDatePicker     
-                disabledFunc={()=>{return !onDate}}
-                date={date}
-                setter={setDate}
-                label={t('date')}
-              />
-            </div>
-            <br/><br/>
-            <div
-              id='roomSearch_startTime'
-            >
-              <CreateTimePicker
-                disabledFunc={()=>{return !onDate}}
-                time={startTime}
-                setter={setStartTime}
-                label={t('startTime')}
-              />
-            </div>
-            <br/><br/>
-            <div
-              id='roomSearch_endTime'
-            >
-              <CreateTimePicker
-                disabledFunc={()=>{return !onDate}}
-                time={endTime}
-                setter={setEndTime}
-                label={t('endTime')}
-              />
-            </div>
-            <br/><br/>
-            
-            <TableContainer component={Paper} sx={{
-              maxHeight: 400, // Set max height
-              overflowY: 'auto', // Enable vertical scroll
-            }}>
-              <Table stickyHeader id='room_table'>
-                <TableHead>
-                  <TableRow key='room_table_header' id='room_table_header'>
-                    <TableCell />
-                    <TableCell>{t('roomRemark')}</TableCell>
-                    <TableCell>{t('building')}</TableCell>
-                    <TableCell>{t('floor')}</TableCell>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, minHeight: 'calc(100vh - 260px)' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 860 }}>
+            <Box id='div_minimalAmountOfWorkstationsInput' sx={{ width: 200 }}>
+              <Tooltip title={i18n.language === 'de' ? 'Die Mindestanzahl der Arbeitsplätze im Raum' : 'The minimal amount of workstations in room'}>
+                <TextField
+                  id='minimalAmountOfWorkstationsInput'
+                  label={i18n.language === 'de' ? 'Mindestanzahl der Arbeitsplätze' : 'Minimal amount of desks in room'}
+                  type='number'
+                  variant='outlined'
+                  size='small'
+                  value={minimalAmountOfWorkstations}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value, 10);
+                    setminimalAmountOfWorkstations(value < 1 ? minimalAmountOfWorkstations : value);
+                  }}
+                  inputProps={{ min: 1 }}
+                  sx={{ width: '100%' }}
+                />
+              </Tooltip>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              <Box id='roomSearch_date' sx={{ width: 200 }}>
+                <CreateDatePicker     
+                  date={date}
+                  setter={setDate}
+                  label={t('date')}
+                  required={false}
+                  clearable
+                  size='small'
+                />
+              </Box>
+              <Box id='roomSearch_startTime' sx={{ width: 200 }}>
+                <CreateTimePicker
+                  time={startTime}
+                  setter={setStartTime}
+                  label={t('startTime')}
+                  stepSeconds={60}
+                  required={false}
+                  size='small'
+                />
+              </Box>
+              <Box id='roomSearch_endTime' sx={{ width: 200 }}>
+                <CreateTimePicker
+                  time={endTime}
+                  setter={setEndTime}
+                  label={t('endTime')}
+                  required={false}
+                  size='small'
+                />
+              </Box>
+            </Box>
+          </Box>
+          <TableContainer
+            component={Paper}
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+            }}
+          >
+            <Table stickyHeader id='room_table'>
+              <TableHead>
+                <TableRow key='room_table_header' id='room_table_header'>
+                  <TableCell />
+                  <TableCell>{t('roomRemark')}</TableCell>
+                  <TableCell>{t('building')}</TableCell>
+                  <TableCell>{t('floor')}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rooms.map(room => (
+                  <TableRow key={room.id} id={room.id}>
+                    <TableCell padding="checkbox">
+                      <IconButton
+                        aria-label="favourite"
+                        onClick={() => toggleFavourite(room.id)}
+                        sx={{ color: favouriteIds.has(room.id) ? semanticColors.booking.favourite.active : semanticColors.booking.favourite.inactive }}
+                      >
+                        {favouriteIds.has(room.id) ? <FaStar /> : <FaRegStar />}
+                      </IconButton>
+                    </TableCell>
+                    <TableCell id={`${room.id}_remark`}>{room.remark}</TableCell>
+                    <TableCell id={`${room.id}_buildingName`}> {room.floor.building.name}</TableCell>
+                    <TableCell id={`${room.id}_floorName`}>{room.floor.name}</TableCell>
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {rooms.map(room => (
-                    <TableRow key={room.id} id={room.id}>
-                      <TableCell padding="checkbox">
-                        <IconButton
-                          aria-label="favourite"
-                          onClick={() => toggleFavourite(room.id)}
-                          sx={{ color: favouriteIds.has(room.id) ? semanticColors.booking.favourite.active : semanticColors.booking.favourite.inactive }}
-                        >
-                          {favouriteIds.has(room.id) ? <FaStar /> : <FaRegStar />}
-                        </IconButton>
-                      </TableCell>
-                      <TableCell id={`${room.id}_remark`}>{room.remark}</TableCell>
-                      <TableCell id={`${room.id}_buildingName`}> {room.floor.building.name}</TableCell>
-                      <TableCell id={`${room.id}_floorName`}>{room.floor.name}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-        </>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
       );
     }
 
     function create_helpText() {
-      return i18n.language === 'de' ? 'Für eine allgemeine Übersicht wählen Sie die Mindestanazhl an Arbeitsplätzen aus und schauen sie in der unten stehenden Tabelle nach einen passenden Raum.<br/>Wenn Sie überprüfen wollen ob ein Raum mit einer Mindestkapazität noch in einer bestimmten Zeitspanne frei ist, setzen Sie zusätzlich das Häckchen und wählen den Tag sowie Start- und Endzeit aus.' : 'For a general overview, select the minimum number of desks and check the table below for a suitable room.<br/>If you want to check if a room with a minimum capacity is available during a specific time frame, also check the box and select the day as well as the start and end time.'
+      return i18n.language === 'de'
+        ? 'Für eine allgemeine Übersicht wählen Sie die Mindestanzahl an Arbeitsplätzen aus und schauen Sie in der unten stehenden Tabelle nach einem passenden Raum.<br/>Wenn Sie zusätzlich Tag, Startzeit und Endzeit auswählen, wird die Liste auf Räume gefiltert, die in diesem Zeitraum frei sind.'
+        : 'For a general overview, select the minimum number of desks and check the table below for a suitable room.<br/>If you also select a day, start time, and end time, the list is filtered to rooms that are available in that time range.';
     }
 
     return (
