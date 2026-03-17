@@ -67,4 +67,20 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
         @Param("startTime") Time startTime, 
         @Param("endTime") Time endTime
     );
+
+    @Query(value=""
+    + "SELECT r.* "
+    + "FROM rooms r "
+    + "JOIN desks d "
+    + "ON r.room_id = d.room_id "
+    + "WHERE d.is_hidden = 0 "
+    + "AND d.is_blocked = 0 "
+    + "AND d.desk_id IN (:deskIds) "
+    + "GROUP BY r.room_id "
+    + "HAVING COUNT(d.desk_id) >= :minimalAmountOfWorkstations "
+    ,nativeQuery=true)
+    List<Room> getByMinimalAmountOfAvailableDeskIds(
+        @Param("minimalAmountOfWorkstations") int minimalAmountOfWorkstations,
+        @Param("deskIds") List<Long> deskIds
+    );
 }

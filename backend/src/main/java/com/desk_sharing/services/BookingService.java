@@ -756,7 +756,12 @@ public class BookingService {
                     .toList()
             );
 
-            calendarNotificationService.sendRoomBulkBookingCreated(savedBookings);
+            eventPublisher.publishEvent(new RoomBulkBookingNotificationEvent(
+                savedBookings.stream()
+                    .map(Booking::getId)
+                    .filter(Objects::nonNull)
+                    .toList()
+            ));
 
             return new AdminRoomBulkBookingResponseDTO(
                 bulkGroupId,

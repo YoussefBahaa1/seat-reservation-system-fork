@@ -15,9 +15,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -144,21 +142,17 @@ public class RoomService {
         final int minimalAmountOfWorkstations, 
         final DatesAndTimesDTO datesAndTimesDTO) {
         final List<Desk> availableDesks = seriesService.getDesksForDatesAndTimes(datesAndTimesDTO);
-        final Map<Long, Long> availableDeskCountsByRoomId = availableDesks.stream()
-            .filter(desk -> desk != null && desk.getRoom() != null && desk.getRoom().getId() != null)
-            .collect(Collectors.groupingBy(
-                desk -> desk.getRoom().getId(),
-                Collectors.counting()
-            ));
+        final List<Long> availableDeskIds = availableDesks.stream()
+            .filter(desk -> desk != null && desk.getId() != null)
+            .map(Desk::getId)
+            .distinct()
+            .toList();
 
-        if (availableDeskCountsByRoomId.isEmpty()) {
+        if (availableDeskIds.isEmpty()) {
             return List.of();
         }
 
-        return getAllRooms().stream()
-            .filter(room -> room != null && room.getId() != null)
-            .filter(room -> availableDeskCountsByRoomId.getOrDefault(room.getId(), 0L) >= minimalAmountOfWorkstations)
-            .toList();
+        return roomRepository.getByMinimalAmountOfAvailableDeskIds(minimalAmountOfWorkstations, availableDeskIds);
     };
 
     /**

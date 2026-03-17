@@ -181,8 +181,8 @@ class BookingServiceRoomBulkTest {
             .extracting(Booking::getCalendarUid)
             .allMatch(uid -> uid != null && !uid.isBlank());
 
-        verify(calendarNotificationService).sendRoomBulkBookingCreated(savedBookings);
-        verify(eventPublisher, never()).publishEvent(any());
+        verify(calendarNotificationService, never()).sendRoomBulkBookingCreated(anyList());
+        verify(eventPublisher).publishEvent(any(RoomBulkBookingNotificationEvent.class));
         verify(bookingLockService).releaseLockForUser(11L, day, 7);
         verify(bookingLockService).releaseLockForUser(12L, day, 7);
     }
@@ -224,7 +224,8 @@ class BookingServiceRoomBulkTest {
 
         assertThat(response.getCreatedCount()).isEqualTo(1);
         assertThat(response.getDeskIds()).containsExactly(21L);
-        verify(calendarNotificationService).sendRoomBulkBookingCreated(anyList());
+        verify(calendarNotificationService, never()).sendRoomBulkBookingCreated(anyList());
+        verify(eventPublisher).publishEvent(any(RoomBulkBookingNotificationEvent.class));
     }
 
     @Test
@@ -266,7 +267,8 @@ class BookingServiceRoomBulkTest {
 
         assertThat(response.getCreatedCount()).isEqualTo(1);
         assertThat(response.getDeskIds()).containsExactly(41L);
-        verify(calendarNotificationService).sendRoomBulkBookingCreated(anyList());
+        verify(calendarNotificationService, never()).sendRoomBulkBookingCreated(anyList());
+        verify(eventPublisher).publishEvent(any(RoomBulkBookingNotificationEvent.class));
     }
 
     @Test
