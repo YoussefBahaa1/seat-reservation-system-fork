@@ -42,7 +42,7 @@ import com.desk_sharing.repositories.DeskRepository;
 import com.desk_sharing.repositories.ScheduledBlockingRepository;
 import com.desk_sharing.repositories.SeriesRepository;
 import com.desk_sharing.repositories.UserRepository;
-import com.desk_sharing.services.calendar.CalendarNotificationService;
+import com.desk_sharing.services.CalendarNotificationService;
 import com.desk_sharing.services.UserService;
 
 import jakarta.transaction.Transactional;

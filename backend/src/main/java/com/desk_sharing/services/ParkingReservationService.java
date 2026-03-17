@@ -43,7 +43,7 @@ import com.desk_sharing.model.ParkingSpotUpdateDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
 import com.desk_sharing.repositories.ParkingSpotRepository;
 import com.desk_sharing.repositories.UserRepository;
-import com.desk_sharing.services.parking.ParkingNotificationService;
+import com.desk_sharing.services.ParkingNotificationService;
 
 import lombok.AllArgsConstructor;
 

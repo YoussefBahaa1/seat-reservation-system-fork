@@ -24,9 +24,9 @@ import com.desk_sharing.entities.Desk;
 import com.desk_sharing.entities.Room;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.repositories.BookingRepository;
-import com.desk_sharing.services.calendar.BookingCalendarFormatter;
-import com.desk_sharing.services.calendar.CalendarNotificationService;
-import com.desk_sharing.services.calendar.NotificationAction;
+import com.desk_sharing.services.BookingCalendarFormatter;
+import com.desk_sharing.services.CalendarNotificationService;
+import com.desk_sharing.services.NotificationAction;
 
 import jakarta.mail.BodyPart;
 import jakarta.mail.Multipart;

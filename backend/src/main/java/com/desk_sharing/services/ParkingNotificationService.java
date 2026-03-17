@@ -1,4 +1,4 @@
-package com.desk_sharing.services.parking;
+package com.desk_sharing.services;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;

@@ -1,4 +1,4 @@
-package com.desk_sharing.services.calendar;
+package com.desk_sharing.services;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

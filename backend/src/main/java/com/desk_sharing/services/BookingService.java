@@ -22,9 +22,9 @@ import com.desk_sharing.repositories.DeskRepository;
 import com.desk_sharing.repositories.RoomRepository;
 import com.desk_sharing.repositories.ScheduledBlockingRepository;
 import com.desk_sharing.services.BookingSettingsService;
-import com.desk_sharing.services.calendar.CalendarNotificationService;
-import com.desk_sharing.services.calendar.BookingNotificationEvent;
-import com.desk_sharing.services.calendar.NotificationAction;
+import com.desk_sharing.services.CalendarNotificationService;
+import com.desk_sharing.services.BookingNotificationEvent;
+import com.desk_sharing.services.NotificationAction;
 
 import org.springframework.stereotype.Service;
 import org.springframework.context.ApplicationEventPublisher;
