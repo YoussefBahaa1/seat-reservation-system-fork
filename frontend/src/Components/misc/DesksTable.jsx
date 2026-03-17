@@ -15,6 +15,7 @@ const DeskTable = ({
     desks,
     submit_function,
     onReportDefect,
+    hideHeader = false,
     submitLabelKey = 'submit',
     submitLabelKeyForDesk = null,
     submitButtonSxForDesk = null
@@ -54,18 +55,20 @@ const DeskTable = ({
             maxHeight: 400,
             overflowY: 'auto',
         }}>
-            <Table stickyHeader id='room_table' sx={{ tableLayout: 'fixed' }}>
-                <TableHead>
-                    <TableRow>
-                        <TableCell>{t('deskRemark')}</TableCell>
-                        <TableCell>{t('equipment')}</TableCell>
-                        <TableCell>{t('roomRemark')}</TableCell>
-                        <TableCell>{t('building')}</TableCell>
-                        <TableCell>{t('floor')}</TableCell>
-                        <TableCell></TableCell>
-                        {onReportDefect && <TableCell></TableCell>}
-                    </TableRow>
-                </TableHead>
+            <Table stickyHeader={!hideHeader} id='room_table' sx={{ tableLayout: 'fixed' }}>
+                {!hideHeader && (
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>{t('deskRemark')}</TableCell>
+                            <TableCell>{t('equipment')}</TableCell>
+                            <TableCell>{t('roomRemark')}</TableCell>
+                            <TableCell>{t('building')}</TableCell>
+                            <TableCell>{t('floor')}</TableCell>
+                            <TableCell></TableCell>
+                            {onReportDefect && <TableCell></TableCell>}
+                        </TableRow>
+                    </TableHead>
+                )}
                 <TableBody>
                     {
                         desks.map((desk) => (
