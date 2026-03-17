@@ -13,6 +13,9 @@ import com.desk_sharing.model.BookingProjectionDTO;
 import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.model.ColleagueBookingsDTO;
 import com.desk_sharing.model.BookingOverlapCheckResponseDTO;
+import com.desk_sharing.model.AdminBookingEditRequestDTO;
+import com.desk_sharing.model.AdminDeskCandidateDTO;
+import com.desk_sharing.model.AdminEditCandidateRequestDTO;
 import com.desk_sharing.model.ScheduledBlockingDeskDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
@@ -30,6 +33,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.sql.Date;
+import java.sql.Time;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -179,6 +183,42 @@ public class BookingService {
         } catch (Exception ex) {
             return false;
         }
+    }
+
+    private void requireAdmin() {
+        final UserEntity currentUser = userService.getCurrentUser();
+        if (currentUser == null || !currentUser.isAdmin()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
+        }
+    }
+
+    private String normalizeTimeString(final String raw) {
+        if (raw == null) return null;
+        final String trimmed = raw.trim();
+        if (trimmed.length() == 5) {
+            return trimmed + ":00";
+        }
+        return trimmed;
+    }
+
+    private Booking snapshotBooking(final Booking booking) {
+        if (booking == null) {
+            return null;
+        }
+        Booking copy = new Booking();
+        copy.setId(booking.getId());
+        copy.setUser(booking.getUser());
+        copy.setRoom(booking.getRoom());
+        copy.setDesk(booking.getDesk());
+        copy.setSeries(booking.getSeries());
+        copy.setDay(booking.getDay());
+        copy.setBegin(booking.getBegin());
+        copy.setEnd(booking.getEnd());
+        copy.setBookingInProgress(booking.isBookingInProgress());
+        copy.setLockExpiryTime(booking.getLockExpiryTime());
+        copy.setCalendarUid(booking.getCalendarUid());
+        copy.setCalendarSequence(booking.getCalendarSequence());
+        return copy;
     }
 
     private boolean userMatchesSearchTerm(final UserEntity user, final String normalizedTerm, final String compactTerm) {
@@ -367,6 +407,27 @@ public class BookingService {
         }
     }
 
+    private boolean hasScheduledBlockingOverlap(
+        final Long deskId,
+        final Date day,
+        final java.sql.Time begin,
+        final java.sql.Time end
+    ) {
+        if (deskId == null || day == null || begin == null || end == null) {
+            return false;
+        }
+
+        final LocalDateTime bookingStart = LocalDateTime.of(day.toLocalDate(), begin.toLocalTime());
+        final LocalDateTime bookingEnd = LocalDateTime.of(day.toLocalDate(), end.toLocalTime());
+
+        return !scheduledBlockingRepository.findOverlapping(
+            deskId,
+            BOOKING_BLOCKING_STATUSES,
+            bookingStart,
+            bookingEnd
+        ).isEmpty();
+    }
+
     /**
      * Create and save a new room.
      * The new room is defined by roomDTO.
@@ -486,6 +547,144 @@ public class BookingService {
             }
         });
         bookingRepository.deleteById(id);
+    }
+
+    public void deleteBookingByAdmin(@NonNull final Long id, @NonNull final String justification) {
+        bookingRepository.findById(id).ifPresent(booking -> {
+            if (!booking.isBookingInProgress()) {
+                calendarNotificationService.sendBookingCancelledByAdmin(booking, justification);
+            }
+        });
+        bookingRepository.deleteById(id);
+    }
+
+    @Transactional
+    public Booking editBookingByAdmin(@NonNull final Long id, @NonNull final AdminBookingEditRequestDTO request) {
+        requireAdmin();
+        if (request.getJustification() == null || request.getJustification().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Justification is required");
+        }
+        if (request.getDeskId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Desk is required");
+        }
+
+        final Booking booking = bookingRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+        if (booking.isBookingInProgress()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Booking is still in progress");
+        }
+        if (booking.getRoom() == null || booking.getDesk() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking is missing room or desk");
+        }
+
+        final Date newDay;
+        final Time newBegin;
+        final Time newEnd;
+        try {
+            newDay = Date.valueOf(request.getDay());
+            newBegin = Time.valueOf(LocalTime.parse(normalizeTimeString(request.getBegin())));
+            newEnd = Time.valueOf(LocalTime.parse(normalizeTimeString(request.getEnd())));
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid booking date or time");
+        }
+
+        final Desk targetDesk = deskRepository.findByIdForUpdate(request.getDeskId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Desk not found"));
+        if (targetDesk.getRoom() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Target desk is missing room");
+        }
+        if (targetDesk.isHidden()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This workstation is not available for booking.");
+        }
+        if (targetDesk.isBlocked()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This workstation is currently blocked due to a defect and cannot be booked.");
+        }
+
+        final boolean periodChanged = !booking.getDay().equals(newDay)
+            || !booking.getBegin().equals(newBegin)
+            || !booking.getEnd().equals(newEnd);
+        final boolean assignmentChanged = !booking.getDesk().getId().equals(targetDesk.getId());
+        if (!periodChanged && !assignmentChanged) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No changes submitted");
+        }
+
+        validateBookingTimes(newDay, newBegin, newEnd, bookingSettingsService.getCurrentSettings());
+        validateNoScheduledBlockingOverlap(targetDesk.getId(), newDay, newBegin, newEnd);
+
+        final List<Booking> alreadyBookingList = bookingRepository.getAllBookings(
+            booking.getId(),
+            targetDesk.getRoom().getId(),
+            targetDesk.getId(),
+            newDay,
+            newBegin,
+            newEnd
+        );
+        if (alreadyBookingList != null && !alreadyBookingList.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This slot overlaps with another booking for this desk");
+        }
+
+        final Booking previousBooking = snapshotBooking(booking);
+        booking.setDay(newDay);
+        booking.setBegin(newBegin);
+        booking.setEnd(newEnd);
+        booking.setRoom(targetDesk.getRoom());
+        booking.setDesk(targetDesk);
+        final Booking saved = bookingRepository.save(booking);
+        calendarNotificationService.sendBookingUpdatedByAdmin(previousBooking, saved, request.getJustification().trim());
+        return saved;
+    }
+
+    public List<AdminDeskCandidateDTO> getCandidateDesksForAdminEdit(
+        @NonNull final Long id,
+        @NonNull final AdminEditCandidateRequestDTO request
+    ) {
+        requireAdmin();
+        final Booking booking = bookingRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+        final Date day;
+        final Time begin;
+        final Time end;
+        try {
+            day = Date.valueOf(request.getDay());
+            begin = Time.valueOf(LocalTime.parse(normalizeTimeString(request.getBegin())));
+            end = Time.valueOf(LocalTime.parse(normalizeTimeString(request.getEnd())));
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid booking date or time");
+        }
+
+        validateBookingTimes(day, begin, end, bookingSettingsService.getCurrentSettings());
+
+        return deskRepository.findByHiddenFalse().stream()
+            .filter(desk -> desk != null && !desk.isBlocked() && desk.getRoom() != null)
+            .filter(desk -> !hasScheduledBlockingOverlap(desk.getId(), day, begin, end))
+            .filter(desk -> {
+                final List<Booking> overlaps = bookingRepository.getAllBookings(
+                    booking.getId(),
+                    desk.getRoom().getId(),
+                    desk.getId(),
+                    day,
+                    begin,
+                    end
+                );
+                return overlaps == null || overlaps.isEmpty();
+            })
+            .map(desk -> new AdminDeskCandidateDTO(
+                desk.getId(),
+                desk.getRemark(),
+                desk.getRoom().getId(),
+                desk.getRoom().getRemark(),
+                desk.getRoom().getFloor() == null || desk.getRoom().getFloor().getBuilding() == null
+                    ? null
+                    : desk.getRoom().getFloor().getBuilding().getId(),
+                desk.getRoom().getFloor() == null || desk.getRoom().getFloor().getBuilding() == null
+                    ? null
+                    : desk.getRoom().getFloor().getBuilding().getName()
+            ))
+            .sorted(Comparator
+                .comparing((AdminDeskCandidateDTO candidate) -> Optional.ofNullable(candidate.getBuildingName()).orElse(""))
+                .thenComparing(candidate -> Optional.ofNullable(candidate.getRoomLabel()).orElse(""))
+                .thenComparing(candidate -> Optional.ofNullable(candidate.getDeskLabel()).orElse("")))
+            .toList();
     }
 
     public List<Booking> findByRoomId(Long room_id) {

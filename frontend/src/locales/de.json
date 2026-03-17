@@ -280,7 +280,7 @@
     "deskNotFound": "Tisch nicht gefunden",
     
     "deleteBooking": "Buchung Entfernen",
-    "editBooking": "Buchung bearbeiten",
+    "editBooking": "Bearbeiten",
     "exportIcs": "ICS exportieren",
     "overviewBooking": "Buchungsübersicht",
     "search": "Suchen",
@@ -606,6 +606,42 @@
     ,"defectAllCategories":"Alle Kategorien"
     ,"defectAllUrgencies":"Alle Dringlichkeiten"
     ,"defectAllRooms":"Alle Räume"
+
+    ,"bookingViewDesks":"Schreibtischbuchungen"
+    ,"bookingViewParkings":"Parkplatzbuchungen"
+    ,"bookingViewRequests":"Parkplatz-Anfragen"
+    ,"filterName":"Name"
+    ,"filterRole":"Rolle"
+    ,"filterDepartment":"Abteilung"
+    ,"spotNumber":"Platznummer"
+    ,"cancelBooking":"Buchung stornieren"
+    ,"updatePeriod":"Zeitraum ändern"
+    ,"cancelBookingJustification":"Begründung für die Stornierung"
+    ,"cancelBookingConfirm":"Stornierung bestätigen"
+    ,"cancelBookingSuccess":"Buchung erfolgreich storniert"
+    ,"editBookingConfirm":"Änderungen speichern"
+    ,"editBookingJustification":"Begründung für die Änderungen"
+    ,"editBookingSuccess":"Änderungen erfolgreich gespeichert"
+    ,"periodSection":"Zeitraum"
+    ,"assignmentSection":"Zuordnung"
+    ,"reassignBooking":"Neu zuweisen"
+    ,"reassignConfirm":"Neuzuweisung bestätigen"
+    ,"reassignJustification":"Begründung für die Neuzuweisung"
+    ,"reassignSuccess":"Buchung erfolgreich neu zugewiesen"
+    ,"currentAssignment":"Aktuelle Zuordnung"
+    ,"newAssignment":"Neue Zuordnung"
+    ,"noAvailableParkingSpots":"Keine verfügbaren Parkplätze gefunden"
+    ,"noBookingsFound":"Keine Buchungen gefunden"
+    ,"bulkApprove":"Sammelgenehmigung"
+    ,"bulkApproveSuccess":"{{count}} Anfrage(n) erfolgreich genehmigt"
+    ,"bulkApproveFailed":"{{count}} Anfrage(n) konnten nicht genehmigt werden"
+    ,"clearFilters":"Filter zurücksetzen"
+    ,"resultsShown":"Ergebnisse: {{count}}"
+    ,"bookingManagementOverviewHelper":"Schreibtisch- und Parkplatzbuchungen verwalten."
+    ,"bookingManagementDeskHelper":"Bestätigte Schreibtischbuchungen anzeigen und verwalten."
+    ,"bookingManagementParkingHelper":"Genehmigte Parkplatzbuchungen anzeigen und verwalten."
+    ,"bookingManagementRequestsHelper":"Offene Parkplatz-Anfragen prüfen und bearbeiten."
+    ,"timeRangeInvalid":"Die Endzeit muss nach der Startzeit liegen."
 
     ,"maintenanceCalendar":"Wartungskalender"
     ,"scheduleBlocking":"Sperrung planen"

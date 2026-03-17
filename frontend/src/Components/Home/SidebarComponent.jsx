@@ -5,7 +5,8 @@ import { Sidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
 import { RiAdminFill } from "react-icons/ri";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FaLock, FaBookmark, FaStar } from "react-icons/fa";
+import { FaLock, FaBookmark, FaStar, FaBook, FaCog } from "react-icons/fa";
+import { FaAddressBook, FaPlusMinus } from "react-icons/fa6";
 import ChangePassword from "./ChangePassword";
 import LogoutConfirmationModal from "./LogoutConfirmationModal";
 import MfaSettings from "./MfaSettings";
@@ -273,6 +274,7 @@ const SidebarComponent = () => {
               <MenuItem
                 id='sidebar_admin_userManagement'
                 active={activeTab === 'adminUserManagement'}
+                icon={<FaAddressBook />}
                 onClick={() => handleClick('adminUserManagement')}
               >
                 {t('userManagement')}
@@ -280,6 +282,7 @@ const SidebarComponent = () => {
               <MenuItem
                 id='sidebar_admin_roomManagement'
                 active={activeTab === 'adminRoomManagement'}
+                icon={<FaPlusMinus />}
                 onClick={() => handleClick('adminRoomManagement')}
               >
                 {t('roomManagement')}
@@ -287,6 +290,7 @@ const SidebarComponent = () => {
               <MenuItem
                 id='sidebar_admin_bookingManagement'
                 active={activeTab === 'adminBookingManagement'}
+                icon={<FaBook />}
                 onClick={() => handleClick('adminBookingManagement')}
               >
                 {t('bookingManagement')}
@@ -294,6 +298,7 @@ const SidebarComponent = () => {
               <MenuItem
                 id='sidebar_admin_bookingSettings'
                 active={activeTab === 'adminBookingSettings'}
+                icon={<FaCog />}
                 onClick={() => handleClick('adminBookingSettings')}
               >
                 {t('bookingSettings')}

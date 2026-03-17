@@ -120,6 +120,11 @@
 .admin-section-content {
   max-width: 460px;
 }
+
+.admin-section-content--full {
+  width: 100%;
+  max-width: none;
+}
 .employee-button {
   background-color: var(--color-brand-accent);
   color: var(--color-text-inverse);

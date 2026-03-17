@@ -3,7 +3,11 @@ package com.desk_sharing.services;
 import com.desk_sharing.entities.Booking;
 import com.desk_sharing.entities.Desk;
 import com.desk_sharing.entities.BookingSettings;
+import com.desk_sharing.entities.Room;
+import com.desk_sharing.entities.Role;
 import com.desk_sharing.entities.UserEntity;
+import com.desk_sharing.model.AdminBookingEditRequestDTO;
+import com.desk_sharing.model.AdminEditCandidateRequestDTO;
 import com.desk_sharing.model.BookingOverlapCheckResponseDTO;
 import com.desk_sharing.repositories.BookingRepository;
 import com.desk_sharing.repositories.DeskRepository;
@@ -31,6 +35,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -194,6 +201,185 @@ class BookingRulesTest {
         assertThatThrownBy(() -> bookingService.checkConfirmedOverlapWithOtherDesk(10L, null))
             .isInstanceOf(ResponseStatusException.class)
             .hasMessageContaining("Booking not found");
+    }
+
+    @Test
+    void editBookingByAdmin_updatesPeriodAndDeskAndSendsAdminNotification() {
+        UserEntity admin = new UserEntity();
+        Role role = new Role();
+        role.setName("ROLE_ADMIN");
+        admin.setRoles(List.of(role));
+        when(userService.getCurrentUser()).thenReturn(admin);
+
+        Booking booking = createBooking(10L, 7, 11L, false);
+        Room currentRoom = new Room();
+        currentRoom.setId(21L);
+        currentRoom.setRemark("Room 21");
+        booking.setRoom(currentRoom);
+        Desk currentDesk = booking.getDesk();
+        currentDesk.setRemark("Desk 11");
+        currentDesk.setRoom(currentRoom);
+
+        Room targetRoom = new Room();
+        targetRoom.setId(31L);
+        targetRoom.setRemark("Room 31");
+        Desk targetDesk = new Desk();
+        targetDesk.setId(41L);
+        targetDesk.setRemark("Desk 41");
+        targetDesk.setRoom(targetRoom);
+
+        AdminBookingEditRequestDTO request = new AdminBookingEditRequestDTO();
+        request.setDay(LocalDate.now().plusDays(2).toString());
+        request.setBegin("10:00");
+        request.setEnd("12:00");
+        request.setDeskId(41L);
+        request.setJustification("Capacity change");
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(booking));
+        when(deskRepository.findByIdForUpdate(41L)).thenReturn(Optional.of(targetDesk));
+        when(bookingSettingsService.getCurrentSettings()).thenReturn(new BookingSettings(1L, 0, null, null));
+        when(bookingRepository.getAllBookings(
+            eq(10L),
+            eq(31L),
+            eq(41L),
+            eq(Date.valueOf(request.getDay())),
+            eq(Time.valueOf("10:00:00")),
+            eq(Time.valueOf("12:00:00"))
+        )).thenReturn(List.of());
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Booking updated = bookingService.editBookingByAdmin(10L, request);
+
+        assertThat(updated.getDay()).isEqualTo(Date.valueOf(request.getDay()));
+        assertThat(updated.getBegin()).isEqualTo(Time.valueOf("10:00:00"));
+        assertThat(updated.getEnd()).isEqualTo(Time.valueOf("12:00:00"));
+        assertThat(updated.getDesk()).isSameAs(targetDesk);
+        assertThat(updated.getRoom()).isSameAs(targetRoom);
+        verify(calendarNotificationService).sendBookingUpdatedByAdmin(any(Booking.class), eq(updated), eq("Capacity change"));
+    }
+
+    @Test
+    void editBookingByAdmin_rejectsBlankJustification() {
+        UserEntity admin = new UserEntity();
+        Role role = new Role();
+        role.setName("ROLE_ADMIN");
+        admin.setRoles(List.of(role));
+        when(userService.getCurrentUser()).thenReturn(admin);
+
+        AdminBookingEditRequestDTO request = new AdminBookingEditRequestDTO();
+        request.setDay(LocalDate.now().plusDays(2).toString());
+        request.setBegin("10:00");
+        request.setEnd("12:00");
+        request.setDeskId(11L);
+        request.setJustification("   ");
+
+        assertThatThrownBy(() -> bookingService.editBookingByAdmin(10L, request))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("Justification is required");
+    }
+
+    @Test
+    void editBookingByAdmin_rejectsUnchangedSubmission() {
+        UserEntity admin = new UserEntity();
+        Role role = new Role();
+        role.setName("ROLE_ADMIN");
+        admin.setRoles(List.of(role));
+        when(userService.getCurrentUser()).thenReturn(admin);
+
+        Booking booking = createBooking(10L, 7, 11L, false);
+        Room currentRoom = new Room();
+        currentRoom.setId(21L);
+        currentRoom.setRemark("Room 21");
+        booking.setRoom(currentRoom);
+        booking.getDesk().setRoom(currentRoom);
+
+        AdminBookingEditRequestDTO request = new AdminBookingEditRequestDTO();
+        request.setDay(booking.getDay().toString());
+        request.setBegin("09:00");
+        request.setEnd("11:00");
+        request.setDeskId(11L);
+        request.setJustification("No-op");
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(booking));
+        when(deskRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(booking.getDesk()));
+
+        assertThatThrownBy(() -> bookingService.editBookingByAdmin(10L, request))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("No changes submitted");
+    }
+
+    @Test
+    void getCandidateDesksForAdminEdit_returnsCurrentDeskWhenStillValid() {
+        UserEntity admin = new UserEntity();
+        Role role = new Role();
+        role.setName("ROLE_ADMIN");
+        admin.setRoles(List.of(role));
+        when(userService.getCurrentUser()).thenReturn(admin);
+
+        Booking booking = createBooking(10L, 7, 11L, false);
+        Room room = new Room();
+        room.setId(21L);
+        room.setRemark("Room 21");
+        booking.setRoom(room);
+        booking.getDesk().setRoom(room);
+        booking.getDesk().setRemark("Desk 11");
+
+        AdminEditCandidateRequestDTO request = new AdminEditCandidateRequestDTO();
+        request.setDay(booking.getDay().toString());
+        request.setBegin("09:00");
+        request.setEnd("11:00");
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(booking));
+        when(bookingSettingsService.getCurrentSettings()).thenReturn(new BookingSettings(1L, 0, null, null));
+        when(deskRepository.findByHiddenFalse()).thenReturn(List.of(booking.getDesk()));
+        when(bookingRepository.getAllBookings(
+            eq(10L),
+            eq(21L),
+            eq(11L),
+            eq(booking.getDay()),
+            eq(booking.getBegin()),
+            eq(booking.getEnd())
+        )).thenReturn(List.of());
+
+        assertThat(bookingService.getCandidateDesksForAdminEdit(10L, request))
+            .extracting(candidate -> candidate.getDeskId())
+            .containsExactly(11L);
+    }
+
+    @Test
+    void getCandidateDesksForAdminEdit_omitsCurrentDeskWhenEditedPeriodConflicts() {
+        UserEntity admin = new UserEntity();
+        Role role = new Role();
+        role.setName("ROLE_ADMIN");
+        admin.setRoles(List.of(role));
+        when(userService.getCurrentUser()).thenReturn(admin);
+
+        Booking booking = createBooking(10L, 7, 11L, false);
+        Room room = new Room();
+        room.setId(21L);
+        room.setRemark("Room 21");
+        booking.setRoom(room);
+        booking.getDesk().setRoom(room);
+        booking.getDesk().setRemark("Desk 11");
+
+        AdminEditCandidateRequestDTO request = new AdminEditCandidateRequestDTO();
+        request.setDay(booking.getDay().toString());
+        request.setBegin("10:00");
+        request.setEnd("12:00");
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(booking));
+        when(bookingSettingsService.getCurrentSettings()).thenReturn(new BookingSettings(1L, 0, null, null));
+        when(deskRepository.findByHiddenFalse()).thenReturn(List.of(booking.getDesk()));
+        when(bookingRepository.getAllBookings(
+            eq(10L),
+            eq(21L),
+            eq(11L),
+            eq(booking.getDay()),
+            eq(Time.valueOf("10:00:00")),
+            eq(Time.valueOf("12:00:00"))
+        )).thenReturn(List.of(createBooking(20L, 8, 11L, false)));
+
+        assertThat(bookingService.getCandidateDesksForAdminEdit(10L, request)).isEmpty();
     }
 
     private Booking createBooking(Long bookingId, int userId, Long deskId, boolean inProgress) {

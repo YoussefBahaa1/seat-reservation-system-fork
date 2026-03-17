@@ -279,7 +279,7 @@
     "deskNotFound": "Desk not found",
     
     "deleteBooking": "Delete Booking",
-    "editBooking": "Edit Booking",
+    "editBooking": "Edit",
     "exportIcs": "Export ICS",
     "overviewBooking": "Overview of Bookings",
     "search": "Search",
@@ -606,6 +606,42 @@
     ,"defectAllCategories":"All Categories"
     ,"defectAllUrgencies":"All Urgencies"
     ,"defectAllRooms":"All Rooms"
+
+    ,"bookingViewDesks":"Desk bookings"
+    ,"bookingViewParkings":"Parking bookings"
+    ,"bookingViewRequests":"Parking Requests"
+    ,"filterName":"Name"
+    ,"filterRole":"Role"
+    ,"filterDepartment":"Department"
+    ,"spotNumber":"Spot Number"
+    ,"cancelBooking":"Cancel Booking"
+    ,"updatePeriod":"Update Period"
+    ,"cancelBookingJustification":"Justification for cancellation"
+    ,"cancelBookingConfirm":"Confirm Cancellation"
+    ,"cancelBookingSuccess":"Booking cancelled successfully"
+    ,"editBookingConfirm":"Save Changes"
+    ,"editBookingJustification":"Justification for changes"
+    ,"editBookingSuccess":"Changes saved successfully"
+    ,"periodSection":"Period"
+    ,"assignmentSection":"Assignment"
+    ,"reassignBooking":"Reassign"
+    ,"reassignConfirm":"Confirm Reassignment"
+    ,"reassignJustification":"Justification for reassignment"
+    ,"reassignSuccess":"Booking reassigned successfully"
+    ,"currentAssignment":"Current assignment"
+    ,"newAssignment":"New assignment"
+    ,"noAvailableParkingSpots":"No available parking spots found"
+    ,"noBookingsFound":"No bookings found"
+    ,"bulkApprove":"Bulk Approve"
+    ,"bulkApproveSuccess":"{{count}} request(s) approved successfully"
+    ,"bulkApproveFailed":"{{count}} request(s) could not be approved"
+    ,"clearFilters":"Clear filters"
+    ,"resultsShown":"Results: {{count}}"
+    ,"bookingManagementOverviewHelper":"Manage desk and parking bookings."
+    ,"bookingManagementDeskHelper":"View and manage confirmed desk bookings."
+    ,"bookingManagementParkingHelper":"View and manage approved parking bookings."
+    ,"bookingManagementRequestsHelper":"Review and process pending parking requests."
+    ,"timeRangeInvalid":"End time must be later than start time."
 
     ,"maintenanceCalendar":"Maintenance Calendar"
     ,"scheduleBlocking":"Schedule Blocking"

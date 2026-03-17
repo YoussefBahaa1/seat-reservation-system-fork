@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import './AdminPage.css';
 import AddRoom from './Room/AddRoom';
 import DeleteRoom from './Room/DeleteRoom';
@@ -11,15 +11,12 @@ import AddUser from './UserManagement/AddUser';
 import DeleteUser from './UserManagement/DeleteUser';
 import EditUser from './UserManagement/EditUser';
 import DeactivateUser from './UserManagement/DeactivateUser';
-import OverviewBookings from './Bookings/OverviewBookings';
 import BookingSettings from './Bookings/BookingSettings';
+import BookingManagementDashboard from './Bookings/BookingManagementDashboard';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useParams } from 'react-router-dom';
 import { BootstrapEmployeeDialog, BootstrapWorkstationDialog, BootstrapDialog } from '../Bootstrap';
 import LayoutPageAdmin from '../Templates/LayoutPageAdmin';
-import { getRequest } from '../RequestFunctions/RequestFunctions';
-import { toast } from 'react-toastify';
-import ParkingReview from './Parking/ParkingReview';
 
 const SECTION_TO_TITLE = {
   'user-management': 'userManagement',
@@ -31,7 +28,6 @@ const SECTION_TO_TITLE = {
 const AdminPage = () => {
   const { t } = useTranslation();
   const { section } = useParams();
-  const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
 
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
   const [isDeleteRoomOpen, setIsDeleteRoomOpen] = useState(false);
@@ -45,11 +41,6 @@ const AdminPage = () => {
   const [isDeactivateUserOpen, setIsDeactivateUserOpen] = useState(false);
   const [isDeleteUserOpen, setIsDeleteUserOpen] = useState(false);
 
-  const [isOverviewBookingsOpen, setIsOverviewBookingsOpen] = useState(false);
-  const [isParkingReviewOpen, setIsParkingReviewOpen] = useState(false);
-  const [pendingParkingCount, setPendingParkingCount] = useState(0);
-  const pendingParkingCountRef = useRef(0);
-
   const toggleAddRoomModal = () => setIsAddRoomOpen(!isAddRoomOpen);
   const toggleDeleteRoomModal = () => setIsDeleteRoomOpen(!isDeleteRoomOpen);
   const toggleEditRoomModal = () => setIsEditRoomOpen(!isEditRoomOpen);
@@ -61,70 +52,13 @@ const AdminPage = () => {
   const toggleEditUserModal = () => setIsEditUserOpen(!isEditUserOpen);
   const toggleDeactivateUserModal = () => setIsDeactivateUserOpen(!isDeactivateUserOpen);
   const toggleDeleteUserModal = () => setIsDeleteUserOpen(!isDeleteUserOpen);
-  const toggleParkingReviewModal = () => setIsParkingReviewOpen(!isParkingReviewOpen);
-
-  const refreshPendingParkingCount = () => {
-    getRequest(
-      `${process.env.REACT_APP_BACKEND_URL}/parking/review/pending/count`,
-      headers.current,
-      (count) => {
-        const nextCount = Number.isFinite(Number(count)) ? Number(count) : 0;
-        if (nextCount > pendingParkingCountRef.current) {
-          toast.info(t('parkingReviewPendingCount', { count: nextCount }));
-        }
-        pendingParkingCountRef.current = nextCount;
-        setPendingParkingCount(nextCount);
-      },
-      () => {}
-    );
-  };
-
-  useEffect(() => {
-    if (section !== 'booking-management') {
-      return undefined;
-    }
-
-    let timer = null;
-
-    const stopPolling = () => {
-      if (timer !== null) {
-        clearInterval(timer);
-        timer = null;
-      }
-    };
-
-    const startPolling = () => {
-      stopPolling();
-      if (document.visibilityState === 'visible') {
-        refreshPendingParkingCount();
-        timer = setInterval(refreshPendingParkingCount, 30000);
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        startPolling();
-      } else {
-        stopPolling();
-      }
-    };
-
-    startPolling();
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      stopPolling();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section]);
 
   if (!section || !SECTION_TO_TITLE[section]) {
     return <Navigate to='/admin/user-management' replace />;
   }
 
   return (
-    <LayoutPageAdmin title={t(SECTION_TO_TITLE[section])} helpText=''>
+    <LayoutPageAdmin title={t(SECTION_TO_TITLE[section])} helpText='' withPaddingX={section === 'booking-management'}>
       {section === 'user-management' && (
         <div className='admin-section-actions'>
           <button id='addUser' className='my-button' onClick={toggleAddUserModal}>
@@ -169,13 +103,8 @@ const AdminPage = () => {
       )}
 
       {section === 'booking-management' && (
-        <div className='admin-section-actions'>
-          <button id='overviewBooking' className='my-button' onClick={setIsOverviewBookingsOpen.bind(null, true)}>
-            {t('overviewBooking')}
-          </button>
-          <button id='parkingReview' className='my-button' onClick={toggleParkingReviewModal}>
-            {t('parkingReview')}{pendingParkingCount > 0 ? ` (${pendingParkingCount})` : ''}
-          </button>
+        <div className='admin-section-content admin-section-content--full'>
+          <BookingManagementDashboard />
         </div>
       )}
 
@@ -227,16 +156,6 @@ const AdminPage = () => {
       <BootstrapEmployeeDialog onClose={setIsDeleteUserOpen.bind(null, !isDeleteUserOpen)} aria-labelledby='customized-dialog-title' open={isDeleteUserOpen}>
         <DeleteUser onClose={setIsDeleteUserOpen.bind(null, !isDeleteUserOpen)} isOpen={isDeleteUserOpen} />
       </BootstrapEmployeeDialog>
-
-      <BootstrapEmployeeDialog onClose={setIsOverviewBookingsOpen.bind(null, !isOverviewBookingsOpen)} aria-labelledby='customized-dialog-title' open={isOverviewBookingsOpen}>
-        <OverviewBookings isOpen={isOverviewBookingsOpen} onClose={setIsOverviewBookingsOpen.bind(null, !isOverviewBookingsOpen)} />
-      </BootstrapEmployeeDialog>
-
-      <ParkingReview
-        isOpen={isParkingReviewOpen}
-        onClose={toggleParkingReviewModal}
-        onChanged={refreshPendingParkingCount}
-      />
     </LayoutPageAdmin>
   );
 };

@@ -7,6 +7,8 @@ import com.desk_sharing.entities.ParkingSpotType;
 import com.desk_sharing.entities.Role;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.model.BookingDayEventDTO;
+import com.desk_sharing.model.AdminParkingReservationEditRequestDTO;
+import com.desk_sharing.model.AdminEditCandidateRequestDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.model.ParkingSpotUpdateDTO;
 import com.desk_sharing.repositories.ParkingReservationRepository;
@@ -241,6 +243,174 @@ class ParkingReservationServiceTest {
         ArgumentCaptor<ParkingReservation> captor = ArgumentCaptor.forClass(ParkingReservation.class);
         verify(parkingReservationRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(ParkingReservationStatus.REJECTED);
+    }
+
+    @Test
+    void editReservationByAdmin_updatesPeriodAndSpotAndNotifies() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingReservation approved = new ParkingReservation();
+        approved.setId(5L);
+        approved.setSpotLabel("1");
+        approved.setUserId(42);
+        approved.setDay(Date.valueOf(LocalDate.now().plusDays(1)));
+        approved.setBegin(Time.valueOf("10:00:00"));
+        approved.setEnd(Time.valueOf("12:00:00"));
+        approved.setStatus(ParkingReservationStatus.APPROVED);
+
+        ParkingSpot targetSpot = activeSpot("2");
+
+        AdminParkingReservationEditRequestDTO request = new AdminParkingReservationEditRequestDTO();
+        request.setDay(LocalDate.now().plusDays(2).toString());
+        request.setBegin("11:00");
+        request.setEnd("13:00");
+        request.setSpotLabel("2");
+        request.setJustification("Operational adjustment");
+
+        when(parkingReservationRepository.findById(5L)).thenReturn(java.util.Optional.of(approved));
+        when(parkingSpotRepository.findById("2")).thenReturn(java.util.Optional.of(targetSpot));
+        when(parkingReservationRepository.findApprovedOverlapsForSpot(
+            eq(Date.valueOf(request.getDay())),
+            eq("2"),
+            eq(Time.valueOf("11:00:00")),
+            eq(Time.valueOf("13:00:00"))
+        )).thenReturn(List.of());
+        when(parkingReservationRepository.save(any(ParkingReservation.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ParkingReservation updated = service.editReservationByAdmin(5L, request);
+
+        assertThat(updated.getDay()).isEqualTo(Date.valueOf(request.getDay()));
+        assertThat(updated.getBegin()).isEqualTo(Time.valueOf("11:00:00"));
+        assertThat(updated.getEnd()).isEqualTo(Time.valueOf("13:00:00"));
+        assertThat(updated.getSpotLabel()).isEqualTo("2");
+        assertThat(updated.getStatus()).isEqualTo(ParkingReservationStatus.APPROVED);
+        verify(parkingNotificationService).notifyUpdatedByAdmin(any(ParkingReservation.class), eq(updated), eq("Operational adjustment"));
+    }
+
+    @Test
+    void editReservationByAdmin_rejectsPendingReservation() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingReservation pending = new ParkingReservation();
+        pending.setId(7L);
+        pending.setSpotLabel("1");
+        pending.setStatus(ParkingReservationStatus.PENDING);
+
+        AdminParkingReservationEditRequestDTO request = new AdminParkingReservationEditRequestDTO();
+        request.setDay(LocalDate.now().plusDays(2).toString());
+        request.setBegin("11:00");
+        request.setEnd("13:00");
+        request.setSpotLabel("1");
+        request.setJustification("Operational adjustment");
+
+        when(parkingReservationRepository.findById(7L)).thenReturn(java.util.Optional.of(pending));
+
+        assertThatThrownBy(() -> service.editReservationByAdmin(7L, request))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("Only approved reservations can be edited");
+    }
+
+    @Test
+    void editReservationByAdmin_rejectsUnchangedSubmission() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingReservation approved = new ParkingReservation();
+        approved.setId(5L);
+        approved.setSpotLabel("1");
+        approved.setUserId(42);
+        approved.setDay(Date.valueOf(LocalDate.now().plusDays(1)));
+        approved.setBegin(Time.valueOf("10:00:00"));
+        approved.setEnd(Time.valueOf("12:00:00"));
+        approved.setStatus(ParkingReservationStatus.APPROVED);
+
+        AdminParkingReservationEditRequestDTO request = new AdminParkingReservationEditRequestDTO();
+        request.setDay(approved.getDay().toString());
+        request.setBegin("10:00");
+        request.setEnd("12:00");
+        request.setSpotLabel("1");
+        request.setJustification("Operational adjustment");
+
+        when(parkingReservationRepository.findById(5L)).thenReturn(java.util.Optional.of(approved));
+        when(parkingSpotRepository.findById("1")).thenReturn(java.util.Optional.of(activeSpot("1")));
+
+        assertThatThrownBy(() -> service.editReservationByAdmin(5L, request))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("No changes submitted");
+    }
+
+    @Test
+    void getCandidateSpotsForAdminEdit_returnsCurrentSpotWhenStillValid() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingReservation approved = new ParkingReservation();
+        approved.setId(5L);
+        approved.setSpotLabel("1");
+        approved.setUserId(42);
+        approved.setDay(Date.valueOf(LocalDate.now().plusDays(1)));
+        approved.setBegin(Time.valueOf("10:00:00"));
+        approved.setEnd(Time.valueOf("12:00:00"));
+        approved.setStatus(ParkingReservationStatus.APPROVED);
+
+        AdminEditCandidateRequestDTO request = new AdminEditCandidateRequestDTO();
+        request.setDay(approved.getDay().toString());
+        request.setBegin("10:00");
+        request.setEnd("12:00");
+
+        when(parkingReservationRepository.findById(5L)).thenReturn(java.util.Optional.of(approved));
+        when(parkingSpotRepository.findByActiveTrueOrderBySpotLabelAsc()).thenReturn(List.of(activeSpot("1")));
+        when(parkingReservationRepository.findApprovedOverlapsForSpot(
+            eq(approved.getDay()),
+            eq("1"),
+            eq(approved.getBegin()),
+            eq(approved.getEnd())
+        )).thenReturn(List.of(approved));
+
+        assertThat(service.getCandidateSpotsForAdminEdit(5L, request))
+            .extracting(candidate -> candidate.getSpotLabel())
+            .containsExactly("1");
+    }
+
+    @Test
+    void getCandidateSpotsForAdminEdit_omitsCurrentSpotWhenEditedPeriodConflicts() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingReservation approved = new ParkingReservation();
+        approved.setId(5L);
+        approved.setSpotLabel("1");
+        approved.setUserId(42);
+        approved.setDay(Date.valueOf(LocalDate.now().plusDays(1)));
+        approved.setBegin(Time.valueOf("10:00:00"));
+        approved.setEnd(Time.valueOf("12:00:00"));
+        approved.setStatus(ParkingReservationStatus.APPROVED);
+
+        ParkingReservation otherReservation = new ParkingReservation();
+        otherReservation.setId(6L);
+
+        AdminEditCandidateRequestDTO request = new AdminEditCandidateRequestDTO();
+        request.setDay(approved.getDay().toString());
+        request.setBegin("11:00");
+        request.setEnd("13:00");
+
+        when(parkingReservationRepository.findById(5L)).thenReturn(java.util.Optional.of(approved));
+        when(parkingSpotRepository.findByActiveTrueOrderBySpotLabelAsc()).thenReturn(List.of(activeSpot("1")));
+        when(parkingReservationRepository.findApprovedOverlapsForSpot(
+            eq(approved.getDay()),
+            eq("1"),
+            eq(Time.valueOf("11:00:00")),
+            eq(Time.valueOf("13:00:00"))
+        )).thenReturn(List.of(otherReservation));
+
+        assertThat(service.getCandidateSpotsForAdminEdit(5L, request)).isEmpty();
     }
 
     @Test

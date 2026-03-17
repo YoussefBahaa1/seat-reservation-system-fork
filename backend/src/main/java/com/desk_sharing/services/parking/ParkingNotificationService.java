@@ -59,6 +59,117 @@ public class ParkingNotificationService {
         }
     }
 
+    public void notifyCancelledByAdmin(@NonNull ParkingReservation res, @NonNull String justification) {
+        if (!notificationsEnabled) return;
+        final UserEntity user = userRepository.findById(res.getUserId()).orElse(null);
+        if (user == null) return;
+        if (user.getEmail() == null || user.getEmail().isBlank()) return;
+
+        try {
+            final boolean german = isGerman(user);
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(mailFrom);
+            helper.setTo(user.getEmail());
+            helper.setSubject(german ? "Parkplatz-Buchung storniert" : "Parking booking cancelled");
+            helper.setText(buildCancelBody(res, justification, german), false);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            log.warn("Failed to send parking cancellation notification for reservation {}: {}", res.getId(), e.getMessage());
+        }
+    }
+
+    public void notifyUpdatedByAdmin(
+        @NonNull ParkingReservation previousReservation,
+        @NonNull ParkingReservation updatedReservation,
+        @NonNull String justification
+    ) {
+        if (!notificationsEnabled) return;
+        final UserEntity user = userRepository.findById(updatedReservation.getUserId()).orElse(null);
+        if (user == null) return;
+        if (user.getEmail() == null || user.getEmail().isBlank()) return;
+
+        try {
+            final boolean german = isGerman(user);
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(mailFrom);
+            helper.setTo(user.getEmail());
+            helper.setSubject(german ? "Parkplatz-Buchung geändert" : "Parking booking updated");
+            helper.setText(buildUpdateBody(previousReservation, updatedReservation, justification, german), false);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            log.warn("Failed to send parking update notification for reservation {}: {}", updatedReservation.getId(), e.getMessage());
+        }
+    }
+
+    private String buildCancelBody(ParkingReservation res, String justification, boolean de) {
+        final String date = res.getDay().toLocalDate().format(DATE_FMT);
+        final String begin = res.getBegin().toLocalTime().format(TIME_FMT);
+        final String end = res.getEnd().toLocalTime().format(TIME_FMT);
+        StringBuilder sb = new StringBuilder();
+        if (de) {
+            sb.append("Ihre Parkplatz-Buchung wurde von einem Administrator storniert.\n");
+            sb.append("Platz: ").append(res.getSpotLabel()).append("\n");
+            sb.append("Datum: ").append(date).append("\n");
+            sb.append("Zeit: ").append(begin).append(" - ").append(end).append("\n\n");
+            sb.append("Begründung des Administrators:\n").append(justification).append("\n");
+        } else {
+            sb.append("Your parking booking has been cancelled by an administrator.\n");
+            sb.append("Spot: ").append(res.getSpotLabel()).append("\n");
+            sb.append("Date: ").append(date).append("\n");
+            sb.append("Time: ").append(begin).append(" - ").append(end).append("\n\n");
+            sb.append("Administrator justification:\n").append(justification).append("\n");
+        }
+        if (frontendBaseUrl != null && !frontendBaseUrl.isBlank()) {
+            sb.append(de ? "Buchung anzeigen: " : "View booking: ").append(frontendBaseUrl).append("/home\n");
+        }
+        return sb.toString();
+    }
+
+    private String buildUpdateBody(
+        ParkingReservation previousReservation,
+        ParkingReservation updatedReservation,
+        String justification,
+        boolean de
+    ) {
+        final String oldDate = previousReservation.getDay().toLocalDate().format(DATE_FMT);
+        final String oldBegin = previousReservation.getBegin().toLocalTime().format(TIME_FMT);
+        final String oldEnd = previousReservation.getEnd().toLocalTime().format(TIME_FMT);
+        final String newDate = updatedReservation.getDay().toLocalDate().format(DATE_FMT);
+        final String newBegin = updatedReservation.getBegin().toLocalTime().format(TIME_FMT);
+        final String newEnd = updatedReservation.getEnd().toLocalTime().format(TIME_FMT);
+
+        StringBuilder sb = new StringBuilder();
+        if (de) {
+            sb.append("Ihre Parkplatz-Buchung wurde von einem Administrator geändert.\n");
+            sb.append("Bisherige Buchungsdetails:\n");
+            sb.append("Platz: ").append(previousReservation.getSpotLabel()).append("\n");
+            sb.append("Datum: ").append(oldDate).append("\n");
+            sb.append("Zeit: ").append(oldBegin).append(" - ").append(oldEnd).append("\n\n");
+            sb.append("Neue Buchungsdetails:\n");
+            sb.append("Platz: ").append(updatedReservation.getSpotLabel()).append("\n");
+            sb.append("Datum: ").append(newDate).append("\n");
+            sb.append("Zeit: ").append(newBegin).append(" - ").append(newEnd).append("\n\n");
+            sb.append("Begründung des Administrators:\n").append(justification).append("\n");
+        } else {
+            sb.append("Your parking booking has been updated by an administrator.\n");
+            sb.append("Previous booking details:\n");
+            sb.append("Spot: ").append(previousReservation.getSpotLabel()).append("\n");
+            sb.append("Date: ").append(oldDate).append("\n");
+            sb.append("Time: ").append(oldBegin).append(" - ").append(oldEnd).append("\n\n");
+            sb.append("Updated booking details:\n");
+            sb.append("Spot: ").append(updatedReservation.getSpotLabel()).append("\n");
+            sb.append("Date: ").append(newDate).append("\n");
+            sb.append("Time: ").append(newBegin).append(" - ").append(newEnd).append("\n\n");
+            sb.append("Administrator justification:\n").append(justification).append("\n");
+        }
+        if (frontendBaseUrl != null && !frontendBaseUrl.isBlank()) {
+            sb.append(de ? "Buchung anzeigen: " : "View booking: ").append(frontendBaseUrl).append("/home\n");
+        }
+        return sb.toString();
+    }
+
     private boolean isGerman(UserEntity user) {
         if (user == null || user.getPreferredLanguage() == null || user.getPreferredLanguage().isBlank()) {
             return false;

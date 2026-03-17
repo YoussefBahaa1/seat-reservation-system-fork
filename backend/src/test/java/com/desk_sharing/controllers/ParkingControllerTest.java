@@ -97,7 +97,20 @@ class ParkingControllerTest {
     @Test
     void pending_returnsOkAndDelegates() {
         List<ParkingReviewItemDTO> body = List.of(
-            new ParkingReviewItemDTO(1L, "1", Date.valueOf("2099-01-01"), Time.valueOf("10:00:00"), Time.valueOf("10:30:00"), 7, "user@example.com", LocalDateTime.now())
+            new ParkingReviewItemDTO(
+                1L,
+                "1",
+                Date.valueOf("2099-01-01"),
+                Time.valueOf("10:00:00"),
+                Time.valueOf("10:30:00"),
+                7,
+                "user@example.com",
+                "Test",
+                "User",
+                "ROLE_USER",
+                "Engineering",
+                LocalDateTime.now()
+            )
         );
         when(parkingReservationService.getPendingReservationsForReview()).thenReturn(body);
 

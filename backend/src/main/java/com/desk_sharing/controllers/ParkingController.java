@@ -115,6 +115,13 @@ public class ParkingController {
         return new ResponseEntity<>(parkingReservationService.getPendingReservationsCount(), HttpStatus.OK);
     }
 
+    @PostMapping("/review/bulk-approve")
+    public ResponseEntity<java.util.Map<String, Object>> bulkApprove(@RequestBody java.util.Map<String, java.util.List<Long>> body) {
+        logger.info("parkingReviewBulkApprove()");
+        java.util.List<Long> ids = body.getOrDefault("ids", java.util.List.of());
+        return new ResponseEntity<>(parkingReservationService.bulkApproveReservations(ids), HttpStatus.OK);
+    }
+
     @PostMapping("/review/{id}/approve")
     public ResponseEntity<ParkingReservation> approve(@PathVariable("id") long id) {
         logger.info("parkingReviewApprove( {} )", id);

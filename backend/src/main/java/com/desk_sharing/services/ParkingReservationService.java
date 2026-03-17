@@ -31,8 +31,12 @@ import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.misc.VisibilityDisplayHelper;
 import com.desk_sharing.model.BookingDayEventDTO;
 import com.desk_sharing.model.ParkingAvailabilityRequestDTO;
+import com.desk_sharing.model.ParkingBookingProjectionDTO;
 import com.desk_sharing.model.ParkingAvailabilityResponseDTO;
 import com.desk_sharing.model.ParkingMyReservationDTO;
+import com.desk_sharing.model.AdminParkingReservationEditRequestDTO;
+import com.desk_sharing.model.AdminEditCandidateRequestDTO;
+import com.desk_sharing.model.AdminParkingSpotCandidateDTO;
 import com.desk_sharing.model.ParkingReviewItemDTO;
 import com.desk_sharing.model.ParkingReservationRequestDTO;
 import com.desk_sharing.model.ParkingSpotUpdateDTO;
@@ -394,6 +398,140 @@ public class ParkingReservationService {
         return parkingReservationRepository.save(reservation);
     }
 
+    private ParkingReservation snapshotReservation(final ParkingReservation reservation) {
+        if (reservation == null) {
+            return null;
+        }
+        ParkingReservation copy = new ParkingReservation();
+        copy.setId(reservation.getId());
+        copy.setSpotLabel(reservation.getSpotLabel());
+        copy.setUserId(reservation.getUserId());
+        copy.setDay(reservation.getDay());
+        copy.setBegin(reservation.getBegin());
+        copy.setEnd(reservation.getEnd());
+        copy.setCreatedAt(reservation.getCreatedAt());
+        copy.setStatus(reservation.getStatus());
+        copy.setRequestLocale(reservation.getRequestLocale());
+        return copy;
+    }
+
+    public ParkingReservation editReservationByAdmin(final long id, final AdminParkingReservationEditRequestDTO request) {
+        requireAdmin();
+        if (request == null || request.getJustification() == null || request.getJustification().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Justification is required");
+        }
+        if (request.getSpotLabel() == null || request.getSpotLabel().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Spot is required");
+        }
+
+        final ParkingReservation reservation = parkingReservationRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reservation not found"));
+        if (effectiveStatus(reservation) != ParkingReservationStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only approved reservations can be edited");
+        }
+
+        final Date newDay;
+        final Time newBegin;
+        final Time newEnd;
+        try {
+            newDay = Date.valueOf(LocalDate.parse(request.getDay()));
+            newBegin = Time.valueOf(LocalTime.parse(normalizeTimeString(request.getBegin())));
+            newEnd = Time.valueOf(LocalTime.parse(normalizeTimeString(request.getEnd())));
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid reservation date or time");
+        }
+
+        final String normalizedSpotLabel = request.getSpotLabel().trim();
+        final ParkingSpot targetSpot = parkingSpotRepository.findById(normalizedSpotLabel)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking spot not found"));
+        if (!isSpotActive(targetSpot)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Parking spot is not active");
+        }
+        final ParkingSpotType targetSpotType = effectiveSpotType(targetSpot, normalizedSpotLabel);
+        if (targetSpotType == ParkingSpotType.SPECIAL_CASE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This spot cannot be reserved");
+        }
+        if (effectiveManuallyBlocked(targetSpot)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This spot is blocked");
+        }
+
+        final boolean periodChanged = !reservation.getDay().equals(newDay)
+            || !reservation.getBegin().equals(newBegin)
+            || !reservation.getEnd().equals(newEnd);
+        final boolean assignmentChanged = !normalizedSpotLabel.equals(reservation.getSpotLabel());
+        if (!periodChanged && !assignmentChanged) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No changes submitted");
+        }
+
+        validateTimes(newDay, newBegin, newEnd);
+
+        final List<ParkingReservation> approvedOverlaps = parkingReservationRepository.findApprovedOverlapsForSpot(
+            newDay,
+            normalizedSpotLabel,
+            newBegin,
+            newEnd
+        ).stream().filter(other -> !other.getId().equals(id)).toList();
+        if (!approvedOverlaps.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Spot is already reserved for this time range");
+        }
+
+        final ParkingReservation previousReservation = snapshotReservation(reservation);
+        reservation.setDay(newDay);
+        reservation.setBegin(newBegin);
+        reservation.setEnd(newEnd);
+        reservation.setSpotLabel(normalizedSpotLabel);
+        reservation.setStatus(ParkingReservationStatus.APPROVED);
+        final ParkingReservation saved = parkingReservationRepository.save(reservation);
+        parkingNotificationService.notifyUpdatedByAdmin(previousReservation, saved, request.getJustification().trim());
+        return saved;
+    }
+
+    public List<AdminParkingSpotCandidateDTO> getCandidateSpotsForAdminEdit(
+        final long id,
+        final AdminEditCandidateRequestDTO request
+    ) {
+        requireAdmin();
+        final ParkingReservation reservation = parkingReservationRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reservation not found"));
+        final Date day;
+        final Time begin;
+        final Time end;
+        try {
+            day = Date.valueOf(LocalDate.parse(request.getDay()));
+            begin = Time.valueOf(LocalTime.parse(normalizeTimeString(request.getBegin())));
+            end = Time.valueOf(LocalTime.parse(normalizeTimeString(request.getEnd())));
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid reservation date or time");
+        }
+
+        validateTimes(day, begin, end);
+
+        return parkingSpotRepository.findByActiveTrueOrderBySpotLabelAsc().stream()
+            .filter(spot -> !effectiveManuallyBlocked(spot))
+            .filter(spot -> effectiveSpotType(spot, spot.getSpotLabel()) != ParkingSpotType.SPECIAL_CASE)
+            .filter(spot -> parkingReservationRepository.findApprovedOverlapsForSpot(
+                day,
+                spot.getSpotLabel(),
+                begin,
+                end
+            ).stream().noneMatch(other -> !other.getId().equals(reservation.getId())))
+            .map(spot -> new AdminParkingSpotCandidateDTO(
+                spot.getSpotLabel(),
+                spot.getDisplayLabel(),
+                effectiveSpotType(spot, spot.getSpotLabel()).name(),
+                effectiveCovered(spot)
+            ))
+            .toList();
+    }
+
+    public void cancelReservationByAdmin(final long id, final String justification) {
+        requireAdmin();
+        final ParkingReservation res = parkingReservationRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reservation not found"));
+        parkingNotificationService.notifyCancelledByAdmin(res, justification);
+        parkingReservationRepository.deleteById(id);
+    }
+
     public void deleteReservation(final long id) {
         final int myUserId = getCurrentUser().getId();
         final ParkingReservation res = parkingReservationRepository.findById(id)
@@ -442,7 +580,12 @@ public class ParkingReservationService {
         requireAdmin();
         return parkingReservationRepository.findByStatusOrderByCreatedAtAsc(ParkingReservationStatus.PENDING).stream()
             .map(reservation -> {
-                final String email = userRepository.findById(reservation.getUserId()).map(UserEntity::getEmail).orElse("unknown");
+                final UserEntity user = userRepository.findById(reservation.getUserId()).orElse(null);
+                final String email = user != null ? user.getEmail() : "unknown";
+                final String userName = user != null ? user.getName() : null;
+                final String userSurname = user != null ? user.getSurname() : null;
+                final String department = user != null ? user.getDepartment() : null;
+                final String roleName = user != null ? getUserRoleName(user) : null;
                 return new ParkingReviewItemDTO(
                     reservation.getId(),
                     reservation.getSpotLabel(),
@@ -451,7 +594,42 @@ public class ParkingReservationService {
                     reservation.getEnd(),
                     reservation.getUserId(),
                     email,
+                    userName,
+                    userSurname,
+                    roleName,
+                    department,
                     reservation.getCreatedAt()
+                );
+            })
+            .toList();
+    }
+
+    private String getUserRoleName(final UserEntity user) {
+        if (user.getRoles() == null || user.getRoles().isEmpty()) return null;
+        return user.getRoles().get(0).getName();
+    }
+
+    public List<ParkingBookingProjectionDTO> getAllApprovedReservationsForAdmin() {
+        requireAdmin();
+        return parkingReservationRepository.findByStatusOrderByCreatedAtAsc(ParkingReservationStatus.APPROVED).stream()
+            .map(reservation -> {
+                final UserEntity user = userRepository.findById(reservation.getUserId()).orElse(null);
+                final String email = user != null ? user.getEmail() : "unknown";
+                final String userName = user != null ? user.getName() : null;
+                final String userSurname = user != null ? user.getSurname() : null;
+                final String department = user != null ? user.getDepartment() : null;
+                final String roleName = user != null ? getUserRoleName(user) : null;
+                return new ParkingBookingProjectionDTO(
+                    reservation.getId(),
+                    reservation.getDay(),
+                    reservation.getBegin(),
+                    reservation.getEnd(),
+                    email,
+                    userName,
+                    userSurname,
+                    roleName,
+                    department,
+                    reservation.getSpotLabel()
                 );
             })
             .toList();
@@ -597,6 +775,24 @@ public class ParkingReservationService {
         final ParkingReservation saved = parkingReservationRepository.save(reservation);
         parkingNotificationService.notifyDecision(saved, true);
         return saved;
+    }
+
+    public Map<String, Object> bulkApproveReservations(final List<Long> ids) {
+        requireAdmin();
+        int approved = 0;
+        int failed = 0;
+        for (final Long id : ids) {
+            try {
+                approveReservation(id);
+                approved++;
+            } catch (Exception e) {
+                failed++;
+            }
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("approved", approved);
+        result.put("failed", failed);
+        return result;
     }
 
     public void rejectReservation(final long id) {

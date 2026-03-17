@@ -17,5 +17,9 @@ public class ParkingReviewItemDTO {
     private Time end;
     private int requesterUserId;
     private String requesterEmail;
+    private String name;
+    private String surname;
+    private String roleName;
+    private String department;
     private LocalDateTime createdAt;
 }

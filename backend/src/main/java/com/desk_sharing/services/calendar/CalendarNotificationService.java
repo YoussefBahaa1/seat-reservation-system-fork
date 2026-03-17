@@ -43,7 +43,7 @@ public class CalendarNotificationService {
 
         ensureUidAndSequence(booking);
         final boolean german = isGerman(user);
-        sendRequest(booking, false, german);
+        sendRequest(booking, action == NotificationAction.UPDATE, german);
     }
 
     public void sendBookingCancelled(@NonNull Booking booking) {
@@ -57,6 +57,68 @@ public class CalendarNotificationService {
         bookingRepository.save(booking);
         final boolean german = isGerman(user);
         sendCancel(booking, german);
+    }
+
+    public void sendBookingCancelledByAdmin(@NonNull Booking booking, @NonNull String justification) {
+        if (!notificationsEnabled) return;
+        final UserEntity user = booking.getUser();
+        if (user == null || isBlank(user.getEmail())) return;
+
+        ensureUidAndSequence(booking);
+        booking.setCalendarSequence(booking.getCalendarSequence() + 1);
+        bookingRepository.save(booking);
+        final boolean german = isGerman(user);
+
+        BookingCalendarFormatter.RenderedCalendarContent content = bookingCalendarFormatter.buildCancelContent(booking, german);
+
+        String bodyWithJustification = content.textBody() + "\n\n"
+            + (german ? "Begründung des Administrators" : "Administrator justification") + ":\n"
+            + justification;
+
+        BookingCalendarFormatter.RenderedCalendarContent enriched = new BookingCalendarFormatter.RenderedCalendarContent(
+            content.subject(),
+            bodyWithJustification,
+            content.icsContent()
+        );
+
+        sendEmail(booking, enriched, "CANCEL");
+    }
+
+    public void sendBookingUpdatedByAdmin(
+        @NonNull Booking previousBooking,
+        @NonNull Booking updatedBooking,
+        @NonNull String justification
+    ) {
+        if (!notificationsEnabled) return;
+        final UserEntity user = updatedBooking.getUser();
+        if (user == null || isBlank(user.getEmail())) return;
+
+        ensureUidAndSequence(updatedBooking);
+        updatedBooking.setCalendarSequence(updatedBooking.getCalendarSequence() + 1);
+        bookingRepository.save(updatedBooking);
+        final boolean german = isGerman(user);
+
+        BookingCalendarFormatter.RenderedCalendarContent content =
+            bookingCalendarFormatter.buildRequestContent(updatedBooking, german, true);
+
+        String bodyWithContext = content.textBody()
+            + "\n\n"
+            + (german ? "Bisherige Buchungsdetails" : "Previous booking details") + ":\n"
+            + formatSchedule(previousBooking, german)
+            + "\n\n"
+            + (german ? "Neue Buchungsdetails" : "Updated booking details") + ":\n"
+            + formatSchedule(updatedBooking, german)
+            + "\n\n"
+            + (german ? "Begründung des Administrators" : "Administrator justification") + ":\n"
+            + justification;
+
+        BookingCalendarFormatter.RenderedCalendarContent enriched = new BookingCalendarFormatter.RenderedCalendarContent(
+            content.subject(),
+            bodyWithContext,
+            content.icsContent()
+        );
+
+        sendEmail(updatedBooking, enriched, "REQUEST");
     }
 
     private void ensureUidAndSequence(Booking booking) {
@@ -113,5 +175,27 @@ public class CalendarNotificationService {
 
     private boolean isGerman(UserEntity user) {
         return user != null && BookingCalendarFormatter.isGermanLanguage(user.getPreferredLanguage());
+    }
+
+    private String formatSchedule(Booking booking, boolean german) {
+        final String buildingLabel = german ? "Gebäude" : "Building";
+        final String dateLabel = german ? "Datum" : "Date";
+        final String timeLabel = german ? "Zeit" : "Time";
+        final String deskLabel = german ? "Schreibtisch" : "Desk";
+        final String roomLabel = german ? "Raum" : "Room";
+
+        return buildingLabel + ": " + safeValue(
+                booking.getRoom() == null || booking.getRoom().getFloor() == null || booking.getRoom().getFloor().getBuilding() == null
+                    ? null
+                    : booking.getRoom().getFloor().getBuilding().getName()
+            )
+            + "\n" + roomLabel + ": " + safeValue(booking.getRoom() == null ? null : booking.getRoom().getRemark())
+            + "\n" + deskLabel + ": " + safeValue(booking.getDesk() == null ? null : booking.getDesk().getRemark())
+            + "\n" + dateLabel + ": " + booking.getDay()
+            + "\n" + timeLabel + ": " + booking.getBegin() + " - " + booking.getEnd();
+    }
+
+    private String safeValue(String value) {
+        return isBlank(value) ? "—" : value.trim();
     }
 }

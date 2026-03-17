@@ -18,10 +18,17 @@ public class BookingProjectionDTO {
     private Time begin;
     private Time end;
     private String email;
+    private String name;
+    private String surname;
+    private String roleName;
+    private String department;
     private String deskRemark;
     private String roomRemark;
     private String building;
     private Long seriesId;
+    private Long deskId;
+    private Long roomId;
+    private Long buildingId;
 
     public BookingProjectionDTO(final Object[] object) {
         this(
@@ -33,7 +40,14 @@ public class BookingProjectionDTO {
             (String) object[5],
             (String) object[6],
             (String) object[7],
-            (Long) object[8]
+            (String) object[8],
+            (String) object[9],
+            (String) object[10],
+            (String) object[11],
+            (Long) object[12],
+            (Long) object[13],
+            (Long) object[14],
+            (Long) object[15]
         );
     }
 }
