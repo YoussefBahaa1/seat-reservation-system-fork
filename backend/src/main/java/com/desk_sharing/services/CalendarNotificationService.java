@@ -143,7 +143,30 @@ public class CalendarNotificationService {
         final boolean german = isGerman(user);
         final BookingCalendarFormatter.RenderedCalendarContent content =
             bookingCalendarFormatter.buildSeriesRequestContent(bookings, german);
-        sendSeriesEmail(bookings, content);
+        sendSeriesEmail(bookings, content, german, false);
+    }
+
+    public void sendSeriesDeleted(@NonNull List<Booking> bookings) {
+        if (!notificationsEnabled || bookings.isEmpty()) return;
+
+        final Booking referenceBooking = bookings.stream()
+            .filter(java.util.Objects::nonNull)
+            .min(Comparator.comparing(Booking::getDay).thenComparing(Booking::getBegin))
+            .orElse(null);
+        if (referenceBooking == null) return;
+
+        final UserEntity user = referenceBooking.getUser();
+        if (user == null || isBlank(user.getEmail())) return;
+        if (!user.isNotifyBookingCancel()) return;
+
+        bookings.stream()
+            .filter(java.util.Objects::nonNull)
+            .forEach(this::ensureUidAndSequence);
+
+        final boolean german = isGerman(user);
+        final BookingCalendarFormatter.RenderedCalendarContent content =
+            bookingCalendarFormatter.buildSeriesCancelContent(bookings, german);
+        sendSeriesEmail(bookings, content, german, true);
     }
 
     private void ensureUidAndSequence(Booking booking) {
@@ -194,7 +217,12 @@ public class CalendarNotificationService {
         }
     }
 
-    private void sendSeriesEmail(List<Booking> bookings, BookingCalendarFormatter.RenderedCalendarContent content) {
+    private void sendSeriesEmail(
+        List<Booking> bookings,
+        BookingCalendarFormatter.RenderedCalendarContent content,
+        boolean german,
+        boolean cancelled
+    ) {
         try {
             Booking referenceBooking = bookings.stream()
                 .filter(java.util.Objects::nonNull)
@@ -209,16 +237,20 @@ public class CalendarNotificationService {
             helper.setText(content.textBody(), false);
 
             mimeMessage.addHeader("Content-Class", "urn:content-classes:calendarmessage");
-            mimeMessage.addHeader("Method", "REQUEST");
+            mimeMessage.addHeader("Method", cancelled ? "CANCEL" : "REQUEST");
 
             for (Booking booking : bookings.stream()
                 .filter(java.util.Objects::nonNull)
                 .sorted(Comparator.comparing(Booking::getDay).thenComparing(Booking::getBegin))
                 .toList()) {
-                final boolean german = isGerman(referenceBooking.getUser());
                 helper.addAttachment(
                     "booking-" + booking.getId() + ".ics",
-                    new ByteArrayResource(buildRequestIcsForExport(booking, german).getBytes(StandardCharsets.UTF_8))
+                    new ByteArrayResource(
+                        (cancelled
+                            ? bookingCalendarFormatter.buildCancelContent(booking, german).icsContent()
+                            : buildRequestIcsForExport(booking, german)
+                        ).getBytes(StandardCharsets.UTF_8)
+                    )
                 );
             }
 

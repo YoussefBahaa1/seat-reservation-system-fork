@@ -8,6 +8,7 @@ import './MyBookings.css';
 import { getRequest, deleteRequest, downloadRequest } from '../RequestFunctions/RequestFunctions';
 import LayoutPage from '../Templates/LayoutPage';
 import LayoutModal from '../Templates/LayoutModal';
+import DeleteFf from '../DeleteFf';
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
@@ -66,6 +67,7 @@ const MyBookings = () => {
   const locationView = normalizeCalendarView(location.state?.view);
   const [currentView, setCurrentView] = useState(locationView);
   const [selectedBookingEvent, setSelectedBookingEvent] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   // The current booking object (with id, room, desk) 
   const [theBookingEvent, setTheBookingEvent] = useState(null);
   //const userId = localStorage.getItem('userId');
@@ -186,6 +188,7 @@ const MyBookings = () => {
     fetchBookings();
     setSelectedBookingEvent(null);
     setTheBookingEvent(null);
+    setIsDeleteDialogOpen(false);
   };  
 
   const deleteBooking = async () => {
@@ -276,6 +279,7 @@ const MyBookings = () => {
           onClose={() => {
             setSelectedBookingEvent(null);
             setTheBookingEvent(null);
+            setIsDeleteDialogOpen(false);
           }}
           closeTxt={t('cancel')}
           title={t('bookingDetails')}
@@ -369,7 +373,7 @@ const MyBookings = () => {
                       }}
                       variant="outlined"
                       color="error"
-                      onClick={deleteBooking}
+                      onClick={() => setIsDeleteDialogOpen(true)}
                       disabled={!selectedBookingEvent}
                     >
                       {t('cancelBooking')}
@@ -380,6 +384,12 @@ const MyBookings = () => {
             } 
           </div>
         </LayoutModal>
+        <DeleteFf
+          open={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onDelete={deleteBooking}
+          text={t('deleteBookingMessage')}
+        />
           {currentView && (
             <>
               <Button

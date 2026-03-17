@@ -6,6 +6,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,8 @@ class BookingCalendarFormatterTest {
             .contains("  Special features: Window seat");
         assertThat(content.icsContent())
             .contains("METHOD:REQUEST")
+            .contains("DTSTART;TZID=Europe/Berlin:20260402T090000")
+            .contains("DTEND;TZID=Europe/Berlin:20260402T110000")
             .contains("Equipment:")
             .contains("  Ergonomics: Ergonomic")
             .contains("  Monitors: 2")
@@ -76,12 +79,42 @@ class BookingCalendarFormatterTest {
         assertThat(content.icsContent())
             .contains("METHOD:CANCEL")
             .contains("STATUS:CANCELLED")
+            .contains("DTSTART;TZID=Europe/Berlin:20260402T090000")
+            .contains("DTEND;TZID=Europe/Berlin:20260402T110000")
             .contains("Ausstattung:")
             .contains("  Ergonomie: —")
             .contains("  Monitore: —")
             .contains("  Tischtyp: —")
             .contains("  Technik: —")
             .contains("  Besondere Merkmale: —");
+    }
+
+    @Test
+    void seriesCancelContent_listsOnlyRemainingDatesAndUsesCancelledWording() {
+        Booking first = bookingWithEquipment("en");
+        first.setDay(Date.valueOf(LocalDate.of(2026, 4, 14)));
+        first.setBegin(Time.valueOf(LocalTime.of(9, 0)));
+
+        Booking second = bookingWithEquipment("en");
+        second.setDay(Date.valueOf(LocalDate.of(2026, 4, 21)));
+        second.setBegin(Time.valueOf(LocalTime.of(9, 0)));
+
+        Booking third = bookingWithEquipment("en");
+        third.setDay(Date.valueOf(LocalDate.of(2026, 4, 28)));
+        third.setBegin(Time.valueOf(LocalTime.of(9, 0)));
+
+        BookingCalendarFormatter.RenderedCalendarContent content =
+            formatter.buildSeriesCancelContent(List.of(second, third, first), false);
+
+        assertThat(content.subject()).contains("series booking cancelled");
+        assertThat(content.textBody())
+            .contains("Your desk series booking was cancelled.")
+            .contains("Dates:")
+            .contains("  2026-04-14")
+            .contains("  2026-04-21")
+            .contains("  2026-04-28");
+        assertThat(content.textBody()).doesNotContain("2026-04-07");
+        assertThat(content.icsContent()).contains("METHOD:CANCEL");
     }
 
     private Booking bookingWithEquipment(String language) {
