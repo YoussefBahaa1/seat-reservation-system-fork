@@ -54,8 +54,12 @@ if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
     scripts/db/exec_db.sh init/insertRoomTypes.sql
     # Insert buzildings, floors, rooms and desks.
     scripts/db/exec_db.sh init/insertBuilding.sql
+    # Mark configured desks as fixed (per building/floor/room mapping).
+    scripts/db/exec_db.sh init/insertFixedDesks.sql
     # Backfill workstation metadata for seeded desks after the desks exist.
     scripts/db/exec_db.sh migration/workstation_metadata_backfill.sql
+    # Override monitors for specific seeded rooms.
+    scripts/db/exec_db.sh init/insertWorkstationMonitors.sql
     # Insert test users: admins, employees, and service personnel.
     scripts/db/exec_db.sh init/insertTestUsers.sql
 else
