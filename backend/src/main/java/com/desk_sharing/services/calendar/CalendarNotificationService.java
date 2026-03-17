@@ -121,6 +121,8 @@ public class CalendarNotificationService {
         );
 
         sendEmail(updatedBooking, enriched, "REQUEST");
+    }
+
     public void sendSeriesCreated(@NonNull List<Booking> bookings) {
         if (!notificationsEnabled || bookings.isEmpty()) return;
 
