@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import {Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, TextField, IconButton} from '@mui/material';
+import {Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Tooltip, TextField, IconButton, Typography} from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { getRequest, postRequest, deleteRequest } from '../RequestFunctions/RequestFunctions';
 import CreateDatePicker from '../misc/CreateDatePicker';
@@ -223,12 +223,20 @@ const RoomSearch = () => {
                   time={endTime}
                   setter={setEndTime}
                   label={t('endTime')}
+                  stepSeconds={60}
                   required={false}
                   size='small'
                 />
               </Box>
             </Box>
           </Box>
+          {rooms.length > 0 && (
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <Typography id='roomSearch_roomsFound' variant='subtitle2'>
+                {t('roomsFound', { count: rooms.length })}
+              </Typography>
+            </Box>
+          )}
           <TableContainer
             component={Paper}
             sx={{

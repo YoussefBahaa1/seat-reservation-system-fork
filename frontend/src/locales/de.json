@@ -180,6 +180,7 @@
     "workstationPresetDeleteMessage": "Preset \"{{name}}\" loeschen?",
     "noFiltersApplied": "Keine Filter aktiv",
     "spacesFound": "{{count}} Plaetze gefunden",
+    "roomsFound": "{{count}} Raeume gefunden",
     "resetFilters": "Filter zuruecksetzen",
     "choose": "Wählen Sie eine Buchung aus",
     "editBookingTime": "Buchungszeit bearbeiten",
