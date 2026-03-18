@@ -150,36 +150,6 @@ const DefectDashboard = () => {
     });
   }, [defects, filters.ageMax, filters.ageMin, sectionMode]);
 
-  const defectBuildingOptions = useMemo(
-    () => buildUniqueOptions(defectsWithAgeFilter, getLocationBuildingId, getLocationBuildingLabel),
-    [defectsWithAgeFilter]
-  );
-
-  const defectsForSelectedBuilding = useMemo(
-    () => (
-      filters.buildingId
-        ? defectsWithAgeFilter.filter((defect) => getLocationBuildingId(defect) === String(filters.buildingId))
-        : defectsWithAgeFilter
-    ),
-    [defectsWithAgeFilter, filters.buildingId]
-  );
-
-  const defectRoomOptions = useMemo(
-    () => buildUniqueOptions(defectsForSelectedBuilding, getLocationRoomId, getLocationRoomLabel),
-    [defectsForSelectedBuilding]
-  );
-
-  const filteredDefects = useMemo(
-    () => (
-      sectionMode === 'history'
-        ? defects
-        : defectsForSelectedBuilding.filter((defect) => (
-          !filters.roomId || getLocationRoomId(defect) === String(filters.roomId)
-        ))
-    ),
-    [defects, defectsForSelectedBuilding, filters.roomId, sectionMode]
-  );
-
   const historyBuildingOptions = useMemo(
     () => buildUniqueOptions(desks, getLocationBuildingId, getLocationBuildingLabel),
     [desks]
@@ -197,6 +167,26 @@ const DefectDashboard = () => {
   const historyRoomOptions = useMemo(
     () => buildUniqueOptions(historyDesksForSelectedBuilding, getLocationRoomId, getLocationRoomLabel),
     [historyDesksForSelectedBuilding]
+  );
+
+  const defectsForSelectedBuilding = useMemo(
+    () => (
+      filters.buildingId
+        ? defectsWithAgeFilter.filter((defect) => getLocationBuildingId(defect) === String(filters.buildingId))
+        : defectsWithAgeFilter
+    ),
+    [defectsWithAgeFilter, filters.buildingId]
+  );
+
+  const filteredDefects = useMemo(
+    () => (
+      sectionMode === 'history'
+        ? defects
+        : defectsForSelectedBuilding.filter((defect) => (
+          !filters.roomId || getLocationRoomId(defect) === String(filters.roomId)
+        ))
+    ),
+    [defects, defectsForSelectedBuilding, filters.roomId, sectionMode]
   );
 
   const historyDesksForSelectedRoom = useMemo(
@@ -225,9 +215,9 @@ const DefectDashboard = () => {
       const hasSelectedBuilding = Boolean(prev.buildingId);
       const hasSelectedRoom = Boolean(prev.roomId);
       const buildingExists = !hasSelectedBuilding
-        || defectBuildingOptions.some((option) => option.value === String(prev.buildingId));
+        || historyBuildingOptions.some((option) => option.value === String(prev.buildingId));
       const roomExists = !hasSelectedRoom
-        || defectRoomOptions.some((option) => option.value === String(prev.roomId));
+        || historyRoomOptions.some((option) => option.value === String(prev.roomId));
 
       if (!buildingExists) {
         return { ...prev, buildingId: null, roomId: null, deskId: null };
@@ -243,7 +233,7 @@ const DefectDashboard = () => {
 
       return prev;
     });
-  }, [defectBuildingOptions, defectRoomOptions, sectionMode]);
+  }, [historyBuildingOptions, historyRoomOptions, sectionMode]);
 
   useEffect(() => {
     if (sectionMode !== 'history') {
@@ -388,7 +378,7 @@ const DefectDashboard = () => {
         <DefectFilters
           filters={filters}
           setFilters={setFilters}
-          locationOptions={{ buildings: defectBuildingOptions, rooms: defectRoomOptions }}
+          locationOptions={{ buildings: historyBuildingOptions, rooms: historyRoomOptions }}
         />
       )}
 

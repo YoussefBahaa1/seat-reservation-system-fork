@@ -38,6 +38,26 @@ const toTimeMinutes = (value) => {
   return (hours * 60) + minutes;
 };
 
+const getBookingStartTimestamp = (booking) => {
+  const day = normalizeDateValue(booking?.day);
+  const begin = normalizeTimeValue(booking?.begin);
+
+  if (!day || !begin) {
+    return null;
+  }
+
+  const parsed = new Date(`${day}T${begin}`);
+  const timestamp = parsed.getTime();
+  return Number.isNaN(timestamp) ? null : timestamp;
+};
+
+const filterFutureBookings = (bookings, nowTimestamp) => (
+  bookings.filter((booking) => {
+    const startTimestamp = getBookingStartTimestamp(booking);
+    return startTimestamp !== null && startTimestamp > nowTimestamp;
+  })
+);
+
 const getFilterCandidateValue = (item, key) => {
   if (key === 'name') {
     return [item?.name, item?.surname].filter(Boolean).join(' ');
@@ -97,6 +117,7 @@ const BookingManagementDashboard = () => {
   const [bookingViewMode, setBookingViewMode] = useState('desks');
   const [deskBookings, setDeskBookings] = useState([]);
   const [parkingBookings, setParkingBookings] = useState([]);
+  const [currentTimestamp, setCurrentTimestamp] = useState(() => Date.now());
   const [deskBookingsLoading, setDeskBookingsLoading] = useState(false);
   const [parkingBookingsLoading, setParkingBookingsLoading] = useState(false);
   const [pendingParkingCount, setPendingParkingCount] = useState(0);
@@ -114,25 +135,33 @@ const BookingManagementDashboard = () => {
 
   const deskFilterFields = useMemo(() => getBookingFilterFields('desks'), []);
   const parkingFilterFields = useMemo(() => getBookingFilterFields('parkings'), []);
+  const futureDeskBookings = useMemo(
+    () => filterFutureBookings(deskBookings, currentTimestamp),
+    [currentTimestamp, deskBookings]
+  );
+  const futureParkingBookings = useMemo(
+    () => filterFutureBookings(parkingBookings, currentTimestamp),
+    [currentTimestamp, parkingBookings]
+  );
 
   const deskLocationOptions = useMemo(() => {
     const building = deskFilters.building || '';
     const roomRemark = deskFilters.roomRemark || '';
 
     const bookingsForBuilding = building
-      ? deskBookings.filter((booking) => String(booking?.building || '') === String(building))
-      : deskBookings;
+      ? futureDeskBookings.filter((booking) => String(booking?.building || '') === String(building))
+      : futureDeskBookings;
 
     const bookingsForRoom = roomRemark
       ? bookingsForBuilding.filter((booking) => String(booking?.roomRemark || '') === String(roomRemark))
       : bookingsForBuilding;
 
     return {
-      buildings: deskBookings
+      buildings: futureDeskBookings
         .map((booking) => booking?.building)
         .filter(Boolean)
         .sort((a, b) => String(a).localeCompare(String(b))),
-      roles: deskBookings
+      roles: futureDeskBookings
         .map((booking) => booking?.roleName)
         .filter(Boolean)
         .sort((a, b) => String(a).localeCompare(String(b))),
@@ -145,18 +174,18 @@ const BookingManagementDashboard = () => {
         .filter(Boolean)
         .sort((a, b) => String(a).localeCompare(String(b))),
     };
-  }, [deskBookings, deskFilters.building, deskFilters.roomRemark]);
+  }, [deskFilters.building, deskFilters.roomRemark, futureDeskBookings]);
 
   const parkingFilterOptions = useMemo(() => ({
-    roles: parkingBookings
+    roles: futureParkingBookings
       .map((booking) => booking?.roleName)
       .filter(Boolean)
       .sort((a, b) => String(a).localeCompare(String(b))),
-    spotLabels: parkingBookings
+    spotLabels: futureParkingBookings
       .map((booking) => booking?.spotLabel)
       .filter(Boolean)
       .sort((a, b) => String(a).localeCompare(String(b))),
-  }), [parkingBookings]);
+  }), [futureParkingBookings]);
 
   const fetchDeskBookings = useCallback(() => {
     setDeskBookingsLoading(true);
@@ -207,6 +236,16 @@ const BookingManagementDashboard = () => {
       () => {}
     );
   }, [t]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCurrentTimestamp(Date.now());
+    }, 30000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     if (bookingViewMode === 'desks' && !hasLoadedDeskBookingsRef.current && !deskBookingsLoading) {
@@ -306,12 +345,12 @@ const BookingManagementDashboard = () => {
   };
 
   const filteredDeskBookings = useMemo(
-    () => applyFilters(deskBookings, deskFilterFields, deskFilters),
-    [deskBookings, deskFilterFields, deskFilters]
+    () => applyFilters(futureDeskBookings, deskFilterFields, deskFilters),
+    [deskFilterFields, deskFilters, futureDeskBookings]
   );
   const filteredParkingBookings = useMemo(
-    () => applyFilters(parkingBookings, parkingFilterFields, parkingFilters),
-    [parkingBookings, parkingFilterFields, parkingFilters]
+    () => applyFilters(futureParkingBookings, parkingFilterFields, parkingFilters),
+    [futureParkingBookings, parkingFilterFields, parkingFilters]
   );
 
   const currentTitle = bookingViewMode === 'desks'
