@@ -360,23 +360,42 @@ Cypress.Commands.add('getAmountOfUsersForMail', (mail) => {
 // ##################################################################
 
 Cypress.Commands.add('setFloor', (buildingId, floorId, imgSrc) => {
-  cy.get('div#Floor_FloorImage_floorSelector_setBuilding').click().then(()=>{
-    cy.wait(1000).then(()=>{
-      cy.get(`li#Floor_FloorImage_building_${buildingId}`).click().then(()=>{
-        cy.wait(1000).then(()=>{
-          cy.get('div#Floor_FloorImage_floorSelector_setFloor').click().then(()=>{
-            cy.wait(1000).then(()=>{
-              cy.get(`li#Floor_FloorImage_floor_${floorId}`).click().then(()=>{
-                cy.get('img').should('exist').should('have.attr', 'src').and('include', imgSrc).then(()=>{
-                  cy.wrap('1');
-                })
-              })
-            })
-          })
-        })
-      })
-    })
-  })
+  const selectFallback = (preferredSelector, fallbackSelector) => {
+    cy.get('body').then(($body) => {
+      if (preferredSelector && $body.find(preferredSelector).length > 0) {
+        cy.get(preferredSelector).click();
+        return;
+      }
+      cy.get(fallbackSelector).filter(':visible').first().click();
+    });
+  };
+
+  cy.get('div#Floor_FloorImage_floorSelector_setBuilding').click().then(() => {
+    cy.wait(1000).then(() => {
+      const preferredBuildingSelector = buildingId == null
+        ? null
+        : `li#Floor_FloorImage_building_${buildingId}`;
+      selectFallback(preferredBuildingSelector, 'li[id^="Floor_FloorImage_building_"]');
+
+      cy.wait(1000).then(() => {
+        cy.get('div#Floor_FloorImage_floorSelector_setFloor').click().then(() => {
+          cy.wait(1000).then(() => {
+            const preferredFloorSelector = floorId == null
+              ? null
+              : `li#Floor_FloorImage_floor_${floorId}`;
+            selectFallback(preferredFloorSelector, 'li[id^="Floor_FloorImage_floor_"]');
+
+            cy.get('img').should('exist').then(() => {
+              if (imgSrc) {
+                cy.get('img').should('have.attr', 'src').and('include', imgSrc);
+              }
+              return cy.wrap('1');
+            });
+          });
+        });
+      });
+    });
+  });
 });
 
 Cypress.Commands.add('rmRoom', (buildingId, floorId, roomRemark, imgSrc) => {

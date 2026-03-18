@@ -395,6 +395,95 @@ describe('Defect management and service personnel features', () => {
     cy.contains('DF-HISTORY-001').should('be.visible');
   });
 
+  it('preserves the selected building when other filters leave that location empty', () => {
+    cy.login(serviceUser.email, password);
+
+    const buildingA = { id: 11, name: 'Building A' };
+    const buildingB = { id: 12, name: 'Building B' };
+    const roomA = {
+      id: 21,
+      remark: 'Room A',
+      floor: { id: 31, name: 'Floor A', building: buildingA },
+    };
+    const roomB = {
+      id: 22,
+      remark: 'Room B',
+      floor: { id: 32, name: 'Floor B', building: buildingB },
+    };
+    const buildingALowDefect = buildDefect(1201, 'DF-A-LOW', {
+      urgency: 'LOW',
+      room: roomA,
+      desk: {
+        id: 301,
+        remark: 'Desk 301',
+        room: roomA,
+        blocked: false,
+        blockedByDefectId: null,
+        blockedReasonCategory: null,
+        blockedEstimatedEndDate: null,
+      },
+    });
+    const buildingBHighDefect = buildDefect(1202, 'DF-B-HIGH', {
+      urgency: 'HIGH',
+      room: roomB,
+      desk: {
+        id: 302,
+        remark: 'Desk 302',
+        room: roomB,
+        blocked: false,
+        blockedByDefectId: null,
+        blockedReasonCategory: null,
+        blockedEstimatedEndDate: null,
+      },
+    });
+
+    cy.intercept('GET', /\/defects(\?.*)?$/, (req) => {
+      const requestUrl = new URL(req.url);
+      const urgency = requestUrl.searchParams.get('urgency');
+
+      if (urgency === 'HIGH') {
+        req.alias = 'getHighUrgencyDefects';
+        req.reply([buildingBHighDefect]);
+        return;
+      }
+
+      req.alias = 'getAllUrgenciesDefects';
+      req.reply([buildingALowDefect, buildingBHighDefect]);
+    });
+
+    cy.intercept('GET', '**/desks', [
+      {
+        id: 301,
+        remark: 'Desk 301',
+        room: roomA,
+      },
+      {
+        id: 302,
+        remark: 'Desk 302',
+        room: roomB,
+      },
+    ]).as('getDesks');
+
+    cy.intercept('GET', '**/rooms', [roomA, roomB]).as('getRooms');
+
+    openDefectsDashboard();
+    cy.wait('@getAllUrgenciesDefects');
+    cy.contains('DF-A-LOW').should('be.visible');
+    cy.contains('DF-B-HIGH').should('be.visible');
+
+    selectComboboxOption(3, /Building A/);
+    cy.get('[role="combobox"]').eq(3).should('contain', 'Building A');
+    cy.contains('DF-A-LOW').should('be.visible');
+    cy.contains('DF-B-HIGH').should('not.exist');
+
+    selectComboboxOption(0, /High|Hoch/);
+    cy.wait('@getHighUrgencyDefects').its('request.url').should('include', 'urgency=HIGH');
+
+    cy.get('[role="combobox"]').eq(3).should('contain', 'Building A');
+    containsOneOf(['No defects found', 'Keine Defekte gefunden']).should('be.visible');
+    cy.contains('DF-B-HIGH').should('not.exist');
+  });
+
   it('applies defect filters and age constraints in the dashboard', () => {
     cy.login(serviceUser.email, password);
 
