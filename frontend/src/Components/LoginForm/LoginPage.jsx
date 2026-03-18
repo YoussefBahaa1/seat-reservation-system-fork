@@ -126,10 +126,9 @@ const LoginPage = () => {
     localStorage.setItem('admin', String(data.admin));
     localStorage.setItem('servicePersonnel', String(data.servicePersonnel));
     localStorage.setItem('visibility', String(data.visibility));
-    const userLang = localStorage.getItem(`language_${data.id}`) || 'en';
-    i18n.changeLanguage(userLang);
-    sessionStorage.setItem('accessToken', String(data['accessToken']));
-    localStorage.setItem('accessToken', String(data['accessToken']));
+    sessionStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('accessToken', accessToken);
+    await applyLanguagePreference(accessToken, data.id);
     navigate('/home', { replace: true });
   }
 

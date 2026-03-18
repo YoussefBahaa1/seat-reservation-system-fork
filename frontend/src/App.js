@@ -27,9 +27,6 @@ import './i18n';
 
 function AppRoutes() {
   const location = useLocation();
-  const token = sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken');
-  const isAuthenticated = Boolean(token && localStorage.getItem('userId'));
-
   const isLoginPage = location.pathname === "/" || location.pathname === "/frontend-main";
 
   // If someone opens a double-prefixed URL (/frontend-main/frontend-main/...), normalize it.
@@ -41,7 +38,8 @@ function AppRoutes() {
     }
     return null;
   };
-  let hasSessionToken = Boolean(sessionStorage.getItem('accessToken'));
+  const token = sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken');
+  let hasSessionToken = Boolean(token && localStorage.getItem('userId'));
   if (!hasSessionToken) {
     try {
       const legacyHeaders = JSON.parse(sessionStorage.getItem('headers') || 'null');
@@ -56,18 +54,7 @@ function AppRoutes() {
   const isAuthenticated = hasSessionToken;
   const canAccessAdmin = localStorage.getItem('admin') === 'true';
   const canAccessDefects =
-    localStorage.getItem('admin') === 'true' ||
-    localStorage.getItem('servicePersonnel') === 'true';
-
-  // Require authentication for protected screens
-  const RequireAuth = ({ children }) => (
-    isAuthenticated ? children : <Navigate to="/" replace />
-  );
-
-  // Keep users out of login when already authenticated
-  const RedirectIfAuth = ({ children }) => (
-    isAuthenticated ? <Navigate to="/home" replace /> : children
-  );
+    canAccessAdmin || localStorage.getItem('servicePersonnel') === 'true';
 
   return (
     <>
