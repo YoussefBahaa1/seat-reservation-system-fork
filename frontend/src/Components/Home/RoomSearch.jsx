@@ -323,6 +323,7 @@ const RoomSearch = () => {
                     <TableCell id={`${room.id}_floorName`}>{room.floor.name}</TableCell>
                     <TableCell>
                       <Button
+                        id={`roomSearch_book_${room.id}`}
                         variant='outlined'
                         onClick={() => goToRoomBooking(room)}
                       >

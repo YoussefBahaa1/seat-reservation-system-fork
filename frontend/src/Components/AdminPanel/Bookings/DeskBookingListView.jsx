@@ -3,11 +3,7 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { formatDate_yyyymmdd_to_ddmmyyyy } from '../../misc/formatDate';
-
-const formatRoleName = (roleName) => {
-  if (!roleName) return '-';
-  return roleName.replace('ROLE_', '').replace(/_/g, ' ');
-};
+import formatRoleName from './formatRoleName';
 
 const formatTimeValue = (value) => {
   if (!value) return '-';
@@ -35,7 +31,7 @@ const DeskBookingListView = ({ bookings, onCancel, onEdit, isLoading = false }) 
 
   return (
     <TableContainer component={Paper} variant="outlined" sx={{ width: '100%', maxHeight: 'calc(100vh - 360px)', overflowY: 'auto' }}>
-      <Table stickyHeader size="small" sx={{ minWidth: 1320 }}>
+      <Table stickyHeader size="small" sx={{ minWidth: 1220 }}>
         <TableHead>
           <TableRow>
             <TableCell>{t('date')}</TableCell>
@@ -49,7 +45,6 @@ const DeskBookingListView = ({ bookings, onCancel, onEdit, isLoading = false }) 
             <TableCell>{t('room')}</TableCell>
             <TableCell>{t('desk')}</TableCell>
             <TableCell>{t('seriesId')}</TableCell>
-            <TableCell>{t('bulkGroupId')}</TableCell>
             <TableCell></TableCell>
           </TableRow>
         </TableHead>
@@ -67,7 +62,6 @@ const DeskBookingListView = ({ bookings, onCancel, onEdit, isLoading = false }) 
               <TableCell>{booking.roomRemark}</TableCell>
               <TableCell>{booking.deskRemark}</TableCell>
               <TableCell>{booking.seriesId || '-'}</TableCell>
-              <TableCell>{booking.bulkGroupId || '-'}</TableCell>
               <TableCell>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <Button

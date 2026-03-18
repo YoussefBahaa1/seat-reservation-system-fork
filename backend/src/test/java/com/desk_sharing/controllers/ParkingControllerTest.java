@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -133,6 +134,18 @@ class ParkingControllerTest {
         verify(parkingReservationService).getPendingReservationsCount();
         assertThat(resp.getStatusCode().value()).isEqualTo(200);
         assertThat(resp.getBody()).isEqualTo(3L);
+    }
+
+    @Test
+    void bulkApprove_returnsOkAndDelegates() {
+        Map<String, Object> body = Map.of("approved", 2, "failed", 1);
+        when(parkingReservationService.bulkApproveReservations(List.of(5L, 6L, 7L))).thenReturn(body);
+
+        ResponseEntity<Map<String, Object>> resp = controller.bulkApprove(Map.of("ids", List.of(5L, 6L, 7L)));
+
+        verify(parkingReservationService).bulkApproveReservations(List.of(5L, 6L, 7L));
+        assertThat(resp.getStatusCode().value()).isEqualTo(200);
+        assertThat(resp.getBody()).isSameAs(body);
     }
 
     @Test

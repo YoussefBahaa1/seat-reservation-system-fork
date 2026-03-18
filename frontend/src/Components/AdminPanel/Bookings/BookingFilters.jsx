@@ -1,5 +1,6 @@
 import { Box, Button, FormControl, InputLabel, MenuItem, Select, TextField } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import formatRoleName from './formatRoleName';
 
 const DESK_FILTER_FIELDS = [
   { key: 'day', labelKey: 'date', type: 'date' },
@@ -13,7 +14,6 @@ const DESK_FILTER_FIELDS = [
   { key: 'roomRemark', labelKey: 'room', type: 'select' },
   { key: 'deskRemark', labelKey: 'desk', type: 'select' },
   { key: 'seriesId', labelKey: 'seriesId', type: 'text' },
-  { key: 'bulkGroupId', labelKey: 'bulkGroupId', type: 'text' },
 ];
 
 const PARKING_FILTER_FIELDS = [
@@ -106,7 +106,9 @@ const BookingFilters = ({ viewMode, filters, setFilters, onReset, selectOptions 
         >
           <MenuItem value="">{t('all')}</MenuItem>
           {options.map((option) => (
-            <MenuItem key={option} value={option}>{option}</MenuItem>
+            <MenuItem key={option} value={option}>
+              {field.key === 'roleName' ? formatRoleName(option) : option}
+            </MenuItem>
           ))}
         </Select>
       </FormControl>

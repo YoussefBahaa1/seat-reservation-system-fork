@@ -1,9 +1,11 @@
 package com.desk_sharing.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,17 +21,22 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.desk_sharing.entities.Defect;
 import com.desk_sharing.entities.DefectInternalNote;
+import com.desk_sharing.entities.ScheduledBlocking;
+import com.desk_sharing.entities.ScheduledBlockingStatus;
 import com.desk_sharing.model.DefectBlockDTO;
 import com.desk_sharing.model.DefectCreateDTO;
 import com.desk_sharing.model.DefectNoteDTO;
 import com.desk_sharing.model.DefectStatusUpdateDTO;
+import com.desk_sharing.model.ScheduledBlockingCreateDTO;
 import com.desk_sharing.services.DefectService;
 import com.desk_sharing.services.FutureBookingsConflictException;
+import com.desk_sharing.services.ScheduledBlockingService;
 
 @ExtendWith(MockitoExtension.class)
 class DefectControllerTest {
 
     @Mock DefectService defectService;
+    @Mock ScheduledBlockingService scheduledBlockingService;
     @InjectMocks DefectController controller;
 
     @Test
@@ -223,5 +230,120 @@ class DefectControllerTest {
 
         verify(defectService).deleteNote(5L, 2L);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    @Test
+    void listScheduledBlockings_returnsOkAndDelegates() {
+        ScheduledBlocking blocking = new ScheduledBlocking();
+        blocking.setId(9L);
+        List<ScheduledBlocking> blockings = List.of(blocking);
+        when(scheduledBlockingService.listByDefect(44L)).thenReturn(blockings);
+
+        ResponseEntity<List<ScheduledBlocking>> response = controller.listScheduledBlockings(44L);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isSameAs(blockings);
+        verify(scheduledBlockingService).listByDefect(44L);
+    }
+
+    @Test
+    void getScheduledBlockingCounts_returnsOkAndDelegates() {
+        Map<String, Long> counts = Map.of("2026-03-20", 2L);
+        when(scheduledBlockingService.getBlockingCountsForMonth(44L, 2026, 3)).thenReturn(counts);
+
+        ResponseEntity<Map<String, Long>> response = controller.getScheduledBlockingCounts(44L, 2026, 3);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isSameAs(counts);
+        verify(scheduledBlockingService).getBlockingCountsForMonth(44L, 2026, 3);
+    }
+
+    @Test
+    void createScheduledBlocking_returnsCreatedAndDelegatesWithParsedDateTimes() {
+        ScheduledBlockingCreateDTO dto = new ScheduledBlockingCreateDTO();
+        dto.setStartDateTime("2099-03-20T09:00:00");
+        dto.setEndDateTime("2099-03-20T11:00:00");
+        dto.setCancelFutureBookings(false);
+
+        ScheduledBlocking blocking = new ScheduledBlocking();
+        blocking.setId(15L);
+        blocking.setStatus(ScheduledBlockingStatus.SCHEDULED);
+
+        when(scheduledBlockingService.createScheduledBlocking(
+            44L,
+            LocalDateTime.of(2099, 3, 20, 9, 0),
+            LocalDateTime.of(2099, 3, 20, 11, 0),
+            false
+        )).thenReturn(blocking);
+
+        ResponseEntity<?> response = controller.createScheduledBlocking(44L, dto);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody()).isSameAs(blocking);
+    }
+
+    @Test
+    void createScheduledBlocking_futureBookingsConflictReturnsStructuredBody() {
+        ScheduledBlockingCreateDTO dto = new ScheduledBlockingCreateDTO();
+        dto.setStartDateTime("2099-03-20T09:00:00");
+        dto.setEndDateTime("2099-03-20T11:00:00");
+
+        when(scheduledBlockingService.createScheduledBlocking(
+            44L,
+            LocalDateTime.of(2099, 3, 20, 9, 0),
+            LocalDateTime.of(2099, 3, 20, 11, 0),
+            null
+        )).thenThrow(new FutureBookingsConflictException(2));
+
+        ResponseEntity<?> response = controller.createScheduledBlocking(44L, dto);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isEqualTo(Map.of(
+            "code", "FUTURE_BOOKINGS_EXIST",
+            "error", "Desk has future bookings during the blocking period.",
+            "futureBookingCount", 2
+        ));
+    }
+
+    @Test
+    void createScheduledBlocking_conflictReturnsSimpleErrorBody() {
+        ScheduledBlockingCreateDTO dto = new ScheduledBlockingCreateDTO();
+        dto.setStartDateTime("2099-03-20T09:00:00");
+        dto.setEndDateTime("2099-03-20T11:00:00");
+
+        when(scheduledBlockingService.createScheduledBlocking(
+            44L,
+            LocalDateTime.of(2099, 3, 20, 9, 0),
+            LocalDateTime.of(2099, 3, 20, 11, 0),
+            null
+        )).thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Overlapping scheduled blocking exists for this desk"));
+
+        ResponseEntity<?> response = controller.createScheduledBlocking(44L, dto);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isEqualTo(Map.of("error", "Overlapping scheduled blocking exists for this desk"));
+    }
+
+    @Test
+    void createScheduledBlocking_throwsBadRequestForInvalidDateTimeFormat() {
+        ScheduledBlockingCreateDTO dto = new ScheduledBlockingCreateDTO();
+        dto.setStartDateTime("20-03-2099 09:00");
+        dto.setEndDateTime("2099-03-20T11:00:00");
+
+        assertThatThrownBy(() -> controller.createScheduledBlocking(44L, dto))
+            .isInstanceOf(ResponseStatusException.class)
+            .satisfies(ex -> {
+                ResponseStatusException rse = (ResponseStatusException) ex;
+                assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                assertThat(rse.getReason()).contains("Invalid startDateTime format");
+            });
+    }
+
+    @Test
+    void cancelScheduledBlocking_returnsNoContentAndDelegates() {
+        ResponseEntity<Void> response = controller.cancelScheduledBlocking(44L, 12L);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        verify(scheduledBlockingService).cancelScheduledBlocking(44L, 12L);
     }
 }

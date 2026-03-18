@@ -298,6 +298,7 @@ const DefectDetailsDrawer = ({ defect, open, onClose, onUpdate }) => {
 
           {defect.status !== 'RESOLVED' && (
             <Button
+              id="defect_open_maintenance_calendar"
               variant="outlined"
               size="small"
               startIcon={<CalendarMonthIcon />}

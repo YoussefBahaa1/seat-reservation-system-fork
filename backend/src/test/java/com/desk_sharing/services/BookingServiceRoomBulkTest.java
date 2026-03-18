@@ -128,6 +128,70 @@ class BookingServiceRoomBulkTest {
     }
 
     @Test
+    void previewRoomBulkBooking_requiresAdminRole() {
+        UserEntity employee = new UserEntity();
+        employee.setId(5);
+        when(userService.getCurrentUser()).thenReturn(employee);
+
+        assertThatThrownBy(() -> bookingService.previewRoomBulkBooking(
+            55L,
+            request(Date.valueOf(LocalDate.now().plusDays(2)), Time.valueOf("10:00:00"), Time.valueOf("12:00:00"))
+        ))
+            .isInstanceOf(ResponseStatusException.class)
+            .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+            .isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void previewRoomBulkBooking_validatesBookingRulesBeforeLoadingRoom() {
+        UserEntity admin = adminUser(7);
+        Date day = Date.valueOf(LocalDate.now().plusDays(2));
+        when(userService.getCurrentUser()).thenReturn(admin);
+        when(bookingSettingsService.getCurrentSettings()).thenReturn(new BookingSettings(1L, 0, 360, 30));
+
+        assertThatThrownBy(() -> bookingService.previewRoomBulkBooking(
+            70L,
+            request(day, Time.valueOf("10:00:00"), Time.valueOf("11:00:00"))
+        ))
+            .isInstanceOf(ResponseStatusException.class)
+            .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+            .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        verify(roomService, never()).getRoomById(any(Long.class));
+    }
+
+    @Test
+    void previewRoomBulkBooking_treatsCurrentUsersLockAsBookable() {
+        Room room = room(56L, "Lyra");
+        Desk lockedDesk = desk(8L, room, "Desk 8", 8L);
+        UserEntity admin = adminUser(9);
+        Date day = Date.valueOf(LocalDate.now().plusDays(2));
+        Time begin = Time.valueOf("10:00:00");
+        Time end = Time.valueOf("12:00:00");
+
+        when(userService.getCurrentUser()).thenReturn(admin);
+        when(bookingSettingsService.getCurrentSettings()).thenReturn(new BookingSettings(1L, 0, 360, 30));
+        when(roomService.getRoomById(56L)).thenReturn(Optional.of(room));
+        when(deskRepository.findByRoomId(56L)).thenReturn(List.of(lockedDesk));
+        when(scheduledBlockingRepository.findOverlapping(any(Long.class), anyList(), any(LocalDateTime.class), any(LocalDateTime.class)))
+            .thenReturn(List.of());
+        when(bookingLockService.findActiveLock(8L, day)).thenReturn(Optional.of(lockForUser(lockedDesk, admin.getId())));
+        when(bookingRepository.getAllBookingsForPreventDuplicates(56L, 8L, day, begin, end)).thenReturn(List.of());
+
+        AdminRoomBulkBookingPreviewDTO preview = bookingService.previewRoomBulkBooking(56L, request(day, begin, end));
+
+        assertThat(preview.getIncludedDeskCount()).isEqualTo(1);
+        assertThat(preview.getConflictedDeskCount()).isZero();
+        assertThat(preview.isCanSubmit()).isTrue();
+        assertThat(preview.getDeskStatuses())
+            .singleElement()
+            .satisfies(status -> {
+                assertThat(status.getStatus()).isEqualTo("BOOKABLE");
+                assertThat(status.getReasons()).containsExactly("bookable");
+            });
+    }
+
+    @Test
     void createRoomBulkBooking_createsSharedBulkGroupAtomicallyAndSendsSingleNotification() {
         Room room = room(70L, "Atlas");
         Desk deskOne = desk(11L, room, "Desk 11", 11L);
@@ -272,6 +336,19 @@ class BookingServiceRoomBulkTest {
     }
 
     @Test
+    void createRoomBulkBooking_rejectsMissingPayloadBeforeLoadingRoom() {
+        UserEntity admin = adminUser(7);
+        when(userService.getCurrentUser()).thenReturn(admin);
+
+        assertThatThrownBy(() -> bookingService.createRoomBulkBooking(70L, null))
+            .isInstanceOf(ResponseStatusException.class)
+            .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+            .isEqualTo(HttpStatus.BAD_REQUEST);
+
+        verify(roomService, never()).getRoomById(any(Long.class));
+    }
+
+    @Test
     void createRoomBulkBooking_rejectsRoomsWithoutAnyEligibleDesk() {
         Room room = room(72L, "Nova");
         Desk hiddenDesk = desk(31L, room, "Desk 31", 31L);
@@ -327,6 +404,38 @@ class BookingServiceRoomBulkTest {
             .isEqualTo(HttpStatus.BAD_REQUEST);
 
         verify(roomService, never()).getRoomById(any(Long.class));
+    }
+
+    @Test
+    void createRoomBulkBooking_releasesTouchedLocksWhenDeskBecomesUnavailableDuringSubmission() {
+        Room room = room(74L, "Draco");
+        Desk firstDesk = desk(51L, room, "Desk 51", 51L);
+        Desk secondDesk = desk(52L, room, "Desk 52", 52L);
+        UserEntity admin = adminUser(7);
+        Date day = Date.valueOf(LocalDate.now().plusDays(2));
+        Time begin = Time.valueOf("10:00:00");
+        Time end = Time.valueOf("12:00:00");
+
+        when(userService.getCurrentUser()).thenReturn(admin);
+        when(bookingSettingsService.getCurrentSettings()).thenReturn(new BookingSettings(1L, 0, 360, 30));
+        when(roomService.getRoomById(74L)).thenReturn(Optional.of(room));
+        when(deskRepository.findByRoomId(74L)).thenReturn(List.of(firstDesk, secondDesk));
+        when(deskRepository.findByIdForUpdate(51L)).thenReturn(Optional.of(firstDesk));
+        when(deskRepository.findByIdForUpdate(52L)).thenReturn(Optional.empty());
+        when(scheduledBlockingRepository.findOverlapping(any(Long.class), anyList(), any(LocalDateTime.class), any(LocalDateTime.class)))
+            .thenReturn(List.of());
+        when(bookingLockService.findActiveLock(any(Long.class), eq(day))).thenReturn(Optional.empty());
+        when(bookingRepository.getAllBookingsForPreventDuplicates(eq(74L), eq(51L), eq(day), eq(begin), eq(end)))
+            .thenReturn(List.of());
+
+        assertThatThrownBy(() -> bookingService.createRoomBulkBooking(74L, request(day, begin, end)))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("became unavailable during bulk booking");
+
+        verify(bookingRepository, never()).saveAll(anyList());
+        verify(calendarNotificationService, never()).sendRoomBulkBookingCreated(anyList());
+        verify(bookingLockService).releaseLockForUser(51L, day, 7);
+        verify(bookingLockService, never()).releaseLockForUser(52L, day, 7);
     }
 
     private AdminRoomBulkBookingRequestDTO request(Date day, Time begin, Time end) {

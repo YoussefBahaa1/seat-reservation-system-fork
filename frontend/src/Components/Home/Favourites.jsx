@@ -366,6 +366,7 @@ const Favourites = () => {
                   <Stack direction="row" spacing={1} alignItems="center">
                     {isTimeframeActive && getStatusChip(isAvailable)}
                     <Button
+                      id={`favourites_room_book_${room.roomId}`}
                       variant="contained"
                       onClick={() => goToRoomBooking(room)}
                       sx={{
@@ -467,7 +468,7 @@ const Favourites = () => {
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, px: 2 }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-end' }}>
-          <Box sx={{ minWidth: 220, flex: '1 1 220px' }}>
+          <Box id="favourites_date" sx={{ minWidth: 220, flex: '1 1 220px' }}>
             <CreateDatePicker
               date={selectedDate}
               setter={setSelectedDate}
@@ -477,7 +478,7 @@ const Favourites = () => {
               size="small"
             />
           </Box>
-          <Box sx={{ minWidth: 180, flex: '1 1 180px' }}>
+          <Box id="favourites_startTime" sx={{ minWidth: 180, flex: '1 1 180px' }}>
             <CreateTimePicker
               time={startTime}
               setter={setStartTime}
@@ -487,7 +488,7 @@ const Favourites = () => {
               size="small"
             />
           </Box>
-          <Box sx={{ minWidth: 180, flex: '1 1 180px' }}>
+          <Box id="favourites_endTime" sx={{ minWidth: 180, flex: '1 1 180px' }}>
             <CreateTimePicker
               time={endTime}
               setter={setEndTime}

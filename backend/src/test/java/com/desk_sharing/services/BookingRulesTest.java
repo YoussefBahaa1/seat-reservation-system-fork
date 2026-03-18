@@ -240,6 +240,17 @@ class BookingRulesTest {
     }
 
     @Test
+    void deleteBookingByAdmin_deletesFutureBookingAndSendsNotification() {
+        Booking booking = createBooking(10L, 7, 11L, false);
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(booking));
+
+        bookingService.deleteBookingByAdmin(10L, "Capacity change");
+
+        verify(calendarNotificationService).sendBookingCancelledByAdmin(booking, "Capacity change");
+        verify(bookingRepository).deleteById(10L);
+    }
+
+    @Test
     void editBookingByAdmin_updatesPeriodAndDeskAndSendsAdminNotification() {
         UserEntity admin = new UserEntity();
         Role role = new Role();
@@ -358,6 +369,42 @@ class BookingRulesTest {
         assertThatThrownBy(() -> bookingService.editBookingByAdmin(10L, request))
             .isInstanceOf(ResponseStatusException.class)
             .hasMessageContaining("Justification is required");
+    }
+
+    @Test
+    void editBookingByAdmin_rejectsHiddenTargetDesk() {
+        UserEntity admin = new UserEntity();
+        Role role = new Role();
+        role.setName("ROLE_ADMIN");
+        admin.setRoles(List.of(role));
+        when(userService.getCurrentUser()).thenReturn(admin);
+
+        Booking booking = createBooking(10L, 7, 11L, false);
+        Room currentRoom = new Room();
+        currentRoom.setId(21L);
+        booking.setRoom(currentRoom);
+        booking.getDesk().setRoom(currentRoom);
+
+        Room targetRoom = new Room();
+        targetRoom.setId(31L);
+        Desk hiddenDesk = new Desk();
+        hiddenDesk.setId(41L);
+        hiddenDesk.setRoom(targetRoom);
+        hiddenDesk.setHidden(true);
+
+        AdminBookingEditRequestDTO request = new AdminBookingEditRequestDTO();
+        request.setDay(LocalDate.now().plusDays(2).toString());
+        request.setBegin("10:00");
+        request.setEnd("12:00");
+        request.setDeskId(41L);
+        request.setJustification("Capacity change");
+
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(booking));
+        when(deskRepository.findByIdForUpdate(41L)).thenReturn(Optional.of(hiddenDesk));
+
+        assertThatThrownBy(() -> bookingService.editBookingByAdmin(10L, request))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("not available for booking");
     }
 
     @Test

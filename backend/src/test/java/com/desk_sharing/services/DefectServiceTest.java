@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import java.sql.Date;
 import java.sql.Time;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,6 +32,8 @@ import com.desk_sharing.entities.DefectUrgency;
 import com.desk_sharing.entities.Desk;
 import com.desk_sharing.entities.Role;
 import com.desk_sharing.entities.Room;
+import com.desk_sharing.entities.ScheduledBlocking;
+import com.desk_sharing.entities.ScheduledBlockingStatus;
 import com.desk_sharing.entities.UserEntity;
 import com.desk_sharing.model.DefectBlockDTO;
 import com.desk_sharing.model.DefectCreateDTO;
@@ -322,6 +325,50 @@ class DefectServiceTest {
         service.updateStatus(44L, "RESOLVED");
 
         verify(deskRepository, never()).save(any(Desk.class));
+        verify(defectNotificationService).sendDefectStatusUpdate(defect);
+    }
+
+    @Test
+    void updateStatus_resolvedCancelsScheduledAndActiveBlockingsForDefect() {
+        Desk desk = desk(1L, 11L);
+        desk.setBlocked(true);
+        desk.setBlockedByDefectId(44L);
+        desk.setBlockedByScheduledBlockingId(501L);
+        desk.setBlockedReasonCategory("TECHNICAL_DEFECT");
+        desk.setBlockedEndDateTime(LocalDateTime.now().plusHours(2));
+
+        Defect defect = baseDefect(44L, desk);
+        defect.setStatus(DefectStatus.IN_PROGRESS);
+
+        ScheduledBlocking scheduled = new ScheduledBlocking();
+        scheduled.setId(500L);
+        scheduled.setDefect(defect);
+        scheduled.setDesk(desk);
+        scheduled.setStatus(ScheduledBlockingStatus.SCHEDULED);
+
+        ScheduledBlocking active = new ScheduledBlocking();
+        active.setId(501L);
+        active.setDefect(defect);
+        active.setDesk(desk);
+        active.setStatus(ScheduledBlockingStatus.ACTIVE);
+
+        when(defectRepository.findById(44L)).thenReturn(Optional.of(defect));
+        when(scheduledBlockingRepository.findByDefectIdAndStatusIn(anyLong(), any())).thenReturn(List.of(scheduled, active));
+        when(defectRepository.save(defect)).thenReturn(defect);
+
+        Defect updated = service.updateStatus(44L, "RESOLVED");
+
+        assertThat(updated.getStatus()).isEqualTo(DefectStatus.RESOLVED);
+        assertThat(scheduled.getStatus()).isEqualTo(ScheduledBlockingStatus.CANCELLED);
+        assertThat(active.getStatus()).isEqualTo(ScheduledBlockingStatus.CANCELLED);
+        assertThat(desk.isBlocked()).isFalse();
+        assertThat(desk.getBlockedByDefectId()).isNull();
+        assertThat(desk.getBlockedByScheduledBlockingId()).isNull();
+        assertThat(desk.getBlockedReasonCategory()).isNull();
+        assertThat(desk.getBlockedEndDateTime()).isNull();
+        verify(deskRepository).save(desk);
+        verify(scheduledBlockingRepository).save(scheduled);
+        verify(scheduledBlockingRepository).save(active);
         verify(defectNotificationService).sendDefectStatusUpdate(defect);
     }
 

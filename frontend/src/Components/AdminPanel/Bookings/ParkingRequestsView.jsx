@@ -8,12 +8,8 @@ import { toast } from 'react-toastify';
 import { getRequest, postRequest } from '../../RequestFunctions/RequestFunctions';
 import { formatDate_yyyymmdd_to_ddmmyyyy } from '../../misc/formatDate';
 import BookingFilters, { getBookingFilterFields } from './BookingFilters';
+import formatRoleName from './formatRoleName';
 import JustificationDialog from './JustificationDialog';
-
-const formatRoleName = (roleName) => {
-  if (!roleName) return '-';
-  return roleName.replace('ROLE_', '').replace(/_/g, ' ');
-};
 
 const formatTimeValue = (value) => {
   if (!value) return '-';

@@ -118,8 +118,9 @@ const getDeskReasonKeys = (desk) => {
   return [];
 };
 
-const DeskStatusList = ({ title, emptyLabel, desks, t }) => (
+const DeskStatusList = ({ title, emptyLabel, desks, t, containerId, titleId }) => (
   <Paper
+    id={containerId}
     variant="outlined"
     sx={{
       p: 2,
@@ -129,7 +130,7 @@ const DeskStatusList = ({ title, emptyLabel, desks, t }) => (
       minHeight: 180,
     }}
   >
-    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+    <Typography id={titleId} variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
       {title}
     </Typography>
     {desks.length === 0 ? (
@@ -141,6 +142,7 @@ const DeskStatusList = ({ title, emptyLabel, desks, t }) => (
         {desks.map((desk) => (
           <Box
             key={`${desk.deskId ?? 'unknown'}-${desk.status}`}
+            id={`room_bulk_status_${String(desk.status || 'unknown').toLowerCase()}_${desk.deskId ?? 'unknown'}`}
             sx={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -358,6 +360,7 @@ const RoomBulkBookingPanel = ({
     <>
       <Stack spacing={2.5}>
         <Paper
+          id="room_bulk_booking_panel"
           variant="outlined"
           sx={{
             p: 2.5,
@@ -377,12 +380,12 @@ const RoomBulkBookingPanel = ({
             </Box>
 
             <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-              <Chip variant="outlined" label={`${t('date')}: ${day || '--'}`} />
-              <Chip variant="outlined" label={`${t('startTime')}: ${begin || '--:--'}`} />
-              <Chip variant="outlined" label={`${t('endTime')}: ${end || '--:--'}`} />
+              <Chip id="room_bulk_selected_day" variant="outlined" label={`${t('date')}: ${day || '--'}`} />
+              <Chip id="room_bulk_selected_begin" variant="outlined" label={`${t('startTime')}: ${begin || '--:--'}`} />
+              <Chip id="room_bulk_selected_end" variant="outlined" label={`${t('endTime')}: ${end || '--:--'}`} />
             </Stack>
 
-            <Box sx={{ height: 620 }}>
+            <Box id="room_bulk_calendar" sx={{ height: 620 }}>
               <Calendar
                 localizer={calendarLocalizer}
                 events={slotEvent ? [slotEvent] : []}
@@ -425,18 +428,19 @@ const RoomBulkBookingPanel = ({
             </Box>
 
             {!slotEvent ? (
-              <Typography variant="body2" color="text.secondary">
+              <Typography id="room_bulk_select_period_hint" variant="body2" color="text.secondary">
                 {t('roomBulkSelectPeriodHint')}
               </Typography>
             ) : null}
 
             {previewError ? (
-              <Alert severity="warning">{previewError}</Alert>
+              <Alert id="room_bulk_preview_error" severity="warning">{previewError}</Alert>
             ) : null}
             {previewLoading ? (
-              <Typography variant="body2">{t('loading')}...</Typography>
+              <Typography id="room_bulk_preview_loading" variant="body2">{t('loading')}...</Typography>
             ) : preview ? (
               <Box
+                id="room_bulk_preview_summary"
                 sx={{
                   display: 'grid',
                   gap: 2,
@@ -447,18 +451,24 @@ const RoomBulkBookingPanel = ({
                 }}
               >
                 <DeskStatusList
+                  containerId="room_bulk_included_list"
+                  titleId="room_bulk_included_title"
                   title={`${t('roomBulkIncludedDesks')} (${groupedStatuses.included.length})`}
                   emptyLabel={t('roomBulkNoIncludedDesks')}
                   desks={groupedStatuses.included}
                   t={t}
                 />
                 <DeskStatusList
+                  containerId="room_bulk_conflicts_list"
+                  titleId="room_bulk_conflicts_title"
                   title={`${t('roomBulkConflictSection')} (${groupedStatuses.conflicts.length})`}
                   emptyLabel={t('roomBulkNoConflicts')}
                   desks={groupedStatuses.conflicts}
                   t={t}
                 />
                 <DeskStatusList
+                  containerId="room_bulk_excluded_list"
+                  titleId="room_bulk_excluded_title"
                   title={`${t('roomBulkExcludedSection')} (${groupedStatuses.excluded.length})`}
                   emptyLabel={t('roomBulkNoExcludedDesks')}
                   desks={groupedStatuses.excluded}
@@ -467,7 +477,10 @@ const RoomBulkBookingPanel = ({
               </Box>
             ) : null}
             {!previewLoading && preview && (preview.includedDeskCount === 0 || preview.conflictedDeskCount > 0) ? (
-              <Alert severity="info">
+              <Alert
+                id={preview.includedDeskCount === 0 ? 'room_bulk_no_eligible_alert' : 'room_bulk_conflicts_alert'}
+                severity="info"
+              >
                 {preview.includedDeskCount === 0
                   ? t('roomBulkNoEligibleDesks')
                   : t('roomBulkHasConflicts')}
@@ -475,6 +488,7 @@ const RoomBulkBookingPanel = ({
             ) : null}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Button
+                id="room_bulk_book_all_btn"
                 variant="contained"
                 onClick={() => setConfirmOpen(true)}
                 disabled={!canSubmit}
@@ -493,29 +507,29 @@ const RoomBulkBookingPanel = ({
 
       </Stack>
 
-      <Dialog open={confirmOpen} onClose={() => !submitting && setConfirmOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{t('roomBulkConfirmTitle')}</DialogTitle>
-        <DialogContent sx={{ display: 'grid', gap: 1.5, pt: '12px !important' }}>
-          <Typography variant="body2">
+      <Dialog id="room_bulk_confirm_dialog" open={confirmOpen} onClose={() => !submitting && setConfirmOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle id="room_bulk_confirm_title">{t('roomBulkConfirmTitle')}</DialogTitle>
+        <DialogContent id="room_bulk_confirm_content" sx={{ display: 'grid', gap: 1.5, pt: '12px !important' }}>
+          <Typography id="room_bulk_confirm_room" variant="body2">
             {t('roomBulkConfirmRoom', { room: room?.remark || preview?.roomLabel || t('room') })}
           </Typography>
-          <Typography variant="body2">
+          <Typography id="room_bulk_confirm_time" variant="body2">
             {t('roomBulkConfirmDateTime', { day, begin, end })}
           </Typography>
-          <Typography variant="body2">
+          <Typography id="room_bulk_confirm_summary" variant="body2">
             {t('roomBulkConfirmSummary', {
               included: preview?.includedDeskCount ?? 0,
               conflicted: preview?.conflictedDeskCount ?? 0,
               excluded: preview?.excludedDeskCount ?? 0,
             })}
           </Typography>
-          <Alert severity="info">{t('roomBulkBookingOwnerNote')}</Alert>
+          <Alert id="room_bulk_confirm_owner_note" severity="info">{t('roomBulkBookingOwnerNote')}</Alert>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} disabled={submitting}>
+          <Button id="room_bulk_confirm_cancel_btn" onClick={() => setConfirmOpen(false)} disabled={submitting}>
             {t('cancel')}
           </Button>
-          <Button variant="contained" onClick={handleSubmit} disabled={!canSubmit || submitting}>
+          <Button id="room_bulk_confirm_submit_btn" variant="contained" onClick={handleSubmit} disabled={!canSubmit || submitting}>
             {submitting ? `${t('loading')}...` : t('roomBulkConfirmAction')}
           </Button>
         </DialogActions>

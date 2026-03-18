@@ -1,5 +1,14 @@
 # User Manual
 
+## Sidebar navigation
+Users with `ADMIN` role see an `Admin` submenu in the left sidebar. It contains these direct links:
+- `User Management`
+- `Room/Desk Management`
+- `Booking Management`
+- `Booking Settings`
+
+In the admin procedures below, paths like `Admin` -> `User Management` mean: open the `Admin` submenu in the sidebar and select that section directly.
+
 ## User management
 ### Add new user
 After you executed initDatabase.sh you can login as test.admin@mail.de with the password test. With this account you can start to add your real users. It is important that, after you setup your real world users, you delete all test users with their unsafe passwords. See [DefaultTestUsers.md](DefaultTestUsers.md) for a complete list of test accounts.
@@ -7,16 +16,15 @@ After you executed initDatabase.sh you can login as test.admin@mail.de with the 
 A step by step guide how to add a new user is seen in the following list:
 
 1. Login as user with ADMIN role.
-2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
-3. Click on `User Management`.
-4. Click on `Add User`.
-5. Provide the user's `Email`, a default `Password`, `Name`, and `Surname`.
-6. (Optional) Provide a `Department`.
-7. Select the user's role(s):
+2. Open `Admin` -> `User Management` in the left sidebar.
+3. Click on `Add User`.
+4. Provide the user's `Email`, a default `Password`, `Name`, and `Surname`.
+5. (Optional) Provide a `Department`.
+6. Select the user's role(s):
    - If the user should be an admin, set `Admin` to `True`. (Admins inherit Employee and Service Personnel permissions via role hierarchy.)
    - If the user is not an admin, select at least one of: `Employee`, `Service Personnel`. (Both can be selected.)
-8. Click `Submit`.
-9. A small window will appear with the information that the user was created successfully.
+7. Click `Submit`.
+8. A small window will appear with the information that the user was created successfully.
 
 Notes:
 - Email addresses are validated. Only valid email formats are accepted.
@@ -24,16 +32,15 @@ Notes:
 
 ### Delete user
 1. Login as user with ADMIN role.
-2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
-3. Click on `User Management`.
-4. Click on `Delete User`.
-5. (Optional) For a faster search enable filter:
+2. Open `Admin` -> `User Management` in the left sidebar.
+3. Click on `Delete User`.
+4. (Optional) For a faster search enable filter:
    - Turn on `Enable Filter`.
    - Choose a `Column` (e.g., Email), choose a `Condition` (`contains` or `is equal`), and enter text.
    - You can add multiple filters and choose whether to match `All` or `Any` filters.
-6. Click `DELETE` for the selected user. You will be asked to confirm the deletion.
-7. If the user has done at least one booking a window will appear. You will be asked to delete all bookings that belong to the user. Click `YES`.
-8. A small window will appear with the information that the user was deleted.
+5. Click `DELETE` for the selected user. You will be asked to confirm the deletion.
+6. If the user has done at least one booking a window will appear. You will be asked to delete all bookings that belong to the user. Click `YES`.
+7. A small window will appear with the information that the user was deleted.
 
 Tip: Some columns are boolean and can be filtered with `True/False` (e.g., Activity and MFA).
 
@@ -41,12 +48,11 @@ Tip: Some columns are boolean and can be filtered with `True/False` (e.g., Activ
 Deactivating a user locks them out of the system without deleting their account (soft lockout). Their history and data are retained, and they can be reactivated later.
 
 1. Login as user with ADMIN role.
-2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
-3. Click on `User Management`.
-4. Click on `Deactivate/Reactivate User`.
-5. (Optional) Use the filter to find the target user (see the filtering notes in the Delete section).
-6. Click `DEACTIVATE` to lock the account, or `REACTIVATE` to restore access.
-7. A confirmation prompt appears before the action is applied.
+2. Open `Admin` -> `User Management` in the left sidebar.
+3. Click on `Deactivate/Reactivate User`.
+4. (Optional) Use the filter to find the target user (see the filtering notes in the Delete section).
+5. Click `DEACTIVATE` to lock the account, or `REACTIVATE` to restore access.
+6. A confirmation prompt appears before the action is applied.
 
 Notes:
 - Deactivated users appear with Activity = `deactivated` and are shown at the bottom of the user table.
@@ -57,19 +63,18 @@ A basic role hierarchy is implemented:
 - `ROLE_ADMIN` inherits permissions from `ROLE_EMPLOYEE` and `ROLE_SERVICE_PERSONNEL`.
 - Non-admin users must have at least one of: Employee, Service Personnel (or both).
 
-Admins can manage user properties via the admin panel (email, name, surname, department, roles) and can additionally perform administrative actions like password resets and account deactivation.
+Admins can manage user properties via the `Admin` sidebar sections (email, name, surname, department, roles) and can additionally perform administrative actions like password resets and account deactivation.
 
 To edit a user's roles or profile:
 1. Login as user with ADMIN role.
-2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
-3. Click on `User Management`.
-4. Click on `Edit User`.
-5. (Optional) Enable filter and search for the user by Email (or other fields). You can add multiple filters and match `All`/`Any`.
-6. Click on `EDIT` for the selected user.
-7. Update the user's attributes (email, name, surname, department, and roles). Email format is validated.
-8. (Optional) Click `Reset Password` and enter the new password twice to confirm the reset.
-9. Click `Update`.
-10. A small window will appear with the information that the user was changed.
+2. Open `Admin` -> `User Management` in the left sidebar.
+3. Click on `Edit User`.
+4. (Optional) Enable filter and search for the user by Email (or other fields). You can add multiple filters and match `All`/`Any`.
+5. Click on `EDIT` for the selected user.
+6. Update the user's attributes (email, name, surname, department, and roles). Email format is validated.
+7. (Optional) Click `Reset Password` and enter the new password twice to confirm the reset.
+8. Click `Update`.
+9. A small window will appear with the information that the user was changed.
 
 MFA notes (admins only):
 - Admins can enable/disable MFA for their own account under `Settings` -> `MFA Settings`.
@@ -80,43 +85,39 @@ MFA notes (admins only):
 A room contains desks/workstations. A room is located in a floor. For the following guide we assume that the floor (and therefore the building) are already added.
 
 1. Login as user with ADMIN role.
-2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
-3. Click on `Room/Desk Management`.
-4. Click on `Add Room`.
-5. Choose a building and a floor. Click on the image where the new room is located.
-6. Select the roomy type, the status and a optional room remark. The remark will be shown when you hover over the room icon in the image.
-7. Click on `SUBMIT`.
-8. A small window will appear with the information that the room was created.
+2. Open `Admin` -> `Room/Desk Management` in the left sidebar.
+3. Click on `Add Room`.
+4. Choose a building and a floor. Click on the image where the new room is located.
+5. Select the roomy type, the status and a optional room remark. The remark will be shown when you hover over the room icon in the image.
+6. Click on `SUBMIT`.
+7. A small window will appear with the information that the room was created.
 
 ### Delete a room
 1. Login as user with ADMIN role.
-2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
-3. Click on `Room/Desk Management`.
-4. Click on `Delete Room`.
-5. Choose a building and a floor. Select the icon of the room you like to delete and click on it.
-6. If a desk is in the room you will be asked if it is ok that the desk(s) are also deleted. 
-7. Click on `YES`.
-8. A small window will appear with the information that the room was deleted.
+2. Open `Admin` -> `Room/Desk Management` in the left sidebar.
+3. Click on `Delete Room`.
+4. Choose a building and a floor. Select the icon of the room you like to delete and click on it.
+5. If a desk is in the room you will be asked if it is ok that the desk(s) are also deleted. 
+6. Click on `YES`.
+7. A small window will appear with the information that the room was deleted.
 
 ### Update a room
 1. Login as user with ADMIN role.
-2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
-3. Click on `Room/Desk Management`.
-4. Click on `Edit Room`.
-5. Choose a building and a floor. Select the icon of the room you like to edit and click on it.
-6. You can now change the room type, status and remark.
-7. Click on `SUBMIT`.
-8. A small window will appear with the information that the room was changed.
+2. Open `Admin` -> `Room/Desk Management` in the left sidebar.
+3. Click on `Edit Room`.
+4. Choose a building and a floor. Select the icon of the room you like to edit and click on it.
+5. You can now change the room type, status and remark.
+6. Click on `SUBMIT`.
+7. A small window will appear with the information that the room was changed.
 
 ### Create a new desk
 A desk/workstation is a concrete place that a user can book. For the following guide we assume that the room, in which the new desk will be placed, already exists.
 
 1. Login as user with ADMIN role.
-2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
-3. Click on `Room/Desk Management`.
-4. Click on `Add Workstation`.
-5. Choose a building and a floor. Click on the image where the room is located in which you like to place the new desk.
-6. After selecting a room, enter the workstation properties:
+2. Open `Admin` -> `Room/Desk Management` in the left sidebar.
+3. Click on `Add Workstation`.
+4. Choose a building and a floor. Click on the image where the room is located in which you like to place the new desk.
+5. After selecting a room, enter the workstation properties:
    - `Ergonomics`
    - `Monitors`
    - `Desk Type`
@@ -126,33 +127,31 @@ A desk/workstation is a concrete place that a user can book. For the following g
    - required `Desk Remark`
    - optional `Special Features`
    - `Fixed`
-7. Click on `SUBMIT`.
-8. A small window will appear with the information that the desk was created.
+6. Click on `SUBMIT`.
+7. A small window will appear with the information that the desk was created.
 
 Notes:
 - `Desk Remark` is required.
 - `Special Features` is optional and has a character limit.
-- If `Fixed` is set to `Yes`, the workstation is treated as permanently assigned and is not available in normal user booking/search flows unless it is unhidden in the admin panel.
+- If `Fixed` is set to `Yes`, the workstation is treated as permanently assigned and is not available in normal user booking/search flows unless it is unhidden via `Admin` -> `Room/Desk Management`.
 
 ### Delete a desk
 1. Login as user with ADMIN role.
-2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
-3. Click on `Room/Desk Management`.
-4. Click on `Delete Workstation`.
-5. Choose a building and a floor. Click on the image where the room is located in which the desk is located you like to delete.
-6. In the lower half of the screen you will see the label `Choose a desk`. Click on the triangle next to it. A list of all desks in this room will be shown. Choose the desk you wish to delete and click on it.
-7. Below you will see the attributes of the choosen desk. If you are sure, click on `DELETE`.
-8. If at least one booking is associated with this desk, you will be asked if it is ok that the booking(s) are also deleted. 
-9. A small window will appear with the information that the desk was deleted.
+2. Open `Admin` -> `Room/Desk Management` in the left sidebar.
+3. Click on `Delete Workstation`.
+4. Choose a building and a floor. Click on the image where the room is located in which the desk is located you like to delete.
+5. In the lower half of the screen you will see the label `Choose a desk`. Click on the triangle next to it. A list of all desks in this room will be shown. Choose the desk you wish to delete and click on it.
+6. Below you will see the attributes of the choosen desk. If you are sure, click on `DELETE`.
+7. If at least one booking is associated with this desk, you will be asked if it is ok that the booking(s) are also deleted. 
+8. A small window will appear with the information that the desk was deleted.
 
 ### Update a desk
 1. Login as user with ADMIN role.
-2. On the left side you will see the row called `Admin`. Click on it to go to the Admin Panel.
-3. Click on `Room/Desk Management`.
-4. Click on `Edit Workstation`.
-5. Choose a building and a floor. Click on the image where the room is located in which the desk is located you like to edit.
-6. In the lower half of the screen you will see the label `Choose a desk`. Click on the triangle next to it. A list of all desks in this room will be shown. Choose the desk you wish to edit and click on it.
-7. Below you will see the current desk properties. You can update:
+2. Open `Admin` -> `Room/Desk Management` in the left sidebar.
+3. Click on `Edit Workstation`.
+4. Choose a building and a floor. Click on the image where the room is located in which the desk is located you like to edit.
+5. In the lower half of the screen you will see the label `Choose a desk`. Click on the triangle next to it. A list of all desks in this room will be shown. Choose the desk you wish to edit and click on it.
+6. Below you will see the current desk properties. You can update:
    - `Ergonomics`
    - `Monitors`
    - `Desk Type`
@@ -162,8 +161,8 @@ Notes:
    - `Desk Remark`
    - `Special Features`
    - `Fixed`
-8. Click on `UPDATE`.
-9. A small window will appear with the information that the desk was updated.
+7. Click on `UPDATE`.
+8. A small window will appear with the information that the desk was updated.
 
 Notes:
 - `Desk Remark` remains required when editing.
@@ -174,12 +173,11 @@ Notes:
 Use this function to control whether fixed desks are visible in normal user booking and search flows.
 
 1. Login as user with ADMIN role.
-2. On the left side click `Admin` to open the Admin Panel.
-3. Click on `Room/Desk Management`.
-4. Click on `Hide/Show Fixed`.
-5. Choose the floor you want to manage.
-6. A list of fixed desks for that floor is shown.
-7. Click `Hide` or `Show` on the target desk.
+2. Open `Admin` -> `Room/Desk Management` in the left sidebar.
+3. Click on `Hide/Show Fixed`.
+4. Choose the floor you want to manage.
+5. A list of fixed desks for that floor is shown.
+6. Click `Hide` or `Show` on the target desk.
 
 Notes:
 - This action is intended for fixed desks.
@@ -190,7 +188,7 @@ Notes:
 Configure global booking rules that apply to every booking.
 
 1. Login with ADMIN role.
-2. Go to `Admin` → `Booking Settings`.
+2. Open `Admin` -> `Booking Settings` in the left sidebar.
 3. Set:
    - **Lead time**: 0–12 hours in 0.5h steps (minimum time before a booking may start).
    - **Max duration**: Unrestricted or 2–12 hours (0.5h steps).
@@ -398,6 +396,61 @@ Notes:
 - If another user currently holds the lock for that desk/day, booking is blocked and a warning is shown.
 - If your selected slot overlaps, the UI can show alternative desk suggestions.
 
+### Admin room booking
+Admins can book multiple desks in one room at once by using the room booking mode.
+This is not a separate page. It is an admin-only mode inside the normal room booking screen (`/desks`).
+
+You can reach the room booking screen from multiple places:
+1. Login as user with `ADMIN` role.
+2. Use one of these entry points:
+   - `Home`: choose a date, open a building/floor, and select a room.
+   - `Search` -> `Room`: open a room from the room search results.
+   - `Favourites`: open a saved room from the favourites list.
+   - Any other workflow that opens the room booking screen for a room.
+3. In the room page, use the `Desk` / `Room` toggle at the top.
+4. Switch to `Room`.
+
+Room booking flow:
+1. In room mode, select a time range in the calendar.
+2. The calendar supports `Day` and `Week` view.
+3. The selectable time range is `06:00` to `22:00`.
+4. The selection must stay on one day and use valid start/end times.
+5. After selecting a valid period, the system automatically loads a preview for that room.
+
+Preview panels:
+- `Included`: desks that will be booked.
+- `Conflicts`: desks that are currently unavailable for the selected time.
+- `Excluded`: desks that are not eligible for room booking.
+
+Possible desk statuses in the preview:
+- `Bookable`
+- `Hidden`
+- `Blocked`
+- `Locked by other user`
+- `Booking conflict`
+- `Scheduled blocking`
+
+Create the room booking:
+1. Review the counts for included, conflicted, and excluded desks.
+2. Click `Book desks`.
+3. Confirm the dialog.
+4. The system creates one standard desk booking per eligible desk in that room.
+
+Notes:
+- Room booking is admin-only.
+- The room screen still opens in `Desk` mode first. Admins must switch to `Room` mode manually.
+- The created desk bookings belong to the admin account that performed the action.
+- At least one desk must be in the `Included` group before submission is possible.
+- Desks that are `Hidden` or `Blocked` are excluded automatically.
+- Desks with an overlapping booking, an active booking lock held by another user, or an overlapping scheduled maintenance block are not booked.
+- Only the currently eligible desks are created. Conflicted desks are skipped.
+- The same booking rules apply as for desk bookings: future start time, 30-minute alignment, booking lead time, maximum duration, and maximum advance window from `Booking Settings`.
+- If the room screen was opened from `Search` -> `Room` with a complete date and time range, that period is prefilled in the room booking calendar.
+- If the room screen was opened from `Favourites` with a complete and available date/time selection, that period is prefilled in the room booking calendar. If no active timeframe is applied, or the room is not available for that selected timeframe, the room still opens but without a prefilled period.
+- If a desk becomes unavailable between preview and confirmation, the room booking can fail and must be retried.
+- Successful room bookings are grouped with one shared `Bulk Group ID`. This is the identifier assigned to all desk bookings created by the same room booking action.
+- If booking-create notifications are enabled for the admin account, the admin receives a room bulk booking confirmation email.
+
 ## Create a parking spot booking
 This tool allows any logged-in user to reserve and book a parking spot.
 
@@ -526,6 +579,9 @@ Status changes:
 - `IN_PROGRESS` -> `RESOLVED`
 
 When a ticket is set to `RESOLVED`, the workstation is automatically unblocked if it was blocked by that ticket.
+Any remaining scheduled maintenance blockings for that defect are also cancelled.
+
+For unresolved defects, the ticket drawer also provides a `Maintenance Calendar` button for planning future workstation blocking windows.
 
 ### Block and unblock workstations from a defect
 1. Open a defect ticket.
@@ -543,6 +599,55 @@ While blocked, the workstation shows:
 You can:
 - Update the end date.
 - Unblock using `Unblock Workstation`.
+
+### Maintenance Calendar
+The Maintenance Calendar is tied to one unresolved defect and its workstation. It is available to users with `SERVICE_PERSONNEL` or `ADMIN` role.
+
+Open it like this:
+1. Open `Defects` from the left sidebar.
+2. Open an unresolved defect ticket.
+3. Click `Maintenance Calendar`.
+
+Month view:
+- The page header shows the workstation location.
+- Each day displays `Blocking sum`, which counts maintenance blocking entries for that day, including `SCHEDULED`, `ACTIVE`, and `COMPLETED`.
+- Use `Today`, `Back`, and `Next` to move through months.
+- Click a day or `Schedule Blocking` to open the day view for that date.
+
+Day view:
+- The calendar shows the selected day for the workstation.
+- Existing scheduled maintenance entries are shown in gray.
+- New selections are shown separately until they are submitted.
+- The selectable time range is `06:00` to `22:00`.
+
+Create a scheduled blocking:
+1. In day view, click-drag over the desired time range.
+2. The selected period must be in the future.
+3. The selected period must be at least `1 hour`.
+4. The selected period cannot overlap another scheduled maintenance entry for the same workstation.
+5. Click `Schedule Blocking`.
+
+If bookings already exist in the selected time range, a decision dialog appears:
+- `Retain Bookings`: the scheduled blocking is created, but existing future bookings stay in place until the blocking starts.
+- `Cancel Bookings`: overlapping future bookings are deleted immediately and booking cancellation notifications are sent.
+
+Scheduled blocking lifecycle:
+- New entries start with status `SCHEDULED`.
+- When the start time is reached, the workstation is automatically blocked and the entry becomes `ACTIVE`.
+- If overlapping bookings still exist at activation time, they are cancelled automatically.
+- When the end time is reached, the entry becomes `COMPLETED` and the workstation is unblocked automatically.
+- If a defect is resolved, all remaining `SCHEDULED` and `ACTIVE` entries for that defect are cancelled.
+
+Cancel a scheduled blocking:
+1. Open the day view for the date that contains the entry.
+2. Click the existing blocking in the calendar.
+3. Click `Cancel`.
+4. Confirm the prompt.
+
+Notes:
+- Only entries with status `SCHEDULED` can be cancelled manually.
+- `ACTIVE` and `COMPLETED` entries remain visible in the calendar history but cannot be cancelled.
+- A resolved defect cannot receive new scheduled blockings.
 
 ### Internal notes on defects
 Service personnel/admin users can add internal notes to a ticket.
@@ -568,22 +673,169 @@ Notification details:
 - Emails are sent only when `ICS_NOTIFICATIONS_ENABLED=true` and mail settings are configured.
 
 ### Blocked workstation behavior in booking flows
-- Blocked desks are visibly marked as blocked in booking views.
+- Desks blocked by a defect or by an active maintenance blocking are visibly marked as blocked in booking views.
 - Users cannot book blocked desks from the UI.
-- Backend validation also rejects booking creation/confirmation for blocked desks.
-- Free desk and series search results return only unblocked desks.
+- Users also cannot create or edit bookings that overlap a scheduled maintenance blocking window.
+- Backend validation rejects booking creation/confirmation for blocked desks and for time ranges that overlap scheduled maintenance blockings.
+- Availability-based desk results, including series booking candidates, exclude desks with overlapping scheduled maintenance blockings.
 
-### Parking bookings management:
-Admins can approve/reject incoming parking requests, or manage existing ones.
-1. From the sidebar, navigate to the Admin panel.
-2. Open the `Booking Management` tab.
-3. Select between the `Parking Bookings` or `Parking Requests` panels:
-4. (Optional) Filter the requests by selecting specific details in the panel.
-   - In `Parking Requests`, view the pending requests where the details of the reservation (user details, times, and justification) are visible
-   - Accept or deny the request by pressing the corresponding buttons.
-  OR
-   - In `Parking Bookings`, view the existing bookings where the details of the booking (user details, times, and justification) are visible
-   - (Optional) Choose to remove the current booking by pressing the `Cancel` button, ot choose the edit the booking with the corresponding button.
+## Booking Management dashboard
+The Booking Management dashboard is available to users with `ADMIN` role.
+
+Open it like this:
+1. Login as user with `ADMIN` role.
+2. Open `Admin` -> `Booking Management` in the left sidebar.
+
+The dashboard has three views:
+- `Desk bookings`: confirmed desk bookings.
+- `Parking bookings`: approved parking reservations.
+- `Parking Requests`: pending parking requests waiting for review.
+
+The `Parking Requests` toggle shows the current number of pending requests when there are open items.
+
+### Desk bookings view
+This view lists existing desk bookings with:
+- Date
+- Start time
+- End time
+- Email
+- User name
+- Role
+- Department
+- Building
+- Room
+- Desk
+- Series ID
+
+Available filters:
+- Date
+- Start time
+- End time
+- Email
+- Name
+- Role
+- Department
+- Building
+- Room
+- Desk
+- Series ID
+
+Notes:
+- Building, room, and desk filters are dependent selectors. After choosing a building, only matching rooms are shown. After choosing a room, only matching desks are shown.
+- `Clear filters` resets the current filter set.
+- The dashboard shows the current result count above the table.
+
+Admin actions for desk bookings:
+- `Edit Booking`: change date, time, and workstation assignment.
+- `Cancel`: remove the booking.
+
+Desk booking edit flow:
+1. Click `Edit Booking` in the target row.
+2. Review the current assignment.
+3. Change the date and/or time.
+4. Select a target building, room, and desk from the currently available candidates.
+5. Enter a mandatory justification.
+6. Click `Save Changes`.
+
+Desk edit rules:
+- The time range must be valid.
+- The updated booking must still comply with the configured booking settings.
+- Only currently available desks are offered as candidates.
+- Hidden desks are excluded.
+- Blocked desks are excluded.
+- Desks with overlapping scheduled maintenance blockings are excluded.
+- Desks with overlapping bookings are excluded.
+- If no valid change is made, the update is rejected.
+- Bookings whose start time has already passed cannot be edited.
+
+Desk booking cancellation:
+1. Click `Cancel`.
+2. Enter a mandatory cancellation justification.
+3. Confirm the cancellation.
+
+Desk cancellation rules:
+- Bookings whose start time has already passed cannot be cancelled.
+- Admin cancellation sends a cancellation notification with the provided justification.
+
+### Parking bookings view
+This view lists approved parking reservations with:
+- Date
+- Start time
+- End time
+- Email
+- User name
+- Role
+- Department
+- Spot number
+- Justification (`View Justification`)
+
+Available filters:
+- Date
+- Start time
+- End time
+- Email
+- Name
+- Role
+- Department
+- Spot number
+
+Admin actions for parking bookings:
+- `Edit Booking`: change date, time, and parking spot.
+- `Cancel`: remove the approved reservation.
+- `View Justification`: open the requester justification in a dialog.
+
+Parking booking edit flow:
+1. Click `Edit Booking`.
+2. Change the date and/or time.
+3. Select one of the currently available parking spot candidates.
+4. Enter a mandatory justification.
+5. Click `Save Changes`.
+
+Parking edit rules:
+- Only approved reservations appear in this view.
+- Only active, unblocked, non-special parking spots are offered as candidates.
+- Candidate spots must be free in the selected time range.
+- The time range must be in the future, must end after it starts, must use 30-minute steps, and must be at least 30 minutes long.
+
+Parking booking cancellation:
+1. Click `Cancel`.
+2. Enter a mandatory cancellation justification.
+3. Confirm the cancellation.
+
+### Parking Requests view
+This view is used to review pending parking requests.
+
+Each row shows:
+- Date
+- Start time
+- End time
+- Email
+- User name
+- Role
+- Department
+- Spot number
+- Justification (`View Justification`)
+
+Available actions:
+- `Approve`: approve one request.
+- `Reject`: reject one request.
+- `Bulk Approve`: approve all requests currently shown after filtering.
+
+Available filters:
+- Date
+- Start time
+- End time
+- Email
+- Name
+- Role
+- Department
+- Spot number
+
+Notes:
+- `Bulk Approve` works on the filtered result set, not on hidden rows.
+- After a bulk approval, the dashboard reports how many requests were approved and how many failed.
+- If a request becomes unavailable because of an overlap or another conflict, approval can fail and the list refreshes.
+- Use `View Justification` to inspect the requester explanation before approving or rejecting.
      
 ## Add new floor images
 Every room is associated with an floor in a building.

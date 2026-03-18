@@ -5,11 +5,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { formatDate_yyyymmdd_to_ddmmyyyy } from '../../misc/formatDate';
 import JustificationDialog from './JustificationDialog';
-
-const formatRoleName = (roleName) => {
-  if (!roleName) return '-';
-  return roleName.replace('ROLE_', '').replace(/_/g, ' ');
-};
+import formatRoleName from './formatRoleName';
 
 const formatTimeValue = (value) => {
   if (!value) return '-';

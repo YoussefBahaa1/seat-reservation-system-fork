@@ -77,7 +77,7 @@ const MaintenanceCalendar = () => {
         end: date.endOf('day').toDate(),
         title: `${t('blockingSum')}: ${count}`,
         allDay: true,
-        resource: { count }
+        resource: { count, dayKey }
       });
     }
 
@@ -313,6 +313,7 @@ const MaintenanceCalendar = () => {
   const BlockingEvent = ({ event }) => {
     const count = event?.resource?.count ?? 0;
     const date = event?.start;
+    const dayKey = event?.resource?.dayKey ?? moment(date).format('YYYY-MM-DD');
 
     const handleClick = (e) => {
       e.preventDefault();
@@ -324,6 +325,7 @@ const MaintenanceCalendar = () => {
       <div className="home-booking-event">
         <button
           type="button"
+          id={`maintenance_calendar_open_day_${dayKey}`}
           className="home-add-booking-btn"
           onClick={handleClick}
         >
@@ -376,11 +378,11 @@ const MaintenanceCalendar = () => {
               {locationLabel}
             </Typography>
           )}
-          <Typography variant="body2" color="text.secondary">
+          <Typography id="maintenance_calendar_selected_date" variant="body2" color="text.secondary">
             {moment(selectedDate).format('dddd, MMMM D, YYYY')}
           </Typography>
 
-          <Box sx={{ width: '100%', maxWidth: 900 }}>
+          <Box id="maintenance_calendar_day_view" sx={{ width: '100%', maxWidth: 900 }}>
             <Calendar
               localizer={localizer}
               events={allEvents}
@@ -398,6 +400,9 @@ const MaintenanceCalendar = () => {
               formats={calendarFormats}
               components={{ toolbar: CustomToolbar }}
               eventPropGetter={(event) => ({
+                className: event.isExisting
+                  ? 'maintenance-calendar-existing-blocking'
+                  : 'maintenance-calendar-selected-blocking',
                 style: {
                   backgroundColor: event.isExisting
                     ? colorVars.state.neutralGrey
@@ -420,6 +425,7 @@ const MaintenanceCalendar = () => {
 
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
             <Button
+              id="maintenance_calendar_schedule_submit"
               sx={{
                 margin: '10px',
                 padding: '15px',
@@ -442,6 +448,7 @@ const MaintenanceCalendar = () => {
             </Button>
             {selectedExistingBlocking?.status === 'SCHEDULED' && (
               <Button
+                id="maintenance_calendar_cancel_selected"
                 sx={{
                   margin: '10px',
                   padding: '15px',
@@ -461,7 +468,7 @@ const MaintenanceCalendar = () => {
           </Box>
         </Box>
 
-        <Dialog open={blockPromptOpen} onClose={() => setBlockPromptOpen(false)}>
+        <Dialog id="maintenance_calendar_future_bookings_dialog" open={blockPromptOpen} onClose={() => setBlockPromptOpen(false)}>
           <DialogTitle>{t('scheduleBlocking')}</DialogTitle>
           <DialogContent>
             <Typography>
@@ -469,23 +476,30 @@ const MaintenanceCalendar = () => {
             </Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => { setBlockPromptOpen(false); submitScheduledBlocking(false); }}>
+            <Button
+              id="maintenance_calendar_retain_bookings"
+              onClick={() => { setBlockPromptOpen(false); submitScheduledBlocking(false); }}
+            >
               {t('defectRetainBookings')}
             </Button>
-            <Button color="error" onClick={() => { setBlockPromptOpen(false); submitScheduledBlocking(true); }}>
+            <Button
+              id="maintenance_calendar_cancel_bookings"
+              color="error"
+              onClick={() => { setBlockPromptOpen(false); submitScheduledBlocking(true); }}
+            >
               {t('defectCancelBookings')}
             </Button>
           </DialogActions>
         </Dialog>
 
-        <Dialog open={cancelConfirmOpen} onClose={() => setCancelConfirmOpen(false)}>
+        <Dialog id="maintenance_calendar_cancel_confirm_dialog" open={cancelConfirmOpen} onClose={() => setCancelConfirmOpen(false)}>
           <DialogTitle>{t('scheduledBlockingCancelConfirmTitle')}</DialogTitle>
           <DialogContent>
             <Typography>{t('scheduledBlockingCancelConfirmText')}</Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setCancelConfirmOpen(false)}>{t('no')}</Button>
-            <Button color="error" onClick={cancelSelectedBlocking}>{t('yes')}</Button>
+            <Button id="maintenance_calendar_cancel_confirm_no" onClick={() => setCancelConfirmOpen(false)}>{t('no')}</Button>
+            <Button id="maintenance_calendar_cancel_confirm_yes" color="error" onClick={cancelSelectedBlocking}>{t('yes')}</Button>
           </DialogActions>
         </Dialog>
       </LayoutPage>
@@ -506,6 +520,7 @@ const MaintenanceCalendar = () => {
         </Typography>
       )}
       <Calendar
+        id="maintenance_calendar_month_view"
         localizer={localizer}
         events={monthEvents}
         date={calendarDate}

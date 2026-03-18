@@ -75,6 +75,30 @@ class AdminControllerRoomBulkBookingTest {
     }
 
     @Test
+    void previewRoomBulkBooking_returnsErrorPayloadWhenServiceRejectsRequest() {
+        AdminRoomBulkBookingRequestDTO request = request();
+        when(bookingService.previewRoomBulkBooking(8L, request))
+            .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid booking date or time"));
+
+        ResponseEntity<?> response = controller.previewRoomBulkBooking(8L, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isEqualTo(Map.of("error", "Invalid booking date or time"));
+    }
+
+    @Test
+    void previewRoomBulkBooking_fallsBackToDefaultErrorMessageWhenReasonIsMissing() {
+        AdminRoomBulkBookingRequestDTO request = request();
+        when(bookingService.previewRoomBulkBooking(8L, request))
+            .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT));
+
+        ResponseEntity<?> response = controller.previewRoomBulkBooking(8L, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isEqualTo(Map.of("error", "Room bulk booking preview failed"));
+    }
+
+    @Test
     void createRoomBulkBooking_returnsCreatedPayload() {
         AdminRoomBulkBookingRequestDTO request = request();
         AdminRoomBulkBookingResponseDTO payload = new AdminRoomBulkBookingResponseDTO(
@@ -107,6 +131,18 @@ class AdminControllerRoomBulkBookingTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(response.getBody())
             .isEqualTo(Map.of("error", "Desk Desk 12 already has a booking in the selected time range."));
+    }
+
+    @Test
+    void createRoomBulkBooking_fallsBackToDefaultErrorMessageWhenReasonIsMissing() {
+        AdminRoomBulkBookingRequestDTO request = request();
+        when(bookingService.createRoomBulkBooking(8L, request))
+            .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT));
+
+        ResponseEntity<?> response = controller.createRoomBulkBooking(8L, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isEqualTo(Map.of("error", "Room bulk booking failed"));
     }
 
     private AdminRoomBulkBookingRequestDTO request() {

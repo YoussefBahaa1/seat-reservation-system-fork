@@ -1550,6 +1550,7 @@ const Booking = () => {
       {isAdmin && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
           <ToggleButtonGroup
+            id="booking_mode_toggle"
             exclusive
             value={bookingMode}
             onChange={(_event, value) => {
@@ -1559,8 +1560,8 @@ const Booking = () => {
             }}
             color="primary"
           >
-            <ToggleButton value="desk">{t('deskBookingMode')}</ToggleButton>
-            <ToggleButton value="room">{t('roomBookingMode')}</ToggleButton>
+            <ToggleButton id="booking_mode_desk" value="desk">{t('deskBookingMode')}</ToggleButton>
+            <ToggleButton id="booking_mode_room" value="room">{t('roomBookingMode')}</ToggleButton>
           </ToggleButtonGroup>
         </Box>
       )}

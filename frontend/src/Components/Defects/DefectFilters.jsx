@@ -7,11 +7,26 @@ const CATEGORIES = [
 const URGENCIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 const STATUSES = ['NEW', 'IN_PROGRESS', 'RESOLVED'];
 
-const DefectFilters = ({ filters, setFilters, rooms }) => {
+const DefectFilters = ({ filters, setFilters, locationOptions }) => {
   const { t } = useTranslation();
+  const buildingOptions = locationOptions?.buildings || [];
+  const roomOptions = locationOptions?.rooms || [];
 
   const update = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      const next = { ...prev, [key]: value };
+
+      if (key === 'buildingId') {
+        next.roomId = null;
+        next.deskId = null;
+      }
+
+      if (key === 'roomId') {
+        next.deskId = null;
+      }
+
+      return next;
+    });
   };
 
   return (
@@ -61,15 +76,29 @@ const DefectFilters = ({ filters, setFilters, rooms }) => {
       </FormControl>
 
       <FormControl size="small" sx={{ minWidth: 150 }}>
-        <InputLabel>{t('defectFilterRoom')}</InputLabel>
+        <InputLabel>{t('building')}</InputLabel>
+        <Select
+          value={filters.buildingId || ''}
+          label={t('building')}
+          onChange={(e) => update('buildingId', e.target.value || null)}
+        >
+          <MenuItem value="">{t('all')}</MenuItem>
+          {buildingOptions.map((building) => (
+            <MenuItem key={building.value} value={building.value}>{building.label}</MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <FormControl size="small" sx={{ minWidth: 150 }} disabled={!filters.buildingId}>
+        <InputLabel>{t('room')}</InputLabel>
         <Select
           value={filters.roomId || ''}
-          label={t('defectFilterRoom')}
+          label={t('room')}
           onChange={(e) => update('roomId', e.target.value || null)}
         >
-          <MenuItem value="">{t('defectAllRooms')}</MenuItem>
-          {rooms.map(r => (
-            <MenuItem key={r.id} value={r.id}>{r.remark || `Room ${r.id}`}</MenuItem>
+          <MenuItem value="">{t('all')}</MenuItem>
+          {roomOptions.map((room) => (
+            <MenuItem key={room.value} value={room.value}>{room.label}</MenuItem>
           ))}
         </Select>
       </FormControl>

@@ -29,9 +29,11 @@ import org.springframework.web.server.ResponseStatusException;
 import java.sql.Date;
 import java.sql.Time;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Dictionary;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -40,6 +42,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -246,6 +251,25 @@ class ParkingReservationServiceTest {
         ArgumentCaptor<ParkingReservation> captor = ArgumentCaptor.forClass(ParkingReservation.class);
         verify(parkingReservationRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(ParkingReservationStatus.REJECTED);
+        verify(parkingNotificationService).notifyDecision(captor.getValue(), false);
+    }
+
+    @Test
+    void cancelReservationByAdmin_notifiesAndDeletesReservation() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingReservation approved = new ParkingReservation();
+        approved.setId(17L);
+        approved.setSpotLabel("12");
+
+        when(parkingReservationRepository.findById(17L)).thenReturn(java.util.Optional.of(approved));
+
+        service.cancelReservationByAdmin(17L, "Operational adjustment");
+
+        verify(parkingNotificationService).notifyCancelledByAdmin(approved, "Operational adjustment");
+        verify(parkingReservationRepository).deleteById(17L);
     }
 
     @Test
@@ -453,6 +477,123 @@ class ParkingReservationServiceTest {
                 assertThat(dto.getSpotLabel()).isEqualTo("12");
                 assertThat(dto.getEmail()).isEqualTo("user@example.com");
             });
+    }
+
+    @Test
+    void getPendingReservationsForReview_mapsUserContextForDashboard() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingReservation pending = new ParkingReservation();
+        pending.setId(18L);
+        pending.setUserId(42);
+        pending.setSpotLabel("15");
+        pending.setDay(Date.valueOf(LocalDate.now().plusDays(2)));
+        pending.setBegin(Time.valueOf("09:00:00"));
+        pending.setEnd(Time.valueOf("11:00:00"));
+        pending.setStatus(ParkingReservationStatus.PENDING);
+        pending.setCreatedAt(LocalDateTime.of(2099, 4, 1, 8, 30));
+        pending.setJustification("Client visit");
+
+        UserEntity requester = new UserEntity();
+        requester.setId(42);
+        requester.setEmail("user@example.com");
+        requester.setName("Grace");
+        requester.setSurname("Hopper");
+        requester.setDepartment("Research");
+        Role role = new Role();
+        role.setName("ROLE_EMPLOYEE");
+        requester.setRoles(List.of(role));
+
+        when(parkingReservationRepository.findByStatusOrderByCreatedAtAsc(ParkingReservationStatus.PENDING))
+            .thenReturn(List.of(pending));
+        when(userRepository.findById(42)).thenReturn(java.util.Optional.of(requester));
+
+        assertThat(service.getPendingReservationsForReview())
+            .singleElement()
+            .satisfies(dto -> {
+                assertThat(dto.getId()).isEqualTo(18L);
+                assertThat(dto.getSpotLabel()).isEqualTo("15");
+                assertThat(dto.getRequesterUserId()).isEqualTo(42);
+                assertThat(dto.getRequesterEmail()).isEqualTo("user@example.com");
+                assertThat(dto.getName()).isEqualTo("Grace");
+                assertThat(dto.getSurname()).isEqualTo("Hopper");
+                assertThat(dto.getRoleName()).isEqualTo("ROLE_EMPLOYEE");
+                assertThat(dto.getDepartment()).isEqualTo("Research");
+                assertThat(dto.getCreatedAt()).isEqualTo(LocalDateTime.of(2099, 4, 1, 8, 30));
+                assertThat(dto.getJustification()).isEqualTo("Client visit");
+            });
+    }
+
+    @Test
+    void getPendingReservationsCount_delegatesToRepository() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+        when(parkingReservationRepository.countByStatus(ParkingReservationStatus.PENDING)).thenReturn(4L);
+
+        long count = service.getPendingReservationsCount();
+
+        assertThat(count).isEqualTo(4L);
+        verify(parkingReservationRepository).countByStatus(ParkingReservationStatus.PENDING);
+    }
+
+    @Test
+    void bulkApproveReservations_countsSuccessesAndFailures() {
+        ParkingReservationService service = spy(new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService));
+        authenticateAs(9, "admin@example.com", true);
+
+        doReturn(new ParkingReservation()).when(service).approveReservation(1L);
+        doThrow(new ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT, "busy"))
+            .when(service).approveReservation(2L);
+        doReturn(new ParkingReservation()).when(service).approveReservation(3L);
+
+        Map<String, Object> result = service.bulkApproveReservations(List.of(1L, 2L, 3L));
+
+        assertThat(result).isEqualTo(Map.of("approved", 2, "failed", 1));
+    }
+
+    @Test
+    void getCandidateSpotsForAdminEdit_excludesBlockedAndSpecialCaseSpots() {
+        ParkingReservationService service = new ParkingReservationService(
+            parkingReservationRepository, parkingSpotRepository, userRepository, parkingNotificationService);
+        authenticateAs(9, "admin@example.com", true);
+
+        ParkingReservation approved = new ParkingReservation();
+        approved.setId(5L);
+        approved.setSpotLabel("1");
+        approved.setUserId(42);
+        approved.setDay(Date.valueOf(LocalDate.now().plusDays(1)));
+        approved.setBegin(Time.valueOf("10:00:00"));
+        approved.setEnd(Time.valueOf("12:00:00"));
+        approved.setStatus(ParkingReservationStatus.APPROVED);
+
+        ParkingSpot blocked = activeSpot("2");
+        blocked.setManuallyBlocked(true);
+        ParkingSpot special = activeSpot("3");
+        special.setSpotType(ParkingSpotType.SPECIAL_CASE);
+        ParkingSpot available = activeSpot("4");
+        available.setCovered(true);
+
+        AdminEditCandidateRequestDTO request = new AdminEditCandidateRequestDTO();
+        request.setDay(approved.getDay().toString());
+        request.setBegin("10:00");
+        request.setEnd("12:00");
+
+        when(parkingReservationRepository.findById(5L)).thenReturn(java.util.Optional.of(approved));
+        when(parkingSpotRepository.findByActiveTrueOrderBySpotLabelAsc()).thenReturn(List.of(blocked, special, available));
+        when(parkingReservationRepository.findApprovedOverlapsForSpot(
+            eq(approved.getDay()),
+            eq("4"),
+            eq(approved.getBegin()),
+            eq(approved.getEnd())
+        )).thenReturn(List.of());
+
+        assertThat(service.getCandidateSpotsForAdminEdit(5L, request))
+            .extracting(candidate -> candidate.getSpotLabel())
+            .containsExactly("4");
     }
 
     @Test

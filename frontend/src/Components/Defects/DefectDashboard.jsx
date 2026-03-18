@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Box, ToggleButton, ToggleButtonGroup, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
@@ -9,6 +9,53 @@ import DefectFilters from './DefectFilters';
 import DefectListView from './DefectListView';
 import DefectKanbanView from './DefectKanbanView';
 import DefectDetailsDrawer from './DefectDetailsDrawer';
+import {
+  getDeskSelectionLabel,
+  getLocationBuildingId,
+  getLocationBuildingLabel,
+  getLocationRoomId,
+  getLocationRoomLabel,
+} from './defectUtils';
+
+const sortOptionsByLabel = (options) => (
+  [...options].sort((a, b) => String(a.label).localeCompare(String(b.label)))
+);
+
+const buildUniqueOptions = (items, getValue, getLabel) => sortOptionsByLabel(
+  Array.from(items.reduce((map, item) => {
+    const value = getValue(item);
+    const label = getLabel(item);
+
+    if (value && label && !map.has(String(value))) {
+      map.set(String(value), { value: String(value), label });
+    }
+
+    return map;
+  }, new Map()).values())
+);
+
+const sortDesks = (items) => (
+  [...items].sort((a, b) => {
+    const roomA = getLocationRoomLabel(a);
+    const roomB = getLocationRoomLabel(b);
+    const roomComparison = String(roomA).localeCompare(String(roomB));
+
+    if (roomComparison !== 0) {
+      return roomComparison;
+    }
+
+    const deskNumberA = Number(a?.deskNumberInRoom);
+    const deskNumberB = Number(b?.deskNumberInRoom);
+    const hasDeskNumberA = Number.isFinite(deskNumberA);
+    const hasDeskNumberB = Number.isFinite(deskNumberB);
+
+    if (hasDeskNumberA && hasDeskNumberB && deskNumberA !== deskNumberB) {
+      return deskNumberA - deskNumberB;
+    }
+
+    return getDeskSelectionLabel(a).localeCompare(getDeskSelectionLabel(b));
+  })
+);
 
 const DefectDashboard = () => {
   const { t } = useTranslation();
@@ -17,12 +64,11 @@ const DefectDashboard = () => {
   const headers = useRef(JSON.parse(sessionStorage.getItem('headers')));
   const [defects, setDefects] = useState([]);
   const [desks, setDesks] = useState([]);
-  const [rooms, setRooms] = useState([]);
   const [sectionMode, setSectionMode] = useState('all');
   const [viewMode, setViewMode] = useState('list');
   const [myActiveAssignmentsCount, setMyActiveAssignmentsCount] = useState(null);
   const [filters, setFilters] = useState({
-    urgency: null, category: null, status: null, roomId: null,
+    urgency: null, category: null, status: null, buildingId: null, roomId: null,
     deskId: null, ageMin: null, ageMax: null,
   });
   const [selectedDefect, setSelectedDefect] = useState(null);
@@ -42,29 +88,16 @@ const DefectDashboard = () => {
     if (sectionMode !== 'history' && filters.urgency) params.set('urgency', filters.urgency);
     if (sectionMode !== 'history' && filters.category) params.set('category', filters.category);
     if (sectionMode !== 'history' && filters.status) params.set('status', filters.status);
-    if (sectionMode !== 'history' && filters.roomId) params.set('roomId', filters.roomId);
     if (sectionMode === 'history' && filters.deskId) params.set('deskId', filters.deskId);
     if (sectionMode === 'mine') params.set('assignedToMe', 'true');
 
     getRequest(
       `${process.env.REACT_APP_BACKEND_URL}/defects?${params.toString()}`,
       headers.current,
-      (data) => {
-        let filtered = data;
-        if (sectionMode !== 'history' && (filters.ageMin != null || filters.ageMax != null)) {
-          const now = Date.now();
-          filtered = filtered.filter(d => {
-            const ageDays = (now - new Date(d.reportedAt).getTime()) / (1000 * 60 * 60 * 24);
-            if (filters.ageMin != null && ageDays < filters.ageMin) return false;
-            if (filters.ageMax != null && ageDays > filters.ageMax) return false;
-            return true;
-          });
-        }
-        setDefects(filtered);
-      },
+      (data) => setDefects(Array.isArray(data) ? data : []),
       () => toast.error(t('defectReportFailed'))
     );
-  }, [filters, sectionMode, t]);
+  }, [filters.category, filters.deskId, filters.status, filters.urgency, sectionMode, t]);
 
   const fetchDesks = useCallback(() => {
     getRequest(
@@ -72,15 +105,6 @@ const DefectDashboard = () => {
       headers.current,
       (data) => setDesks(Array.isArray(data) ? data : []),
       () => setDesks([])
-    );
-  }, []);
-
-  const fetchRooms = useCallback(() => {
-    getRequest(
-      `${process.env.REACT_APP_BACKEND_URL}/rooms`,
-      headers.current,
-      setRooms,
-      () => {}
     );
   }, []);
 
@@ -106,8 +130,160 @@ const DefectDashboard = () => {
 
   useEffect(() => { fetchDefects(); }, [fetchDefects]);
   useEffect(() => { fetchDesks(); }, [fetchDesks]);
-  useEffect(() => { fetchRooms(); }, [fetchRooms]);
   useEffect(() => { fetchMyActiveAssignmentsCount(); }, [fetchMyActiveAssignmentsCount]);
+
+  const defectsWithAgeFilter = useMemo(() => {
+    if (sectionMode === 'history') {
+      return defects;
+    }
+
+    if (filters.ageMin == null && filters.ageMax == null) {
+      return defects;
+    }
+
+    const now = Date.now();
+    return defects.filter((defect) => {
+      const ageDays = (now - new Date(defect.reportedAt).getTime()) / (1000 * 60 * 60 * 24);
+      if (filters.ageMin != null && ageDays < filters.ageMin) return false;
+      if (filters.ageMax != null && ageDays > filters.ageMax) return false;
+      return true;
+    });
+  }, [defects, filters.ageMax, filters.ageMin, sectionMode]);
+
+  const defectBuildingOptions = useMemo(
+    () => buildUniqueOptions(defectsWithAgeFilter, getLocationBuildingId, getLocationBuildingLabel),
+    [defectsWithAgeFilter]
+  );
+
+  const defectsForSelectedBuilding = useMemo(
+    () => (
+      filters.buildingId
+        ? defectsWithAgeFilter.filter((defect) => getLocationBuildingId(defect) === String(filters.buildingId))
+        : defectsWithAgeFilter
+    ),
+    [defectsWithAgeFilter, filters.buildingId]
+  );
+
+  const defectRoomOptions = useMemo(
+    () => buildUniqueOptions(defectsForSelectedBuilding, getLocationRoomId, getLocationRoomLabel),
+    [defectsForSelectedBuilding]
+  );
+
+  const filteredDefects = useMemo(
+    () => (
+      sectionMode === 'history'
+        ? defects
+        : defectsForSelectedBuilding.filter((defect) => (
+          !filters.roomId || getLocationRoomId(defect) === String(filters.roomId)
+        ))
+    ),
+    [defects, defectsForSelectedBuilding, filters.roomId, sectionMode]
+  );
+
+  const historyBuildingOptions = useMemo(
+    () => buildUniqueOptions(desks, getLocationBuildingId, getLocationBuildingLabel),
+    [desks]
+  );
+
+  const historyDesksForSelectedBuilding = useMemo(
+    () => (
+      filters.buildingId
+        ? desks.filter((desk) => getLocationBuildingId(desk) === String(filters.buildingId))
+        : desks
+    ),
+    [desks, filters.buildingId]
+  );
+
+  const historyRoomOptions = useMemo(
+    () => buildUniqueOptions(historyDesksForSelectedBuilding, getLocationRoomId, getLocationRoomLabel),
+    [historyDesksForSelectedBuilding]
+  );
+
+  const historyDesksForSelectedRoom = useMemo(
+    () => (
+      filters.roomId
+        ? historyDesksForSelectedBuilding.filter((desk) => getLocationRoomId(desk) === String(filters.roomId))
+        : []
+    ),
+    [filters.roomId, historyDesksForSelectedBuilding]
+  );
+
+  const historyDeskOptions = useMemo(
+    () => sortDesks(historyDesksForSelectedRoom).map((desk) => ({
+      value: String(desk.id),
+      label: getDeskSelectionLabel(desk),
+    })),
+    [historyDesksForSelectedRoom]
+  );
+
+  useEffect(() => {
+    if (sectionMode === 'history') {
+      return;
+    }
+
+    setFilters((prev) => {
+      const hasSelectedBuilding = Boolean(prev.buildingId);
+      const hasSelectedRoom = Boolean(prev.roomId);
+      const buildingExists = !hasSelectedBuilding
+        || defectBuildingOptions.some((option) => option.value === String(prev.buildingId));
+      const roomExists = !hasSelectedRoom
+        || defectRoomOptions.some((option) => option.value === String(prev.roomId));
+
+      if (!buildingExists) {
+        return { ...prev, buildingId: null, roomId: null, deskId: null };
+      }
+
+      if (!hasSelectedBuilding && hasSelectedRoom) {
+        return { ...prev, roomId: null, deskId: null };
+      }
+
+      if (!roomExists) {
+        return { ...prev, roomId: null, deskId: null };
+      }
+
+      return prev;
+    });
+  }, [defectBuildingOptions, defectRoomOptions, sectionMode]);
+
+  useEffect(() => {
+    if (sectionMode !== 'history') {
+      return;
+    }
+
+    setFilters((prev) => {
+      const hasSelectedBuilding = Boolean(prev.buildingId);
+      const hasSelectedRoom = Boolean(prev.roomId);
+      const hasSelectedDesk = Boolean(prev.deskId);
+      const buildingExists = !hasSelectedBuilding
+        || historyBuildingOptions.some((option) => option.value === String(prev.buildingId));
+      const roomExists = !hasSelectedRoom
+        || historyRoomOptions.some((option) => option.value === String(prev.roomId));
+      const deskExists = !hasSelectedDesk
+        || historyDeskOptions.some((option) => option.value === String(prev.deskId));
+
+      if (!buildingExists) {
+        return { ...prev, buildingId: null, roomId: null, deskId: null };
+      }
+
+      if (!hasSelectedBuilding && (hasSelectedRoom || hasSelectedDesk)) {
+        return { ...prev, roomId: null, deskId: null };
+      }
+
+      if (!roomExists) {
+        return { ...prev, roomId: null, deskId: null };
+      }
+
+      if (!hasSelectedRoom && hasSelectedDesk) {
+        return { ...prev, deskId: null };
+      }
+
+      if (!deskExists) {
+        return { ...prev, deskId: null };
+      }
+
+      return prev;
+    });
+  }, [historyBuildingOptions, historyDeskOptions, historyRoomOptions, sectionMode]);
 
   useEffect(() => {
     const openDefectId = location.state?.openDefectId;
@@ -209,40 +385,72 @@ const DefectDashboard = () => {
       </Box>
 
       {sectionMode !== 'history' && (
-        <DefectFilters filters={filters} setFilters={setFilters} rooms={rooms} />
+        <DefectFilters
+          filters={filters}
+          setFilters={setFilters}
+          locationOptions={{ buildings: defectBuildingOptions, rooms: defectRoomOptions }}
+        />
       )}
 
       {sectionMode === 'history' && (
-        <Box sx={{ mb: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 280, maxWidth: 520 }}>
-            <InputLabel>{t('defectSelectWorkstation')}</InputLabel>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>{t('building')}</InputLabel>
+            <Select
+              value={filters.buildingId || ''}
+              label={t('building')}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFilters((prev) => ({
+                  ...prev,
+                  buildingId: value || null,
+                  roomId: null,
+                  deskId: null,
+                }));
+              }}
+            >
+              <MenuItem value="">{t('all')}</MenuItem>
+              {historyBuildingOptions.map((building) => (
+                <MenuItem key={building.value} value={building.value}>{building.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 180 }} disabled={!filters.buildingId}>
+            <InputLabel>{t('room')}</InputLabel>
+            <Select
+              value={filters.roomId || ''}
+              label={t('room')}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFilters((prev) => ({
+                  ...prev,
+                  roomId: value || null,
+                  deskId: null,
+                }));
+              }}
+            >
+              <MenuItem value="">{t('all')}</MenuItem>
+              {historyRoomOptions.map((room) => (
+                <MenuItem key={room.value} value={room.value}>{room.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 280, maxWidth: 520 }} disabled={!filters.buildingId || !filters.roomId}>
+            <InputLabel>{t('desk')}</InputLabel>
             <Select
               value={filters.deskId || ''}
-              label={t('defectSelectWorkstation')}
+              label={t('desk')}
               onChange={(e) => {
                 const value = e.target.value;
                 setFilters((prev) => ({ ...prev, deskId: value || null }));
               }}
             >
-              <MenuItem value="">{t('defectSelectWorkstation')}</MenuItem>
-              {[...desks]
-                .sort((a, b) => {
-                  const roomA = (a?.room?.remark || '').toLowerCase();
-                  const roomB = (b?.room?.remark || '').toLowerCase();
-                  if (roomA < roomB) return -1;
-                  if (roomA > roomB) return 1;
-                  return (a?.deskNumberInRoom || 0) - (b?.deskNumberInRoom || 0);
-                })
-                .map((desk) => {
-                  const roomLabel = desk?.room?.remark || `Room ${desk?.room?.id || '—'}`;
-                  const workstationLabel = desk?.remark
-                    || `Desk ${desk?.id || '—'}`;
-                  return (
-                    <MenuItem key={desk.id} value={desk.id}>
-                      {`${roomLabel} — ${workstationLabel}`}
-                    </MenuItem>
-                  );
-                })}
+              <MenuItem value="">{t('all')}</MenuItem>
+              {historyDeskOptions.map((desk) => (
+                <MenuItem key={desk.value} value={desk.value}>{desk.label}</MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Box>
@@ -260,10 +468,10 @@ const DefectDashboard = () => {
         </Box>
       )}
 
-      {(showNoActiveAssignmentsMessage && defects.length === 0) || showHistorySelectPrompt ? null : viewMode === 'list' ? (
-        <DefectListView defects={defects} onSelect={handleSelect} />
+      {(showNoActiveAssignmentsMessage && filteredDefects.length === 0) || showHistorySelectPrompt ? null : viewMode === 'list' ? (
+        <DefectListView defects={filteredDefects} onSelect={handleSelect} />
       ) : (
-        <DefectKanbanView defects={defects} onSelect={handleSelect} onStatusChange={handleStatusChange} />
+        <DefectKanbanView defects={filteredDefects} onSelect={handleSelect} onStatusChange={handleStatusChange} />
       )}
 
       <DefectDetailsDrawer
