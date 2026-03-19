@@ -129,10 +129,8 @@
     "myBookings": "Meine Buchungen",
     "booking": "Buchung",
     "bookingDetails": "Buchungsdetails",
-    "bookingDetails": "Buchungsdetails",
     "edit": "Bearbeiten",
     "delete": "Entfernen",
-    "cancelBooking": "Buchung stornieren",
     "day": "Tag",
     "start": "Beginn",
     "end": "Ende",
@@ -212,12 +210,12 @@
     "bookingConfirmationTitle": "Buchungsbestaetigung fuer {{desk}}",
     "currentlyBeingBooked": "Wird derzeit gebucht",
     "bookingLockExpired": "Die Arbeitsplatzsperre ist nach 3 Minuten abgelaufen. Bitte wählen Sie den Arbeitsplatz erneut.",
-    "otherFreeDesksForSelectedTimeSlots": "Naechste Arbeitsplaetze von {{start}} bis {{end}}",
-    "otherDesksWithSameEquipementForSelectedTimeSlots": "Naechste Arbeitsplaetze mit gleicher Ausstattung von {{start}} bis {{end}}",
-    "closestPreferredDesksForSelectedTimeSlots": "Naechste bevorzugte Arbeitsplaetze von {{start}} bis {{end}}",
-    "noFreeDesksForSelectedTimeSlotInBuilding": "Fuer dieses Zeitfenster gibt es in diesem Gebaeude keine freien Arbeitsplaetze.",
-    "noFreeDesksWithSameEquipmentForSelectedTimeSlotInBuilding": "Fuer dieses Zeitfenster gibt es in diesem Gebaeude keine freien Arbeitsplaetze mit gleicher Ausstattung.",
-    "noFreeDesksInFavoriteRoomsForSelectedTimeSlot": "Fuer dieses Zeitfenster gibt es in den favorisierten Raeumen keine freien Arbeitsplaetze.",
+    "otherFreeDesksForSelectedTimeSlots": "Naechste Arbeitsplätze von {{start}} bis {{end}}",
+    "otherDesksWithSameEquipementForSelectedTimeSlots": "Naechste Arbeitsplätze mit gleicher Ausstattung von {{start}} bis {{end}}",
+    "closestPreferredDesksForSelectedTimeSlots": "Naechste bevorzugte Arbeitsplätze von {{start}} bis {{end}}",
+    "noFreeDesksForSelectedTimeSlotInBuilding": "Fuer dieses Zeitfenster gibt es in diesem Gebaeude keine freien Arbeitsplätze.",
+    "noFreeDesksWithSameEquipmentForSelectedTimeSlotInBuilding": "Fuer dieses Zeitfenster gibt es in diesem Gebaeude keine freien Arbeitsplätze mit gleicher Ausstattung.",
+    "noFreeDesksInFavoriteRoomsForSelectedTimeSlot": "Fuer dieses Zeitfenster gibt es in den favorisierten Raeumen keine freien Arbeitsplätze.",
     "noFavoriteRooms": "Keine favorisierten Raeume.",
     "booked": "Buchung erfolgreich",
     "scheduledBlockingLabel": "Geplante Sperrung",
@@ -288,8 +286,8 @@
     "fixedToggleFailed": "Fixed-Status konnte nicht aktualisiert werden.",
     "deskVisibilityToggleSuccess": "Sichtbarkeit des Arbeitsplatzes aktualisiert.",
     "deskVisibilityToggleFailed": "Sichtbarkeit des Arbeitsplatzes konnte nicht aktualisiert werden.",
-    "fixedDeskLoadFailed": "Arbeitsplaetze fuer die ausgewaehlte Etage konnten nicht geladen werden.",
-    "noDesksForSelectedFloor": "Keine Arbeitsplaetze fuer die ausgewaehlte Etage gefunden.",
+    "fixedDeskLoadFailed": "Arbeitsplätze fuer die ausgewaehlte Etage konnten nicht geladen werden.",
+    "noDesksForSelectedFloor": "Keine Arbeitsplätze fuer die ausgewaehlte Etage gefunden.",
     "noWorkstationForThisRoom": "Es existiert kein Arbeitsplatz in diesem Raum.",
     "status": "Status",
     "fixed": "Fixiert",
@@ -347,32 +345,32 @@
     "helpAddRoom":"Bitte wählen Sie einen Ort für ein neues Büro auf der Karte und klicken Sie darauf.<br/>Anschließend geben Sie alle nötigen Informationen ein und wählen <strong>Einreichen</strong>."
     ,"helpChooseRoom":"Bitte wählen Sie ein existierendes Büro aus und klicken hierauf."
     ,"helpCreateBooking":"Bitte wählen Sie zuerst ein Arbeitsplatz und dann eine Zeitspanne aus. Klicken Sie anschließend <strong>Buchen</strong>."
-    ,"helpCreateRoomBooking":"Bitte wählen Sie Datum und Zeitraum aus, um alle buchbaren Arbeitsplaetze in diesem Raum gemeinsam zu buchen."
+    ,"helpCreateRoomBooking":"Bitte wählen Sie Datum und Zeitraum aus, um alle buchbaren Arbeitsplätze in diesem Raum gemeinsam zu buchen."
     ,"deskBookingMode":"Arbeitsplatz"
     ,"roomBookingMode":"Raum"
     ,"bookRoom":"Raum buchen"
     ,"bulkGroupId":"Sammelgruppe"
     ,"roomBulkBookingTitle":"Raumbuchung"
-    ,"roomBulkBookingHelper":"Buchen Sie alle buchbaren Arbeitsplaetze in {{room}} auf einmal."
+    ,"roomBulkBookingHelper":"Buchen Sie alle buchbaren Arbeitsplätze in {{room}} auf einmal."
     ,"roomBulkIncludedDesks":"Enthalten"
     ,"roomBulkConflictedDesks":"Konflikte"
-    ,"roomBulkExcludedDesks":"Ausgeschlossene Arbeitsplaetze"
+    ,"roomBulkExcludedDesks":"Ausgeschlossene Arbeitsplätze"
     ,"roomBulkSelectPeriodHint":"Waehlen Sie einen gueltigen Zeitraum aus, um die Raumbuchung vorzuschauen."
-    ,"roomBulkNoEligibleDesks":"In diesem Raum gibt es aktuell keine buchbaren Arbeitsplaetze fuer die Sammelbuchung."
-    ,"roomBulkHasConflicts":"Einige Arbeitsplaetze in diesem Raum sind fuer den ausgewaehlten Zeitraum nicht verfuegbar. Sie koennen die enthaltenen Arbeitsplaetze trotzdem buchen."
-    ,"roomBulkBookAll":"Arbeitsplaetze buchen"
-    ,"roomBulkNoIncludedDesks":"Aktuell sind keine Arbeitsplaetze enthalten."
+    ,"roomBulkNoEligibleDesks":"In diesem Raum gibt es aktuell keine buchbaren Arbeitsplätze fuer die Sammelbuchung."
+    ,"roomBulkHasConflicts":"Einige Arbeitsplätze in diesem Raum sind fuer den ausgewaehlten Zeitraum nicht verfuegbar. Sie koennen die enthaltenen Arbeitsplätze trotzdem buchen."
+    ,"roomBulkBookAll":"Arbeitsplätze buchen"
+    ,"roomBulkNoIncludedDesks":"Aktuell sind keine Arbeitsplätze enthalten."
     ,"roomBulkConflictSection":"Konflikte"
     ,"roomBulkNoConflicts":"Keine Konflikte fuer den ausgewaehlten Zeitraum."
     ,"roomBulkExcludedSection":"Ausgeschlossen"
-    ,"roomBulkNoExcludedDesks":"Keine Arbeitsplaetze ausgeschlossen."
+    ,"roomBulkNoExcludedDesks":"Keine Arbeitsplätze ausgeschlossen."
     ,"roomBulkConfirmTitle":"Raumbuchung bestaetigen"
     ,"roomBulkConfirmRoom":"Raum: {{room}}"
     ,"roomBulkConfirmDateTime":"Zeit: {{day}} {{begin}} - {{end}}"
     ,"roomBulkConfirmSummary":"Enthalten: {{included}}, Konflikte: {{conflicted}}, ausgeschlossen: {{excluded}}."
     ,"roomBulkBookingOwnerNote":"Dabei werden normale Arbeitsplatzbuchungen unter Ihrem Admin-Konto erstellt."
     ,"roomBulkConfirmAction":"Raumbuchung bestaetigen"
-    ,"roomBulkBookingSuccess":"{{count}} Arbeitsplaetze wurden erfolgreich gebucht."
+    ,"roomBulkBookingSuccess":"{{count}} Arbeitsplätze wurden erfolgreich gebucht."
     ,"roomBulkStatusBookable":"Buchbar"
     ,"roomBulkStatusHidden":"Versteckt"
     ,"roomBulkStatusBlocked":"Gesperrt"
@@ -381,8 +379,8 @@
     ,"roomBulkStatusScheduledBlocking":"Geplante Sperrung"
     ,"roomBulkStatusUnknown":"Unbekannt"
     ,"roomBulkReasonBookable":"Bereit zur Buchung."
-    ,"roomBulkReasonHidden":"Versteckte Arbeitsplaetze werden bei der Raumbuchung ausgeschlossen."
-    ,"roomBulkReasonBlocked":"Gesperrte Arbeitsplaetze werden bei der Raumbuchung ausgeschlossen."
+    ,"roomBulkReasonHidden":"Versteckte Arbeitsplätze werden bei der Raumbuchung ausgeschlossen."
+    ,"roomBulkReasonBlocked":"Gesperrte Arbeitsplätze werden bei der Raumbuchung ausgeschlossen."
     ,"roomBulkReasonLockedByOther":"Ein anderer Nutzer bucht diesen Arbeitsplatz gerade."
     ,"roomBulkReasonBookingConflict":"Fuer diesen Arbeitsplatz gibt es bereits eine Buchung im ausgewaehlten Zeitraum."
     ,"roomBulkReasonScheduledBlocking":"Fuer diesen Arbeitsplatz gibt es eine geplante Sperrung im ausgewaehlten Zeitraum."
@@ -399,7 +397,7 @@
     ,"noMatchingBookingsForSelectedFilter":"Keine passenden Buchungen fuer den ausgewaehlten Filter."
     ,"filters":"Filter"
     ,"maxNumberFiltersSelected":"Maximale Anzahl an Filtern ausgewaehlt ({{max}})."
-    ,"desksTitle":"Arbeitsplaetze"
+    ,"desksTitle":"Arbeitsplätze"
     ,"parkingsTitle":"Parkplaetze"
     ,"filter":"Filter"
     ,"deskTypes":"Ergonomie"
